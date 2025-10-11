@@ -1,6 +1,6 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import React, { useEffect, useRef, useState, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Card,
   CardContent,
@@ -89,10 +89,10 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     URL.revokeObjectURL(url);
   };
 
-  const [uploadState, uploadFormAction] = useFormState(handlePlanUpload, {
+  const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, {
     message: '',
   });
-  const [quoteState, quoteFormAction] = useFormState(handleGenerateQuote, {
+  const [quoteState, quoteFormAction] = useActionState(handleGenerateQuote, {
     message: '',
   });
   
