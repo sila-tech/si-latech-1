@@ -36,12 +36,16 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
     { key: 'beamSectionH', label: 'Beam Section H (m)' },
     { key: 'wastagePercentage', label: 'Wastage (%)' },
   ];
+  
+  const concreteRatioSettings = [
+    { key: 'concreteMixRatioCement', label: 'Cement' },
+    { key: 'concreteMixRatioSand', label: 'Sand' },
+    { key: 'concreteMixRatioBallast', label: 'Ballast' },
+  ];
 
-  const concreteSettings = [
-    { key: 'concreteUnitWeight', label: 'Concrete Weight (kg/m³)'},
-    { key: 'cementBagWeight', label: 'Cement Bag Wt (kg)'},
-    { key: 'sandDensity', label: 'Sand Density (kg/m³)'},
-    { key: 'ballastDensity', label: 'Ballast Density (kg/m³)'},
+  const concreteMaterialSettings = [
+    { key: 'wheelbarrowVolume', label: 'Wheelbarrow Vol. (m³)'},
+    { key: 'wheelbarrowsPerTonne', label: 'Wheelbarrows per Tonne'},
   ];
 
   return (
@@ -80,13 +84,10 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
         <Separator />
 
         <div>
-          <Label className="text-base font-medium">Concrete Mix Ratio</Label>
-          <div className="grid grid-cols-3 gap-x-2 mt-2">
-              {[
-                { key: 'concreteMixRatioCement', label: 'Cement' },
-                { key: 'concreteMixRatioSand', label: 'Sand' },
-                { key: 'concreteMixRatioBallast', label: 'Ballast' },
-              ].map(({ key, label }) => (
+          <Label className="text-base font-medium">Concrete Mix Ratio (by Volume)</Label>
+          <p className="text-xs text-muted-foreground mb-2">e.g., 1 Bag Cement : 2 Wheelbarrows Sand : 4 Wheelbarrows Ballast</p>
+          <div className="grid grid-cols-3 gap-x-2">
+              {concreteRatioSettings.map(({ key, label }) => (
                 <div className="space-y-2" key={key}>
                   <Label htmlFor={key} className="text-sm font-normal text-muted-foreground">{label}</Label>
                   <Input
@@ -104,7 +105,7 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-          {concreteSettings.map(({ key, label }) => (
+          {concreteMaterialSettings.map(({ key, label }) => (
             <div className="space-y-2" key={key}>
               <Label htmlFor={key} className="text-sm">
                 {label}
@@ -120,7 +121,7 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
                   )
                 }
                 min="0"
-                step="1"
+                step="0.001"
                 placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
               />
             </div>

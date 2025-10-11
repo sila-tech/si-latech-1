@@ -19,11 +19,9 @@ export interface CalculationDefaults {
   concreteMixRatioCement: number;
   concreteMixRatioSand: number;
   concreteMixRatioBallast: number;
-  concreteUnitWeight: number; // kg/m³
-  sandDensity: number; // kg/m³
-  ballastDensity: number; // kg/m³
   wastagePercentage: number; // e.g., 10 for 10%
-  cementBagWeight: number; // kg
+  wheelbarrowVolume: number; // m³
+  wheelbarrowsPerTonne: number;
 }
 
 export interface RoomCalculation {
@@ -60,21 +58,19 @@ const m = (mm: number) => mm / 1000; // convert mm to meters
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
-  beamSectionW: m(120), // Common width of a T-beam stem
-  beamSectionH: m(40), // Common height of a T-beam stem below the slab
+  beamSectionW: m(120),
+  beamSectionH: m(40),
   toppingThickness: 0.05, // 50mm
   brcRollLength: 48,
   brcRollWidth: 2.4,
 
-  // Concrete Defaults
+  // Concrete Defaults (Local Ratio Method)
   concreteMixRatioCement: 1,
   concreteMixRatioSand: 2,
   concreteMixRatioBallast: 4,
-  concreteUnitWeight: 2400, // kg/m³
-  sandDensity: 1600, // kg/m³
-  ballastDensity: 1600, // kg/m³
   wastagePercentage: 10, // 10%
-  cementBagWeight: 50, // kg
+  wheelbarrowVolume: 0.065, // m³
+  wheelbarrowsPerTonne: 6, // 1 tonne = 6 wheelbarrows
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -131,40 +127,51 @@ export function calcConcrete(
   const C = { ...DEFAULTS, ...opts };
   const area = roomCalc.length * roomCalc.width;
 
-  // This volume is for the concrete in the T-beam ribs below the slab topping
   const beamRibVolume =
     roomCalc.totalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
   const totalConcreteVolume = beamRibVolume + toppingVolume;
-
-  // --- Mass-based Raw Material Calculation ---
-  const totalRatioParts = C.concreteMixRatioCement + C.concreteMixRatioSand + C.concreteMixRatioBallast;
+  
   const wastageFactor = 1 + (C.wastagePercentage / 100);
+
+  // --- Local Wheelbarrow Ratio Method ---
+  const { 
+    concreteMixRatioCement, 
+    concreteMixRatioSand, 
+    concreteMixRatioBallast,
+    wheelbarrowVolume,
+    wheelbarrowsPerTonne,
+  } = C;
 
   let cementBags = 0;
   let sandTonnes = 0;
   let ballastTonnes = 0;
 
-  if (totalConcreteVolume > 0 && totalRatioParts > 0) {
-    // Step B: Determine mass per m³
-    const cementMassPerM3 = (C.concreteMixRatioCement / totalRatioParts) * C.concreteUnitWeight;
-    const sandMassPerM3 = (C.concreteMixRatioSand / totalRatioParts) * C.concreteUnitWeight;
-    const ballastMassPerM3 = (C.concreteMixRatioBallast / totalRatioParts) * C.concreteUnitWeight;
+  if (totalConcreteVolume > 0) {
+    // Total parts in one batch (1 bag cement is 1 part)
+    const totalRatioParts = concreteMixRatioCement + concreteMixRatioSand + concreteMixRatioBallast;
+    
+    // Volume of one batch of concrete in m³
+    const oneBatchVolume = totalRatioParts * wheelbarrowVolume;
+    
+    // How many bags of cement are needed per m³ of concrete
+    const bagsPerM3 = oneBatchVolume > 0 ? (1 / oneBatchVolume) * concreteMixRatioCement : 0;
+    
+    // How many wheelbarrows of sand are needed per m³ of concrete
+    const sandWBPerM3 = bagsPerM3 * concreteMixRatioSand;
+    
+    // How many wheelbarrows of ballast are needed per m³ of concrete
+    const ballastWBPerM3 = bagsPerM3 * concreteMixRatioBallast;
 
-    // Step C: Scale by total volume
-    const totalCementMass = cementMassPerM3 * totalConcreteVolume;
-    const totalSandMass = sandMassPerM3 * totalConcreteVolume;
-    const totalBallastMass = ballastMassPerM3 * totalConcreteVolume;
+    // Calculate total materials for the given concrete volume, including wastage
+    const totalCementBags = totalConcreteVolume * bagsPerM3 * wastageFactor;
+    const totalSandWB = totalConcreteVolume * sandWBPerM3 * wastageFactor;
+    const totalBallastWB = totalConcreteVolume * ballastWBPerM3 * wastageFactor;
 
-    // Step E (part 1): Apply wastage
-    const totalCementMassWithWastage = totalCementMass * wastageFactor;
-    const totalSandMassWithWastage = totalSandMass * wastageFactor;
-    const totalBallastMassWithWastage = totalBallastMass * wastageFactor;
-
-    // Step D & E (part 2): Convert to practical units and final rounding
-    cementBags = C.cementBagWeight > 0 ? ceil(totalCementMassWithWastage / C.cementBagWeight) : 0;
-    sandTonnes = totalSandMassWithWastage / 1000;
-    ballastTonnes = totalBallastMassWithWastage / 1000;
+    // Convert to final units
+    cementBags = ceil(totalCementBags);
+    sandTonnes = wheelbarrowsPerTonne > 0 ? totalSandWB / wheelbarrowsPerTonne : 0;
+    ballastTonnes = wheelbarrowsPerTonne > 0 ? totalBallastWB / wheelbarrowsPerTonne : 0;
   }
   
   return { 
