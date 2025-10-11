@@ -36,7 +36,8 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
         {[
           { key: 'blockLength', label: 'Block Length (m)' },
           { key: 'blockWidth', label: 'Block Width (m)' },
-          { key: 'beamSpacing', label: 'Beam Spacing (m)' },
+          // The beam spacing is tied to block length in the new logic, so it's hidden.
+          // { key: 'beamSpacing', label: 'Beam Spacing (m)' }, 
           { key: 'toppingThickness', label: 'Topping Thickness (m)' },
           { key: 'brcRollWidth', label: 'BRC Roll Width (m)' },
           { key: 'brcRollLength', label: 'BRC Roll Length (m)' },

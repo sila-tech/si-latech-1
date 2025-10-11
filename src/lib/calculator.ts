@@ -50,7 +50,7 @@ const m = (mm: number) => mm / 1000; // convert mm to meters
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
-  beamSpacing: m(400),
+  beamSpacing: m(400), // This is equivalent to block length for this logic
   beamSectionW: m(400),
   beamSectionH: m(200),
   toppingThickness: 0.05,
@@ -70,21 +70,32 @@ export function calcRoomBlocksAndBeams(
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
-  const beamSpacing = C.beamSpacing;
-  const beamSpaces = ceil(shorter / beamSpacing);
+  // Per the new formula:
+  // Flat beams are placed parallel to the shorter side.
+  // They run across the longer side.
+  
+  // 1a. Number of Flat Beams
+  // The spacing is determined by the block length (400mm default).
+  const beamSpaces = ceil(longer / C.blockLength);
   const beamCount = beamSpaces + 1;
+  
+  // 1b. Length of each flat beam is the shorter side of the room.
+  const beamLengthEach = shorter;
+  const totalBeamLength = beamCount * beamLengthEach;
 
-  const blocksPerBeam = ceil(longer / C.blockLength);
-  const totalBlocks = beamCount * blocksPerBeam;
-  const leftoverAlongLength = blocksPerBeam * C.blockLength - longer;
-  const halfBlockNeededAlongLength =
-    leftoverAlongLength >= 0.001 && leftoverAlongLength < C.blockLength / 2;
+  // 2a. Blocks per Beam Row
+  // This is the number of blocks that fit along one beam (i.e., along the shorter side).
+  // This is based on the block width (200mm default).
+  const blocksPerBeam = ceil(shorter / C.blockWidth);
 
+  // 3. Total Blocks for the room
+  const totalBlocks = beamSpaces * blocksPerBeam;
+
+  // Other calculations for display (can be simplified or removed if not needed)
   const blockArea = C.blockLength * C.blockWidth;
   const totalBlocksArea = totalBlocks * blockArea;
-
-  const beamLengthEach = longer;
-  const totalBeamLength = beamCount * beamLengthEach;
+  const leftoverAlongLength = blocksPerBeam * C.blockWidth - shorter;
+  const halfBlockNeededAlongLength = false; // This logic might not be relevant anymore
 
   return {
     length: lengthMeters,
