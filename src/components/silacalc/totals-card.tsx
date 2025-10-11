@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -92,17 +93,17 @@ export function TotalsCard({ totals }: TotalsCardProps) {
                 </li>
                 <li className="flex items-center justify-between">
                     <span className="text-muted-foreground">Sand</span>
-                    <span className="font-semibold">{totalSandTonnes.toFixed(2)} tonnes</span>
+                    <span className="font-semibold">{totalSandTonnes.toFixed(3)} tonnes</span>
                 </li>
                 <li className="flex items-center justify-between">
                     <span className="text-muted-foreground">Ballast</span>
-                    <span className="font-semibold">{totalBallastTonnes.toFixed(2)} tonnes</span>
+                    <span className="font-semibold">{totalBallastTonnes.toFixed(3)} tonnes</span>
                 </li>
             </ul>
         </div>
         
         <p className="text-xs text-muted-foreground text-center pt-2">
-            BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete mix ratio 1:2:4.
+            BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete materials include wastage.
         </p>
       </CardContent>
     </Card>
