@@ -88,7 +88,7 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
             <MoveHorizontal className="h-5 w-5 text-primary" />
             <div>
                 <div className="font-semibold">{roomCalcs.totalBeamLength.toFixed(2)}m</div>
-                <div className="text-muted-foreground">Beams</div>
+                <div className="text-muted-foreground">Flat Beams</div>
             </div>
          </div>
          <div className="flex items-center gap-2">

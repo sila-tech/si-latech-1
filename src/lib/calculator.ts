@@ -142,7 +142,7 @@ export function generateInvoiceJSON(
     items: [
       { desc: 'Blocks (pieces)', qty: totalBlocks, unit: 'pcs' },
       {
-        desc: 'Main beams (linear m)',
+        desc: 'Flat Beams (linear m)',
         qty: Number(totalBeamLength.toFixed(2)),
         unit: 'm',
       },

@@ -54,7 +54,7 @@ export function TotalsCard({ totals }: TotalsCardProps) {
           </li>
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
-              <MoveHorizontal className="w-4 h-4" /> Total Beam Length
+              <MoveHorizontal className="w-4 h-4" /> Total Flat Beam Length
             </span>
             <span className="font-semibold">{totalBeamLength.toFixed(2)} m</span>
           </li>
