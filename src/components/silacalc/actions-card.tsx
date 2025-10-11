@@ -71,10 +71,7 @@ function SubmitButton({
   );
 }
 
-export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
-  const { toast } = useToast();
-  const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: (clientInfo: ClientInfo) => void }) => {
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: '',
     projectName: '',
@@ -83,7 +80,60 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     contactPerson: '',
   });
 
-  const handleDownloadInvoice = () => {
+  const handleGenerate = () => {
+    onGenerateClick(clientInfo);
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Client Information</DialogTitle>
+        <DialogDescription>
+          Please fill in the client details for the document.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="clientName">Client Name</Label>
+            <Input id="clientName" value={clientInfo.clientName} onChange={(e) => setClientInfo({...clientInfo, clientName: e.target.value})} placeholder="e.g., John Doe" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="clientContact">Client Contact</Label>
+            <Input id="clientContact" value={clientInfo.clientContact} onChange={(e) => setClientInfo({...clientInfo, clientContact: e.target.value})} placeholder="e.g., +254 7..."/>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="projectName">Project Name</Label>
+          <Input id="projectName" value={clientInfo.projectName} onChange={(e) => setClientInfo({...clientInfo, projectName: e.target.value})} placeholder="e.g., Residential House"/>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="projectLocation">Project Location</Label>
+          <Input id="projectLocation" value={clientInfo.projectLocation} onChange={(e) => setClientInfo({...clientInfo, projectLocation: e.target.value})} placeholder="e.g., Karen, Nairobi" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="contactPerson">Site Contact Person</Label>
+          <Input id="contactPerson" value={clientInfo.contactPerson} onChange={(e) => setClientInfo({...clientInfo, contactPerson: e.target.value})} placeholder="e.g., Site Foreman" />
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="secondary">Cancel</Button>
+        </DialogClose>
+        <Button onClick={handleGenerate}>Generate & Download</Button>
+      </DialogFooter>
+    </>
+  );
+};
+
+
+export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
+  const { toast } = useToast();
+  const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  
+
+  const handleDownloadInvoice = (clientInfo: ClientInfo) => {
     const { totalBlocks, totalBeamLength } = totals;
     const doc = new jsPDF();
     const invoiceDate = new Date().toLocaleDateString('en-GB');
@@ -235,7 +285,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     setInvoiceDialogOpen(false); // Close dialog after download
   };
 
-  const handleDownloadMaterialSchedule = () => {
+  const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
     const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc } = totals;
     const doc = new jsPDF();
     const scheduleDate = new Date().toLocaleDateString('en-GB');
@@ -349,48 +399,6 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
       });
     }
   }, [quoteState, toast]);
-  
-  const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: () => void }) => (
-    <>
-      <DialogHeader>
-        <DialogTitle>Client Information</DialogTitle>
-        <DialogDescription>
-          Please fill in the client details for the document.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="space-y-4 py-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="clientName">Client Name</Label>
-            <Input id="clientName" value={clientInfo.clientName} onChange={(e) => setClientInfo({...clientInfo, clientName: e.target.value})} placeholder="e.g., John Doe" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="clientContact">Client Contact</Label>
-            <Input id="clientContact" value={clientInfo.clientContact} onChange={(e) => setClientInfo({...clientInfo, clientContact: e.target.value})} placeholder="e.g., +254 7..."/>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="projectName">Project Name</Label>
-          <Input id="projectName" value={clientInfo.projectName} onChange={(e) => setClientInfo({...clientInfo, projectName: e.target.value})} placeholder="e.g., Residential House"/>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="projectLocation">Project Location</Label>
-          <Input id="projectLocation" value={clientInfo.projectLocation} onChange={(e) => setClientInfo({...clientInfo, projectLocation: e.target.value})} placeholder="e.g., Karen, Nairobi" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="contactPerson">Site Contact Person</Label>
-          <Input id="contactPerson" value={clientInfo.contactPerson} onChange={(e) => setClientInfo({...clientInfo, contactPerson: e.target.value})} placeholder="e.g., Site Foreman" />
-        </div>
-      </div>
-      <DialogFooter>
-        <DialogClose asChild>
-          <Button type="button" variant="secondary">Cancel</Button>
-        </DialogClose>
-        <Button onClick={onGenerateClick}>Generate & Download</Button>
-      </DialogFooter>
-    </>
-  );
-
 
   return (
     <Card>
