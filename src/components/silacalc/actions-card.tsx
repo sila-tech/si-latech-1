@@ -106,7 +106,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
             // Header
             doc.setFontSize(20);
             doc.setTextColor(40);
-            doc.text('SilaCalc Invoice', data.settings.margin.left, 15);
+            doc.text('SI-LATECH Invoice', data.settings.margin.left, 15);
         },
         foot: [
             [{ content: 'Subtotal', colSpan: 4, styles: { halign: 'right' } }, { content: subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right' } }],
@@ -117,7 +117,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
         theme: 'striped'
     });
 
-    doc.save(`SilaCalc-Invoice-${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`SI-LATECH-Invoice-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, {
