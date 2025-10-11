@@ -8,7 +8,8 @@ export interface Room {
 export interface CalculationDefaults {
   blockLength: number;
   blockWidth: number;
-  beamSpacing: number;
+  // beamSpacing is now derived from blockLength, so it's commented out but kept for reference
+  // beamSpacing: number; 
   beamSectionW: number;
   beamSectionH: number;
   toppingThickness: number;
@@ -23,12 +24,8 @@ export interface RoomCalculation {
   longer: number;
   beamCount: number;
   beamSpaces: number;
-  blocksPerBeam: number;
+  blocksPerBeamRow: number;
   totalBlocks: number;
-  blockArea: number;
-  totalBlocksArea: number;
-  leftoverAlongLength: number;
-  halfBlockNeededAlongLength: boolean;
   totalBeamLength: number;
 }
 
@@ -50,12 +47,12 @@ const m = (mm: number) => mm / 1000; // convert mm to meters
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
-  beamSpacing: m(400), // This is equivalent to block length for this logic
-  beamSectionW: m(400),
-  beamSectionH: m(200),
-  toppingThickness: 0.05,
+  // beamSpacing: m(400),
+  beamSectionW: m(120), // Common width of a T-beam stem
+  beamSectionH: m(40), // Common height of a T-beam stem below the slab
+  toppingThickness: 0.05, // 50mm
   brcRollLength: 48,
-  brcRollWidth: 3,
+  brcRollWidth: 2.4,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -70,13 +67,12 @@ export function calcRoomBlocksAndBeams(
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
-  // Per the new formula:
-  // Flat beams are placed parallel to the shorter side.
-  // They run across the longer side.
-  
+  // The spacing for flat beams is determined by the length of the blocks.
+  const beamSpacing = C.blockLength;
+
   // 1a. Number of Flat Beams
-  // The spacing is determined by the block length (400mm default).
-  const beamSpaces = ceil(longer / C.blockLength);
+  // Placed parallel to the shorter side, running across the longer side.
+  const beamSpaces = ceil(longer / beamSpacing);
   const beamCount = beamSpaces + 1;
   
   // 1b. Length of each flat beam is the shorter side of the room.
@@ -84,18 +80,13 @@ export function calcRoomBlocksAndBeams(
   const totalBeamLength = beamCount * beamLengthEach;
 
   // 2a. Blocks per Beam Row
-  // This is the number of blocks that fit along one beam (i.e., along the shorter side).
+  // This is the number of blocks that fit along the shorter side.
   // This is based on the block width (200mm default).
-  const blocksPerBeam = ceil(shorter / C.blockWidth);
+  const blocksPerBeamRow = ceil(shorter / C.blockWidth);
 
   // 3. Total Blocks for the room
-  const totalBlocks = beamSpaces * blocksPerBeam;
-
-  // Other calculations for display (can be simplified or removed if not needed)
-  const blockArea = C.blockLength * C.blockWidth;
-  const totalBlocksArea = totalBlocks * blockArea;
-  const leftoverAlongLength = blocksPerBeam * C.blockWidth - shorter;
-  const halfBlockNeededAlongLength = false; // This logic might not be relevant anymore
+  // This is the number of rows of blocks (beamSpaces) times the number of blocks in each row.
+  const totalBlocks = beamSpaces * blocksPerBeamRow;
 
   return {
     length: lengthMeters,
@@ -104,12 +95,8 @@ export function calcRoomBlocksAndBeams(
     longer,
     beamCount,
     beamSpaces,
-    blocksPerBeam,
+    blocksPerBeamRow,
     totalBlocks,
-    blockArea,
-    totalBlocksArea,
-    leftoverAlongLength: Math.abs(leftoverAlongLength),
-    halfBlockNeededAlongLength,
     totalBeamLength,
   };
 }
@@ -121,12 +108,13 @@ export function calcConcrete(
   const C = { ...DEFAULTS, ...opts };
   const area = roomCalc.length * roomCalc.width;
 
-  const beamSectionArea = C.beamSectionW * C.beamSectionH;
-  const beamsVolume = roomCalc.totalBeamLength * beamSectionArea;
+  // This volume is for the concrete in the T-beam ribs below the slab topping
+  const beamRibVolume =
+    roomCalc.totalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
-  const totalConcrete = beamsVolume + toppingVolume;
+  const totalConcrete = beamRibVolume + toppingVolume;
 
-  return { area, beamsVolume, toppingVolume, totalConcrete };
+  return { area, beamsVolume: beamRibVolume, toppingVolume, totalConcrete };
 }
 
 export function calcBRC(
@@ -138,36 +126,4 @@ export function calcBRC(
   const rollsNeeded = areaPerRoll > 0 ? ceil(totalArea / areaPerRoll) : 0;
   const metresOfBRC = rollsNeeded * C.brcRollLength;
   return { areaPerRoll, rollsNeeded, metresOfBRC };
-}
-
-export function generateInvoiceJSON(
-  totalBlocks: number,
-  totalBeamLength: number,
-  totalConcreteVolume: number,
-  brc: BrcCalculation,
-  totalArea: number
-) {
-  return {
-    date: new Date().toISOString(),
-    company: 'Silatech Solutions',
-    items: [
-      { desc: 'Blocks (pieces)', qty: totalBlocks, unit: 'pcs' },
-      {
-        desc: 'Flat Beams (linear m)',
-        qty: Number(totalBeamLength.toFixed(2)),
-        unit: 'm',
-      },
-      {
-        desc: 'Concrete (m3)',
-        qty: Number(totalConcreteVolume.toFixed(3)),
-        unit: 'm3',
-      },
-      { desc: 'BRC rolls', qty: brc.rollsNeeded, unit: 'rolls' },
-    ],
-    totals: {
-      area_m2: Number(totalArea.toFixed(2)),
-      blocks: totalBlocks,
-      concrete_m3: Number(totalConcreteVolume.toFixed(3)),
-    },
-  };
 }

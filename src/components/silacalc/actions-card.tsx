@@ -30,11 +30,11 @@ import {
   Wand2,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
-import { generateInvoiceJSON } from '@/lib/calculator';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import type { Room } from '@/lib/calculator';
 
 type ActionsCardProps = {
   totals: {
@@ -64,30 +64,36 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
   const { toast } = useToast();
 
   const handleDownloadInvoice = () => {
-    const {
-      totalBlocks,
-      totalBeamLength,
-      totalConcreteVolume,
-      brc,
-      totalArea,
-    } = totals;
-    const json = generateInvoiceJSON(
-      totalBlocks,
-      totalBeamLength,
-      totalConcreteVolume,
-      brc,
-      totalArea
-    );
+    const { totalBlocks, totalBeamLength } = totals;
+
+    // Pricing constants
+    const BLOCK_PRICE = 85; // Ksh per block
+    const BEAM_PRICE_PER_METER = 545; // Ksh per meter
+    const VAT_RATE = 0.16; // 16%
+
+    // Calculations
+    const blocksTotal = totalBlocks * BLOCK_PRICE;
+    const beamsTotal = totalBeamLength * BEAM_PRICE_PER_METER;
+    const subtotal = blocksTotal + beamsTotal;
+    const vat = subtotal * VAT_RATE;
+    const grandTotal = subtotal + vat;
     
     const doc = new jsPDF();
-    const tableColumn = ['Description', 'Quantity', 'Unit'];
+    const tableColumn = ['Description', 'Quantity', 'Unit', 'Unit Price (Ksh)', 'Amount (Ksh)'];
     const tableRows: (string | number)[][] = [];
 
-    json.items.forEach(item => {
+    const items = [
+        { desc: 'Blocks', qty: totalBlocks, unit: 'pcs', unitPrice: BLOCK_PRICE, amount: blocksTotal},
+        { desc: 'Flat Beams', qty: totalBeamLength.toFixed(2), unit: 'm', unitPrice: BEAM_PRICE_PER_METER, amount: beamsTotal},
+    ]
+
+    items.forEach(item => {
       const itemData = [
         item.desc,
         item.qty,
-        item.unit
+        item.unit,
+        item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+        item.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })
       ];
       tableRows.push(itemData);
     });
@@ -95,9 +101,22 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 20
+        startY: 20,
+        didDrawPage: (data) => {
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(40);
+            doc.text('SilaCalc Invoice', data.settings.margin.left, 15);
+        },
+        foot: [
+            [{ content: 'Subtotal', colSpan: 4, styles: { halign: 'right' } }, { content: subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right' } }],
+            [{ content: 'VAT (16%)', colSpan: 4, styles: { halign: 'right' } }, { content: vat.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right' } }],
+            [{ content: 'Total Payable', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } }, { content: grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right', fontStyle: 'bold' } }],
+        ],
+        footStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: 'normal' },
+        theme: 'striped'
     });
-    doc.text('SilaCalc Invoice', 14, 15);
+
     doc.save(`SilaCalc-Invoice-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
