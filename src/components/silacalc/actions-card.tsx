@@ -33,6 +33,8 @@ import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
 import { generateInvoiceJSON } from '@/lib/calculator';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 type ActionsCardProps = {
   totals: {
@@ -76,17 +78,27 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
       brc,
       totalArea
     );
-    const blob = new Blob([JSON.stringify(json, null, 2)], {
-      type: 'application/json',
+    
+    const doc = new jsPDF();
+    const tableColumn = ['Description', 'Quantity', 'Unit'];
+    const tableRows: (string | number)[][] = [];
+
+    json.items.forEach(item => {
+      const itemData = [
+        item.desc,
+        item.qty,
+        item.unit
+      ];
+      tableRows.push(itemData);
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `SilaCalc-Invoice-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20
+    });
+    doc.text('SilaCalc Invoice', 14, 15);
+    doc.save(`SilaCalc-Invoice-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, {
