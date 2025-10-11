@@ -1,19 +1,18 @@
 import type { SVGProps } from 'react';
 
-export function SilaCalcIcon(props: SVGProps<SVGSVGElement>) {
+export function SiLatechIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 256"
+      viewBox="0 0 24 24"
       width="1em"
       height="1em"
       {...props}
     >
-      <g fill="currentColor">
-        <path d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88a88.1 88.1 0 0 1-88 88Z" />
-        <path d="M168 88h-56a32 32 0 0 0-32 32v16a8 8 0 0 0 16 0v-16a16 16 0 0 1 16-16h56a8 8 0 0 0 0-16Z" />
-        <path d="M88 168h56a32 32 0 0 0 32-32v-16a8 8 0 0 0-16 0v16a16 16 0 0 1-16 16H88a8 8 0 0 0 0 16Z" />
-      </g>
+      <path
+        fill="currentColor"
+        d="M17.435 2.065a2 2 0 0 1 1.732 1l3.464 6a2 2 0 0 1 0 2l-3.464 6a2 2 0 0 1-1.732 1H6.565a2 2 0 0 1-1.732-1l-3.464-6a2 2 0 0 1 0-2l3.464-6a2 2 0 0 1 1.732-1h10.87ZM8.353 7.647a.5.5 0 0 0-.706.706L10.294 11H8.5a2.5 2.5 0 0 0 0 5h3.147l-2.647 2.647a.5.5 0 1 0 .706.706L13.707 15H15.5a2.5 2.5 0 0 0 0-5H12.353l2.647-2.647a.5.5 0 0 0-.706-.706L10.293 9H8.353Z"
+      />
     </svg>
   );
 }

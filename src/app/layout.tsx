@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'SilaCalc',
+  title: 'SI-LATECH',
   description: 'Construction Material Calculator',
 };
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SilaCalcIcon } from '@/components/icons';
+import { SiLatechIcon } from '@/components/icons';
 
 export function Header() {
   return (
@@ -7,9 +7,9 @@ export function Header() {
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <SilaCalcIcon className="h-6 w-6 text-primary" />
-            <span className="font-bold sm:inline-block font-headline">
-              SilaCalc
+            <SiLatechIcon className="h-8 w-8 text-primary" />
+            <span className="font-bold sm:inline-block font-headline text-lg">
+              SI-LATECH
             </span>
           </Link>
         </div>
