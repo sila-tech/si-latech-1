@@ -28,6 +28,7 @@ import {
   FileText,
   Loader2,
   Wand2,
+  List,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +42,9 @@ type ActionsCardProps = {
     totalBlocks: number;
     totalBeamLength: number;
     totalConcreteVolume: number;
+    totalCementBags: number;
+    totalSandTonnes: number;
+    totalBallastTonnes: number;
     brc: { rollsNeeded: number };
   };
   setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
@@ -70,6 +74,7 @@ function SubmitButton({
 export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
   const { toast } = useToast();
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: '',
     projectName: '',
@@ -79,7 +84,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
   });
 
   const handleDownloadInvoice = () => {
-    const { totalBlocks, totalBeamLength, brc } = totals;
+    const { totalBlocks, totalBeamLength } = totals;
     const doc = new jsPDF();
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
@@ -221,13 +226,85 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
     finalY += 5;
-    doc.text(`1. BRC Mesh: Based on your calculations, you may require ${brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, finalY);
+    doc.text(`1. BRC Mesh: Based on your calculations, you may require ${totals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, finalY);
     finalY += 5;
     doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, finalY);
 
 
     doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
     setInvoiceDialogOpen(false); // Close dialog after download
+  };
+
+  const handleDownloadMaterialSchedule = () => {
+    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc } = totals;
+    const doc = new jsPDF();
+    const scheduleDate = new Date().toLocaleDateString('en-GB');
+    const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
+    const primaryColor = '#2563EB';
+
+    // --- PDF Styling and Layout ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(primaryColor);
+    doc.text('SI-LATECH', 14, 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Slab Materials Schedule', 14, 30);
+    
+    // Client and Project Info
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT DETAILS', 14, 45);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
+    doc.text(`Client: ${clientInfo.clientName}`, 14, 51);
+    doc.text(`Project: ${clientInfo.projectName}`, 14, 56);
+    doc.text(`Location: ${clientInfo.projectLocation}`, 14, 61);
+
+    // Schedule metadata
+    doc.text(`Schedule No.: ${scheduleNumber}`, 145, 51);
+    doc.text(`Date: ${scheduleDate}`, 145, 56);
+
+    // Materials Table
+    const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
+    const tableRows = [
+      ['Cement (50kg bags)', totalCementBags, 'bags', 'Includes 10% wastage'],
+      ['Sand', totalSandTonnes.toFixed(3), 'tonnes', 'Includes 10% wastage'],
+      ['Ballast', totalBallastTonnes.toFixed(3), 'tonnes', 'Includes 10% wastage'],
+      ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total area of ${totals.totalArea.toFixed(2)} m²`],
+      ['Total Concrete Needed', totalConcreteVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+    ];
+
+    (doc as any).autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 70,
+      theme: 'grid',
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 10 },
+      columnStyles: {
+        1: { halign: 'right' },
+      }
+    });
+
+    let finalY = (doc as any).lastAutoTable.finalY;
+    
+    // Notes Section
+    finalY += 15;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('NOTES', 14, finalY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
+    finalY += 6;
+    doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
+    finalY += 6;
+    doc.text('2. This schedule is for materials required for the slab only and excludes other structural elements.', 14, finalY);
+
+    doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
+    setScheduleDialogOpen(false); // Close dialog after download
   };
 
   const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, { message: '' });
@@ -272,66 +349,84 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
       });
     }
   }, [quoteState, toast]);
+  
+  const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: () => void }) => (
+    <>
+      <DialogHeader>
+        <DialogTitle>Client Information</DialogTitle>
+        <DialogDescription>
+          Please fill in the client details for the document.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="clientName">Client Name</Label>
+            <Input id="clientName" value={clientInfo.clientName} onChange={(e) => setClientInfo({...clientInfo, clientName: e.target.value})} placeholder="e.g., John Doe" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="clientContact">Client Contact</Label>
+            <Input id="clientContact" value={clientInfo.clientContact} onChange={(e) => setClientInfo({...clientInfo, clientContact: e.target.value})} placeholder="e.g., +254 7..."/>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="projectName">Project Name</Label>
+          <Input id="projectName" value={clientInfo.projectName} onChange={(e) => setClientInfo({...clientInfo, projectName: e.target.value})} placeholder="e.g., Residential House"/>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="projectLocation">Project Location</Label>
+          <Input id="projectLocation" value={clientInfo.projectLocation} onChange={(e) => setClientInfo({...clientInfo, projectLocation: e.target.value})} placeholder="e.g., Karen, Nairobi" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="contactPerson">Site Contact Person</Label>
+          <Input id="contactPerson" value={clientInfo.contactPerson} onChange={(e) => setClientInfo({...clientInfo, contactPerson: e.target.value})} placeholder="e.g., Site Foreman" />
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="secondary">Cancel</Button>
+        </DialogClose>
+        <Button onClick={onGenerateClick}>Generate & Download</Button>
+      </DialogFooter>
+    </>
+  );
+
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Project Actions</CardTitle>
         <CardDescription>
-          Generate invoices, use AI to analyze plans, or get a quote.
+          Generate documents, use AI to analyze plans, or get a quote.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4 sm:flex-row">
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-row gap-4">
         
         <Dialog open={isInvoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="secondary">
+            <Button variant="secondary" className="w-full">
               <Download /> Download Invoice
             </Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Client Information</DialogTitle>
-              <DialogDescription>
-                Please fill in the client details for the invoice.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clientName">Client Name</Label>
-                  <Input id="clientName" value={clientInfo.clientName} onChange={(e) => setClientInfo({...clientInfo, clientName: e.target.value})} placeholder="e.g., John Doe" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clientContact">Client Contact</Label>
-                  <Input id="clientContact" value={clientInfo.clientContact} onChange={(e) => setClientInfo({...clientInfo, clientContact: e.target.value})} placeholder="e.g., +254 7..."/>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="projectName">Project Name</Label>
-                <Input id="projectName" value={clientInfo.projectName} onChange={(e) => setClientInfo({...clientInfo, projectName: e.target.value})} placeholder="e.g., Residential House"/>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="projectLocation">Project Location</Label>
-                <Input id="projectLocation" value={clientInfo.projectLocation} onChange={(e) => setClientInfo({...clientInfo, projectLocation: e.target.value})} placeholder="e.g., Karen, Nairobi" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactPerson">Site Contact Person</Label>
-                <Input id="contactPerson" value={clientInfo.contactPerson} onChange={(e) => setClientInfo({...clientInfo, contactPerson: e.target.value})} placeholder="e.g., Site Foreman" />
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="secondary">Cancel</Button>
-              </DialogClose>
-              <Button onClick={handleDownloadInvoice}>Generate & Download</Button>
-            </DialogFooter>
+            <ClientInfoDialog onGenerateClick={handleDownloadInvoice} />
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isScheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <List /> Material Schedule
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <ClientInfoDialog onGenerateClick={handleDownloadMaterialSchedule} />
           </DialogContent>
         </Dialog>
 
         <Dialog>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full">
               <Upload /> Upload Plan (AI)
             </Button>
           </DialogTrigger>
@@ -362,7 +457,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
         
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="accent">
+            <Button variant="accent" className="w-full">
               <FileText /> Generate Quote (AI)
             </Button>
           </DialogTrigger>
