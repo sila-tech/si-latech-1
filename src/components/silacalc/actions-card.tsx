@@ -167,7 +167,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text('Head Office: Nairobi, Kenya', 145, 20);
+    doc.text('Head Office: Juja, Kenya', 145, 20);
     doc.text('Tel: +254 741 557960', 145, 25);
     doc.text('Email: info@silatech.co.ke', 145, 30);
     doc.text('VAT Registration No.: P051XXXXXXX', 145, 35);
