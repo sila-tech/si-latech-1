@@ -87,14 +87,12 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     // Pricing constants
     const BLOCK_PRICE = 85;
     const BEAM_PRICE_PER_METER = 545;
-    const BRC_PRICE_PER_ROLL = 3800; // Assuming 'sheet' in prompt means 'roll'
     const VAT_RATE = 0.16;
 
     // Calculations
     const blocksTotal = totalBlocks * BLOCK_PRICE;
     const beamsTotal = totalBeamLength * BEAM_PRICE_PER_METER;
-    const brcTotal = brc.rollsNeeded * BRC_PRICE_PER_ROLL;
-    const subtotal = blocksTotal + beamsTotal + brcTotal;
+    const subtotal = blocksTotal + beamsTotal;
     const vat = subtotal * VAT_RATE;
     const grandTotal = subtotal + vat;
 
@@ -139,10 +137,9 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     const tableRows = [
       [invoiceDate, 'Beam & Block Slab Works – Blocks', '16% S', totalBlocks, 'pcs', BLOCK_PRICE.toFixed(2), blocksTotal.toFixed(2)],
       [invoiceDate, 'Flat Beams (in metres)', '16% S', totalBeamLength.toFixed(2), 'm', BEAM_PRICE_PER_METER.toFixed(2), beamsTotal.toFixed(2)],
-      [invoiceDate, 'BRC Mesh A98', '16% S', brc.rollsNeeded, 'roll', BRC_PRICE_PER_ROLL.toFixed(2), brcTotal.toFixed(2)],
     ];
 
-    doc.autoTable({
+    (doc as any).autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: startY + 55,
@@ -151,7 +148,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     });
 
     // Totals Section
-    const finalY = (doc as any).lastAutoTable.finalY;
+    let finalY = (doc as any).lastAutoTable.finalY;
     const totalsX = 140;
     doc.setFontSize(10);
     doc.text('SUBTOTAL: ', totalsX, finalY + 10, { align: 'right' });
@@ -167,32 +164,29 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
 
 
     // VAT Summary
-    let yPos = finalY + 40;
+    finalY = finalY + 40;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('VAT SUMMARY', 14, yPos);
-    doc.autoTable({
+    doc.text('VAT SUMMARY', 14, finalY);
+    (doc as any).autoTable({
       head: [['RATE', 'VAT (Ksh)', 'NET (Ksh)']],
       body: [['16%', vat.toFixed(2), subtotal.toFixed(2)]],
-      startY: yPos + 2,
+      startY: finalY + 2,
       theme: 'grid',
       headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
     });
+    
+    finalY = (doc as any).lastAutoTable.finalY;
 
-    // Payment Details
-    yPos = (doc as any).lastAutoTable.finalY + 10;
+    // Notes Section
+    finalY += 10;
     doc.setFont('helvetica', 'bold');
-    doc.text('PAYMENT DETAILS', 14, yPos);
+    doc.text('NOTES', 14, finalY);
     doc.setFont('helvetica', 'normal');
-    yPos += 5;
-    doc.text('Payment via: Company Cheque / Bank Transfer / M-PESA Paybill', 14, yPos);
-    yPos += 5;
-    doc.text('Bank: [Your Bank Name]', 14, yPos);
-    doc.text('Account Name: Silatech Construction Limited', 14, yPos + 5);
-    doc.text('Account Number: [Your Account No.]', 14, yPos + 10);
-    doc.text('Paybill: [Your Paybill No.]', 14, yPos + 15);
-    doc.text('Branch: [Branch Name]', 14, yPos + 20);
-    doc.text('Currency: KES', 14, yPos + 25);
+    finalY += 5;
+    doc.text(`1. BRC Mesh: Based on your calculations, you may require ${brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, finalY);
+    finalY += 5;
+    doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, finalY);
 
 
     doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
