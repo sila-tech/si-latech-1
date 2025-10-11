@@ -83,6 +83,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     const doc = new jsPDF();
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
+    const primaryColor = '#2563EB'; // HSL(217, 91%, 60%)
 
     // Pricing constants
     const BLOCK_PRICE = 85;
@@ -98,39 +99,59 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
 
     // --- PDF Styling and Layout ---
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('Beam & Block Slab Quotation / Tax Invoice', 14, 22);
+    doc.setFontSize(20);
+    doc.setTextColor(primaryColor);
+    doc.text('SI-LATECH', 14, 22);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text('Head Office: Nairobi, Kenya', 14, 30);
-    doc.text('Tel: +254 741 557960', 14, 35);
-    doc.text('Email: info@silatech.co.ke', 14, 40);
-    doc.text('VAT Registration No.: P051XXXXXXX', 14, 45);
+    doc.setTextColor(100);
+    doc.text('Beam & Block Slab Quotation / Tax Invoice', 14, 30);
+
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Head Office: Nairobi, Kenya', 145, 20);
+    doc.text('Tel: +254 741 557960', 145, 25);
+    doc.text('Email: info@silatech.co.ke', 145, 30);
+    doc.text('VAT Registration No.: P051XXXXXXX', 145, 35);
 
     // Invoice To / Ship To sections
     const invoiceToX = 14;
     const shipToX = 110;
-    const startY = 55;
+    const startY = 45;
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
     doc.text('INVOICE TO', invoiceToX, startY);
     doc.text('SHIP / SITE TO', shipToX, startY);
 
     doc.setFont('helvetica', 'normal');
-    doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, startY + 5);
-    doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, startY + 10);
-    doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, startY + 15);
-    doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, startY + 20);
+    doc.setTextColor(50);
+    doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, startY + 6);
+    doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, startY + 11);
+    doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, startY + 16);
+    doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, startY + 21);
 
-    doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, startY + 5);
-    doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, startY + 10);
-    doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, startY + 15);
+    doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, startY + 6);
+    doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, startY + 11);
+    doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, startY + 16);
     
     // Invoice metadata
-    doc.text(`Invoice No.: ${invoiceNumber}`, invoiceToX, startY + 30);
-    doc.text(`Date: ${invoiceDate}`, invoiceToX, startY + 35);
-    doc.text('Terms: Due on Receipt', invoiceToX, startY + 40);
-    doc.text(`Due Date: ${invoiceDate}`, invoiceToX, startY + 45);
+    doc.setFont('helvetica', 'normal');
+    const metaX = 14;
+    const metaY = startY + 30;
+    doc.text(`Invoice No.:`, metaX, metaY);
+    doc.text(`Date:`, metaX, metaY + 5);
+    doc.text(`Terms:`, metaX, metaY + 10);
+    doc.text(`Due Date:`, metaX, metaY + 15);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${invoiceNumber}`, metaX + 30, metaY);
+    doc.text(`${invoiceDate}`, metaX + 30, metaY + 5);
+    doc.text(`Due on Receipt`, metaX + 30, metaY + 10);
+    doc.text(`${invoiceDate}`, metaX + 30, metaY + 15);
+
 
     // Invoice Table
     const tableColumn = ['DATE', 'DESCRIPTION', 'VAT', 'QTY', 'UNIT', 'RATE (KSH)', 'AMOUNT (KSH)'];
@@ -142,47 +163,63 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     (doc as any).autoTable({
       head: [tableColumn],
       body: tableRows,
-      startY: startY + 55,
+      startY: metaY + 25,
       theme: 'grid',
-      headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9 },
+      columnStyles: {
+        5: { halign: 'right' },
+        6: { halign: 'right' },
+      }
     });
 
     // Totals Section
     let finalY = (doc as any).lastAutoTable.finalY;
-    const totalsX = 140;
+    const totalsX = 130;
+    const totalsValueX = 200;
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.text('SUBTOTAL: ', totalsX, finalY + 10, { align: 'right' });
-    doc.text(`Ksh ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 10, { align: 'right' });
+    doc.text(`Ksh ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 10, { align: 'right' });
     doc.text('VAT @16%: ', totalsX, finalY + 15, { align: 'right' });
-    doc.text(`Ksh ${vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 15, { align: 'right' });
+    doc.text(`Ksh ${vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 15, { align: 'right' });
     doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL: ', totalsX, finalY + 20, { align: 'right' });
-    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 20, { align: 'right' });
+    doc.text('TOTAL: ', totalsX, finalY + 22, { align: 'right' });
+    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 22, { align: 'right' });
     
-    doc.text('BALANCE DUE: ', totalsX, finalY + 25, { align: 'right' });
-    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 25, { align: 'right' });
+    // Balance due has a box around it
+    doc.setFillColor(240,240,240);
+    doc.roundedRect(totalsX - 60, finalY + 27, 85, 10, 3, 3, 'F');
+    doc.text('BALANCE DUE: ', totalsX, finalY + 33, { align: 'right' });
+    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 33, { align: 'right' });
 
 
     // VAT Summary
-    finalY = finalY + 40;
-    doc.setFontSize(10);
+    finalY = finalY + 45;
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
     doc.text('VAT SUMMARY', 14, finalY);
     (doc as any).autoTable({
       head: [['RATE', 'VAT (Ksh)', 'NET (Ksh)']],
       body: [['16%', vat.toFixed(2), subtotal.toFixed(2)]],
       startY: finalY + 2,
       theme: 'grid',
-      headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9 },
+      bodyStyles: { textColor: 50 },
+      tableWidth: 80,
     });
     
     finalY = (doc as any).lastAutoTable.finalY;
 
     // Notes Section
-    finalY += 10;
+    finalY = Math.max(finalY, finalY + 10);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
     doc.text('NOTES', 14, finalY);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
     finalY += 5;
     doc.text(`1. BRC Mesh: Based on your calculations, you may require ${brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, finalY);
     finalY += 5;
