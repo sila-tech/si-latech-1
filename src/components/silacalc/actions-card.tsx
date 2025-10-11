@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useRef, useState, useActionState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
   Card,
@@ -26,7 +27,6 @@ import {
   Upload,
   FileText,
   Loader2,
-  AlertCircle,
   Wand2,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
@@ -34,7 +34,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import type { Room } from '@/lib/calculator';
 
 type ActionsCardProps = {
   totals: {
@@ -45,6 +44,14 @@ type ActionsCardProps = {
     brc: { rollsNeeded: number };
   };
   setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
+};
+
+type ClientInfo = {
+  clientName: string;
+  projectName: string;
+  projectLocation: string;
+  clientContact: string;
+  contactPerson: string;
 };
 
 function SubmitButton({
@@ -62,77 +69,144 @@ function SubmitButton({
 
 export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
   const { toast } = useToast();
+  const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [clientInfo, setClientInfo] = useState<ClientInfo>({
+    clientName: '',
+    projectName: '',
+    projectLocation: '',
+    clientContact: '',
+    contactPerson: '',
+  });
 
   const handleDownloadInvoice = () => {
-    const { totalBlocks, totalBeamLength } = totals;
+    const { totalBlocks, totalBeamLength, brc } = totals;
+    const doc = new jsPDF();
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+    const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
 
     // Pricing constants
-    const BLOCK_PRICE = 85; // Ksh per block
-    const BEAM_PRICE_PER_METER = 545; // Ksh per meter
-    const VAT_RATE = 0.16; // 16%
+    const BLOCK_PRICE = 85;
+    const BEAM_PRICE_PER_METER = 545;
+    const BRC_PRICE_PER_ROLL = 3800; // Assuming 'sheet' in prompt means 'roll'
+    const VAT_RATE = 0.16;
 
     // Calculations
     const blocksTotal = totalBlocks * BLOCK_PRICE;
     const beamsTotal = totalBeamLength * BEAM_PRICE_PER_METER;
-    const subtotal = blocksTotal + beamsTotal;
+    const brcTotal = brc.rollsNeeded * BRC_PRICE_PER_ROLL;
+    const subtotal = blocksTotal + beamsTotal + brcTotal;
     const vat = subtotal * VAT_RATE;
     const grandTotal = subtotal + vat;
+
+    // --- PDF Styling and Layout ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Beam & Block Slab Quotation / Tax Invoice', 14, 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Head Office: Nairobi, Kenya', 14, 30);
+    doc.text('Tel: +254 741 557960', 14, 35);
+    doc.text('Email: info@silatech.co.ke', 14, 40);
+    doc.text('VAT Registration No.: P051XXXXXXX', 14, 45);
+
+    // Invoice To / Ship To sections
+    const invoiceToX = 14;
+    const shipToX = 110;
+    const startY = 55;
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE TO', invoiceToX, startY);
+    doc.text('SHIP / SITE TO', shipToX, startY);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, startY + 5);
+    doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, startY + 10);
+    doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, startY + 15);
+    doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, startY + 20);
+
+    doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, startY + 5);
+    doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, startY + 10);
+    doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, startY + 15);
     
-    const doc = new jsPDF();
-    const tableColumn = ['Description', 'Quantity', 'Unit', 'Unit Price (Ksh)', 'Amount (Ksh)'];
-    const tableRows: (string | number)[][] = [];
+    // Invoice metadata
+    doc.text(`Invoice No.: ${invoiceNumber}`, invoiceToX, startY + 30);
+    doc.text(`Date: ${invoiceDate}`, invoiceToX, startY + 35);
+    doc.text('Terms: Due on Receipt', invoiceToX, startY + 40);
+    doc.text(`Due Date: ${invoiceDate}`, invoiceToX, startY + 45);
 
-    const items = [
-        { desc: 'Blocks', qty: totalBlocks, unit: 'pcs', unitPrice: BLOCK_PRICE, amount: blocksTotal},
-        { desc: 'Flat Beams', qty: totalBeamLength.toFixed(2), unit: 'm', unitPrice: BEAM_PRICE_PER_METER, amount: beamsTotal},
-    ]
-
-    items.forEach(item => {
-      const itemData = [
-        item.desc,
-        item.qty,
-        item.unit,
-        item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 }),
-        item.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })
-      ];
-      tableRows.push(itemData);
-    });
+    // Invoice Table
+    const tableColumn = ['DATE', 'DESCRIPTION', 'VAT', 'QTY', 'UNIT', 'RATE (KSH)', 'AMOUNT (KSH)'];
+    const tableRows = [
+      [invoiceDate, 'Beam & Block Slab Works – Blocks', '16% S', totalBlocks, 'pcs', BLOCK_PRICE.toFixed(2), blocksTotal.toFixed(2)],
+      [invoiceDate, 'Flat Beams (in metres)', '16% S', totalBeamLength.toFixed(2), 'm', BEAM_PRICE_PER_METER.toFixed(2), beamsTotal.toFixed(2)],
+      [invoiceDate, 'BRC Mesh A98', '16% S', brc.rollsNeeded, 'roll', BRC_PRICE_PER_ROLL.toFixed(2), brcTotal.toFixed(2)],
+    ];
 
     doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 20,
-        didDrawPage: (data) => {
-            // Header
-            doc.setFontSize(20);
-            doc.setTextColor(40);
-            doc.text('SI-LATECH Invoice', data.settings.margin.left, 15);
-        },
-        foot: [
-            [{ content: 'Subtotal', colSpan: 4, styles: { halign: 'right' } }, { content: subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right' } }],
-            [{ content: 'VAT (16%)', colSpan: 4, styles: { halign: 'right' } }, { content: vat.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right' } }],
-            [{ content: 'Total Payable', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } }, { content: grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 }), styles: { halign: 'right', fontStyle: 'bold' } }],
-        ],
-        footStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: 'normal' },
-        theme: 'striped'
+      head: [tableColumn],
+      body: tableRows,
+      startY: startY + 55,
+      theme: 'grid',
+      headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
     });
 
-    doc.save(`SI-LATECH-Invoice-${new Date().toISOString().split('T')[0]}.pdf`);
+    // Totals Section
+    const finalY = (doc as any).lastAutoTable.finalY;
+    const totalsX = 140;
+    doc.setFontSize(10);
+    doc.text('SUBTOTAL: ', totalsX, finalY + 10, { align: 'right' });
+    doc.text(`Ksh ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 10, { align: 'right' });
+    doc.text('VAT @16%: ', totalsX, finalY + 15, { align: 'right' });
+    doc.text(`Ksh ${vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 15, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL: ', totalsX, finalY + 20, { align: 'right' });
+    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 20, { align: 'right' });
+    
+    doc.text('BALANCE DUE: ', totalsX, finalY + 25, { align: 'right' });
+    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 25, { align: 'right' });
+
+
+    // VAT Summary
+    let yPos = finalY + 40;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VAT SUMMARY', 14, yPos);
+    doc.autoTable({
+      head: [['RATE', 'VAT (Ksh)', 'NET (Ksh)']],
+      body: [['16%', vat.toFixed(2), subtotal.toFixed(2)]],
+      startY: yPos + 2,
+      theme: 'grid',
+      headStyles: { fillColor: [220, 220, 220], textColor: 0, fontStyle: 'bold' },
+    });
+
+    // Payment Details
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYMENT DETAILS', 14, yPos);
+    doc.setFont('helvetica', 'normal');
+    yPos += 5;
+    doc.text('Payment via: Company Cheque / Bank Transfer / M-PESA Paybill', 14, yPos);
+    yPos += 5;
+    doc.text('Bank: [Your Bank Name]', 14, yPos);
+    doc.text('Account Name: Silatech Construction Limited', 14, yPos + 5);
+    doc.text('Account Number: [Your Account No.]', 14, yPos + 10);
+    doc.text('Paybill: [Your Paybill No.]', 14, yPos + 15);
+    doc.text('Branch: [Branch Name]', 14, yPos + 20);
+    doc.text('Currency: KES', 14, yPos + 25);
+
+
+    doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
+    setInvoiceDialogOpen(false); // Close dialog after download
   };
 
-  const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, {
-    message: '',
-  });
-  const [quoteState, quoteFormAction] = useActionState(handleGenerateQuote, {
-    message: '',
-  });
+  const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, { message: '' });
+  const [quoteState, quoteFormAction] = useActionState(handleGenerateQuote, { message: '' });
   
   const uploadDialogCloseRef = useRef<HTMLButtonElement>(null);
-  const quoteResultDialogCloseRef = useRef<HTMLButtonElement>(null);
   const [isQuoteResultOpen, setQuoteResultOpen] = useState(false);
 
   useEffect(() => {
-    if (uploadState.message) {
+    if (uploadState.message && uploadState.data) {
       toast({
         title: 'Success',
         description: uploadState.message,
@@ -152,7 +226,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
   }, [uploadState, toast, setRooms]);
 
   useEffect(() => {
-    if (quoteState.message) {
+    if (quoteState.message && quoteState.data) {
       toast({
         title: 'Success',
         description: quoteState.message,
@@ -177,9 +251,52 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 sm:flex-row">
-        <Button onClick={handleDownloadInvoice} variant="secondary">
-          <Download /> Download Invoice
-        </Button>
+        
+        <Dialog open={isInvoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="secondary">
+              <Download /> Download Invoice
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Client Information</DialogTitle>
+              <DialogDescription>
+                Please fill in the client details for the invoice.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="clientName">Client Name</Label>
+                  <Input id="clientName" value={clientInfo.clientName} onChange={(e) => setClientInfo({...clientInfo, clientName: e.target.value})} placeholder="e.g., John Doe" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="clientContact">Client Contact</Label>
+                  <Input id="clientContact" value={clientInfo.clientContact} onChange={(e) => setClientInfo({...clientInfo, clientContact: e.target.value})} placeholder="e.g., +254 7..."/>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="projectName">Project Name</Label>
+                <Input id="projectName" value={clientInfo.projectName} onChange={(e) => setClientInfo({...clientInfo, projectName: e.target.value})} placeholder="e.g., Residential House"/>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="projectLocation">Project Location</Label>
+                <Input id="projectLocation" value={clientInfo.projectLocation} onChange={(e) => setClientInfo({...clientInfo, projectLocation: e.target.value})} placeholder="e.g., Karen, Nairobi" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactPerson">Site Contact Person</Label>
+                <Input id="contactPerson" value={clientInfo.contactPerson} onChange={(e) => setClientInfo({...clientInfo, contactPerson: e.target.value})} placeholder="e.g., Site Foreman" />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleDownloadInvoice}>Generate & Download</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog>
           <DialogTrigger asChild>
