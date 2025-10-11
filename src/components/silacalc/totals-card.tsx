@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Beaker, BrickWall, MoveHorizontal } from 'lucide-react';
+import { Separator } from '../ui/separator';
 
 type TotalsCardProps = {
   totals: {
@@ -14,6 +15,9 @@ type TotalsCardProps = {
     totalBlocks: number;
     totalBeamLength: number;
     totalConcreteVolume: number;
+    totalCementBags: number;
+    totalSandTonnes: number;
+    totalBallastTonnes: number;
     brc: {
       rollsNeeded: number;
       areaPerRoll: number;
@@ -27,6 +31,9 @@ export function TotalsCard({ totals }: TotalsCardProps) {
     totalBlocks,
     totalBeamLength,
     totalConcreteVolume,
+    totalCementBags,
+    totalSandTonnes,
+    totalBallastTonnes,
     brc,
   } = totals;
   return (
@@ -60,22 +67,42 @@ export function TotalsCard({ totals }: TotalsCardProps) {
           </li>
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
-              <Beaker className="w-4 h-4" /> Total Concrete
-            </span>
-            <span className="font-semibold">
-              {totalConcreteVolume.toFixed(3)} m³
-            </span>
-          </li>
-          <li className="flex items-center justify-between">
-            <span className="text-muted-foreground flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
                 BRC Rolls
             </span>
             <span className="font-semibold">{brc.rollsNeeded} rolls</span>
           </li>
         </ul>
+
+        <Separator />
+
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                 <span className="text-muted-foreground flex items-center gap-2">
+                    <Beaker className="w-4 h-4" /> Total Concrete
+                </span>
+                <span className="font-semibold">
+                    {totalConcreteVolume.toFixed(3)} m³
+                </span>
+            </div>
+            <ul className="space-y-1 pl-6 text-xs">
+                <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Cement (50kg bags)</span>
+                    <span className="font-semibold">{totalCementBags} bags</span>
+                </li>
+                <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Sand</span>
+                    <span className="font-semibold">{totalSandTonnes.toFixed(2)} tonnes</span>
+                </li>
+                <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Ballast</span>
+                    <span className="font-semibold">{totalBallastTonnes.toFixed(2)} tonnes</span>
+                </li>
+            </ul>
+        </div>
+        
         <p className="text-xs text-muted-foreground text-center pt-2">
-            BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll.
+            BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete mix ratio 1:2:4.
         </p>
       </CardContent>
     </Card>

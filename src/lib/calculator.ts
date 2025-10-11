@@ -34,6 +34,10 @@ export interface ConcreteCalculation {
   beamsVolume: number;
   toppingVolume: number;
   totalConcrete: number;
+  // Raw materials
+  cementBags: number; // 50kg bags
+  sandTonnes: number;
+  ballastTonnes: number;
 }
 
 export interface BrcCalculation {
@@ -114,7 +118,47 @@ export function calcConcrete(
   const toppingVolume = area * C.toppingThickness;
   const totalConcrete = beamRibVolume + toppingVolume;
 
-  return { area, beamsVolume: beamRibVolume, toppingVolume, totalConcrete };
+  // --- Raw Material Calculation (Mix Ratio 1:2:4) ---
+  const CEMENT_RATIO = 1;
+  const SAND_RATIO = 2;
+  const BALLAST_RATIO = 4;
+  const TOTAL_RATIO = CEMENT_RATIO + SAND_RATIO + BALLAST_RATIO; // 7
+
+  // Constants for material properties
+  const DENSITY_CEMENT = 1440; // kg/m³
+  const DENSITY_SAND = 1450; // kg/m³ (loose bulk density)
+  const DENSITY_BALLAST = 1500; // kg/m³ (loose bulk density)
+  const CEMENT_BAG_WEIGHT = 50; // kg
+  
+  // Bulking factor and shrinkage
+  const WET_TO_DRY_FACTOR = 1.54; // Volume of dry materials is ~54% more than wet concrete
+
+  const dryVolume = totalConcrete * WET_TO_DRY_FACTOR;
+
+  // Volume of each material
+  const cementVolume = (dryVolume * CEMENT_RATIO) / TOTAL_RATIO;
+  const sandVolume = (dryVolume * SAND_RATIO) / TOTAL_RATIO;
+  const ballastVolume = (dryVolume * BALLAST_RATIO) / TOTAL_RATIO;
+
+  // Convert volumes to practical units
+  const cementWeight = cementVolume * DENSITY_CEMENT;
+  const cementBags = ceil(cementWeight / CEMENT_BAG_WEIGHT);
+
+  const sandWeight = sandVolume * DENSITY_SAND;
+  const sandTonnes = sandWeight / 1000;
+
+  const ballastWeight = ballastVolume * DENSITY_BALLAST;
+  const ballastTonnes = ballastWeight / 1000;
+
+  return { 
+    area, 
+    beamsVolume: beamRibVolume, 
+    toppingVolume, 
+    totalConcrete,
+    cementBags,
+    sandTonnes,
+    ballastTonnes,
+  };
 }
 
 export function calcBRC(

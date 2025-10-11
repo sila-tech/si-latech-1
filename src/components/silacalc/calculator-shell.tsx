@@ -73,29 +73,31 @@ export function CalculatorShell() {
   }, [rooms, settings]);
 
   const totals = useMemo(() => {
-    const totalArea = perRoomCalculations.reduce(
-      (sum, p) => sum + p.concreteCalcs.area,
-      0
-    );
-    const totalBlocks = perRoomCalculations.reduce(
-      (sum, p) => sum + p.roomCalcs.totalBlocks,
-      0
-    );
-    const totalBeamLength = perRoomCalculations.reduce(
-      (sum, p) => sum + p.roomCalcs.totalBeamLength,
-      0
-    );
-    const totalConcreteVolume = perRoomCalculations.reduce(
-      (sum, p) => sum + p.concreteCalcs.totalConcrete,
-      0
-    );
-    const brc = calcBRC(totalArea, settings);
+    const initialTotals = {
+      totalArea: 0,
+      totalBlocks: 0,
+      totalBeamLength: 0,
+      totalConcreteVolume: 0,
+      totalCementBags: 0,
+      totalSandTonnes: 0,
+      totalBallastTonnes: 0,
+    };
+
+    const aggregated = perRoomCalculations.reduce((acc, p) => {
+      acc.totalArea += p.concreteCalcs.area;
+      acc.totalBlocks += p.roomCalcs.totalBlocks;
+      acc.totalBeamLength += p.roomCalcs.totalBeamLength;
+      acc.totalConcreteVolume += p.concreteCalcs.totalConcrete;
+      acc.totalCementBags += p.concreteCalcs.cementBags;
+      acc.totalSandTonnes += p.concreteCalcs.sandTonnes;
+      acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
+      return acc;
+    }, initialTotals);
+    
+    const brc = calcBRC(aggregated.totalArea, settings);
 
     return {
-      totalArea,
-      totalBlocks,
-      totalBeamLength,
-      totalConcreteVolume,
+      ...aggregated,
       brc,
     };
   }, [perRoomCalculations, settings]);
