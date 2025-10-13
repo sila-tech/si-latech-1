@@ -106,7 +106,7 @@ export function CalculatorShell() {
     <div className="container mx-auto max-w-7xl">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-          <ActionsCard totals={totals} setRooms={setRoomsFromPlan} />
+          <ActionsCard totals={totals} setRooms={setRoomsFromPlan} perRoomCalculations={perRoomCalculations} />
           
           <div className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>

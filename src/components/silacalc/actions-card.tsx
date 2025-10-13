@@ -29,10 +29,12 @@ import {
   Loader2,
   Wand2,
   List,
+  FileDown,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
+import type { Room, RoomCalculation } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -48,6 +50,10 @@ type ActionsCardProps = {
     brc: { rollsNeeded: number };
   };
   setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
+  perRoomCalculations: {
+    room: Room;
+    roomCalcs: RoomCalculation;
+  }[];
 };
 
 type ClientInfo = {
@@ -71,7 +77,7 @@ function SubmitButton({
   );
 }
 
-const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: (clientInfo: ClientInfo) => void }) => {
+const ClientInfoDialog = ({ onGenerateClick, onGenerateBreakdownClick, showBreakdownButton = false }: { onGenerateClick?: (clientInfo: ClientInfo) => void; onGenerateBreakdownClick?: (clientInfo: ClientInfo) => void; showBreakdownButton?: boolean; }) => {
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: '',
     projectName: '',
@@ -81,7 +87,11 @@ const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: (clientInfo: C
   });
 
   const handleGenerate = () => {
-    onGenerateClick(clientInfo);
+    if (onGenerateClick) {
+      onGenerateClick(clientInfo);
+    } else if (onGenerateBreakdownClick) {
+      onGenerateBreakdownClick(clientInfo);
+    }
   }
 
   return (
@@ -127,10 +137,11 @@ const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: (clientInfo: C
 };
 
 
-export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
+export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCardProps) {
   const { toast } = useToast();
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
   
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
@@ -357,6 +368,115 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
     setScheduleDialogOpen(false); // Close dialog after download
   };
 
+  const handleDownloadBreakdownReport = (clientInfo: ClientInfo) => {
+    const doc = new jsPDF();
+    const reportDate = new Date().toLocaleDateString('en-GB');
+    const reportNumber = `BRK-${String(Date.now()).slice(-6)}`;
+    const primaryColor = '#2563EB';
+
+    // --- Header ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(primaryColor);
+    doc.text('SI-LATECH', 14, 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text('Beam & Block Breakdown Report', 14, 30);
+
+    doc.setFontSize(10);
+    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 40);
+    doc.text(`Client: ${clientInfo.clientName}`, 14, 45);
+    doc.text(`Date: ${reportDate}`, 14, 50);
+
+    let currentY = 60;
+
+    // --- Per-Room Breakdown ---
+    perRoomCalculations.forEach(({ room, roomCalcs }) => {
+      if (currentY > 250) { // Add new page if content overflows
+        doc.addPage();
+        currentY = 20;
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor);
+      doc.text(`Room Name: ${room.name}`, 14, currentY);
+      currentY += 7;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(50);
+      doc.text(`Room Size: ${roomCalcs.longer.toFixed(2)} m × ${roomCalcs.shorter.toFixed(2)} m`, 14, currentY);
+      currentY += 10;
+      
+      const body = [
+        ['Beams', `${roomCalcs.shorter.toFixed(2)} m × ${roomCalcs.beamCount} beams`, `Total Beam Length: ${roomCalcs.totalBeamLength.toFixed(2)} m`],
+        ['Blocks', `${roomCalcs.beamSpaces} rows × ${roomCalcs.blocksPerBeamRow} blocks`, `Total Blocks: ${roomCalcs.totalBlocks} pcs`],
+      ];
+
+      (doc as any).autoTable({
+        startY: currentY,
+        body: body,
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 2 },
+        columnStyles: {
+            0: { fontStyle: 'bold' }
+        }
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+    });
+
+
+    // --- Project Totals ---
+    if (currentY > 240) {
+      doc.addPage();
+      currentY = 20;
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT TOTALS', 14, currentY);
+    currentY += 7;
+
+    (doc as any).autoTable({
+      head: [['Item', 'Total', 'Unit']],
+      body: [
+        ['Total Blocks', totals.totalBlocks, 'pcs'],
+        ['Total Beam Length', totals.totalBeamLength.toFixed(2), 'm'],
+      ],
+      startY: currentY,
+      theme: 'grid',
+      headStyles: { fillColor: primaryColor, textColor: 255 },
+      styles: { fontSize: 10 }
+    });
+    currentY = (doc as any).lastAutoTable.finalY + 15;
+
+    // --- Notes ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(primaryColor);
+    doc.text('NOTES', 14, currentY);
+    currentY += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(50);
+    const notes = [
+      'Beams are placed parallel to the shorter side, spaced at 0.6 m.',
+      'Blocks measure 400 mm × 200 mm, laid between beams.',
+      'All quantities are rounded up to the nearest whole piece.',
+      'This report is for estimation and site guidance only.',
+    ];
+    notes.forEach(note => {
+      doc.text(note, 14, currentY);
+      currentY += 5;
+    });
+
+    doc.save(`SI-LATECH-Breakdown-Report-${reportNumber}.pdf`);
+    setBreakdownDialogOpen(false);
+  };
+
+
   const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, { message: '' });
   const [quoteState, quoteFormAction] = useActionState(handleGenerateQuote, { message: '' });
   
@@ -408,7 +528,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
           Generate documents, use AI to analyze plans, or get a quote.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:flex xl:flex-row gap-4">
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
         
         <Dialog open={isInvoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
           <DialogTrigger asChild>
@@ -430,6 +550,17 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
           <DialogContent>
             <ClientInfoDialog onGenerateClick={handleDownloadMaterialSchedule} />
           </DialogContent>
+        </Dialog>
+
+        <Dialog open={isBreakdownDialogOpen} onOpenChange={setBreakdownDialogOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" className="w-full">
+                    <FileDown /> Breakdown Report
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <ClientInfoDialog onGenerateClick={handleDownloadBreakdownReport} />
+            </DialogContent>
         </Dialog>
 
         <Dialog>
@@ -465,7 +596,7 @@ export function ActionsCard({ totals, setRooms }: ActionsCardProps) {
         
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="accent" className="w-full">
+            <Button variant="accent" className="w-full xl:col-span-2">
               <FileText /> Generate Quote (AI)
             </Button>
           </DialogTrigger>
