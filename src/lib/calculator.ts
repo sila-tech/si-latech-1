@@ -9,6 +9,7 @@ export interface Room {
 export interface CalculationDefaults {
   blockLength: number;
   blockWidth: number;
+  beamSpacing: number; // New setting
   beamSectionW: number;
   beamSectionH: number;
   toppingThickness: number;
@@ -30,7 +31,7 @@ export interface RoomCalculation {
   shorter: number;
   longer: number;
   beamCount: number;
-  beamSpaces: number;
+  beamSpaces: number; // This is 'Rows' in the new logic
   blocksPerBeamRow: number;
   totalBlocks: number;
   totalBeamLength: number;
@@ -58,6 +59,7 @@ const m = (mm: number) => mm / 1000; // convert mm to meters
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
+  beamSpacing: 0.6, // New default based on user spec
   beamSectionW: m(120),
   beamSectionH: m(40),
   toppingThickness: 0.05, // 50mm
@@ -85,25 +87,24 @@ export function calcRoomBlocksAndBeams(
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
-  // The spacing for flat beams is determined by the length of the blocks.
-  const beamSpacing = C.blockLength;
+  // 1. Calculate the Number of Rows (Beam Spaces)
+  // Each row is spaced at 0.6m intervals along the longer side.
+  const beamSpaces = longer > 0 && C.beamSpacing > 0 ? ceil(longer / C.beamSpacing) : 0;
 
-  // 1a. Number of Flat Beams
-  // Placed parallel to the shorter side, running across the longer side.
-  const beamSpaces = longer > 0 && beamSpacing > 0 ? ceil(longer / beamSpacing) : 0;
+  // 2. Calculate the Number of Beams
+  // There is always one more beam than the number of rows.
   const beamCount = beamSpaces + 1;
-  
-  // 1b. Length of each flat beam is the shorter side of the room.
-  const beamLengthEach = shorter;
-  const totalBeamLength = beamCount * beamLengthEach;
 
-  // 2a. Blocks per Beam Row
-  // This is the number of blocks that fit along the shorter side.
-  // This is based on the block width (200mm default).
+  // 3. Calculate the Total Length of Beams
+  // Each beam runs along the shorter side of the room.
+  const totalBeamLength = beamCount * shorter;
+
+  // 4. Calculate the Number of Blocks per Row
+  // Each block has a width of 0.2m, which runs parallel to the flat beams.
   const blocksPerBeamRow = shorter > 0 && C.blockWidth > 0 ? ceil(shorter / C.blockWidth) : 0;
 
-  // 3. Total Blocks for the room
-  // This is the number of rows of blocks (beamSpaces) times the number of blocks in each row.
+  // 5. Calculate the Total Number of Blocks
+  // Multiply the number of rows by the number of blocks per row.
   const totalBlocks = beamSpaces * blocksPerBeamRow;
 
 
@@ -113,7 +114,7 @@ export function calcRoomBlocksAndBeams(
     shorter,
     longer,
     beamCount,
-    beamSpaces,
+    beamSpaces, // Represents 'Rows' from the spec
     blocksPerBeamRow,
     totalBlocks,
     totalBeamLength,

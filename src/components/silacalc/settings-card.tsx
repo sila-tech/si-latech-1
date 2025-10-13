@@ -29,6 +29,7 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
   const basicSettings = [
     { key: 'blockLength', label: 'Block Length (m)' },
     { key: 'blockWidth', label: 'Block Width (m)' },
+    { key: 'beamSpacing', label: 'Beam Spacing (m)'},
     { key: 'toppingThickness', label: 'Topping Thickness (m)' },
     { key: 'brcRollWidth', label: 'BRC Roll Width (m)' },
     { key: 'brcRollLength', label: 'BRC Roll Length (m)' },
