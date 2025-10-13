@@ -103,9 +103,16 @@ export function TotalsCard({ totals }: TotalsCardProps) {
         </div>
         
         <p className="text-xs text-muted-foreground text-center pt-2">
-            BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete materials include wastage.
+            BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete materials include {totals.wastagePercentage}% wastage.
         </p>
       </CardContent>
     </Card>
   );
+}
+
+// Add a new prop for wastage percentage to display it dynamically
+TotalsCard.defaultProps = {
+    totals: {
+        wastagePercentage: 10,
+    }
 }

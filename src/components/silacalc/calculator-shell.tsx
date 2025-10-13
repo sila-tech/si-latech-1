@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import type {
   Room,
   CalculationDefaults,
@@ -21,13 +22,19 @@ import { TotalsCard } from './totals-card';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+type PerRoomCalculation = {
+  room: Room;
+  roomCalcs: RoomCalculation;
+  concreteCalcs: ConcreteCalculation;
+  brcCalcs: BrcCalculation;
+};
+
 export function CalculatorShell() {
   const [rooms, setRooms] = useState<Room[]>([
-    { id: '1', name: 'Living room', length: 5, width: 4 },
-    { id: '2', name: 'Bedroom 1', length: 4, width: 3 },
+    { id: '1', name: 'Living room', length: 5, width: 4.5 },
+    { id: '2', name: 'Bedroom 1', length: 4, width: 3.8 },
   ]);
-  const [settings, setSettings] =
-    useState<CalculationDefaults>(DEFAULTS);
+  const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
 
   const addRoom = () => {
     setRooms([
@@ -63,12 +70,12 @@ export function CalculatorShell() {
     setRooms(newRooms);
   };
 
-
-  const perRoomCalculations = useMemo(() => {
+  const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
     return rooms.map((r) => {
       const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
-      return { room: r, roomCalcs, concreteCalcs };
+      const brcCalcs = calcBRC(concreteCalcs.area, settings);
+      return { room: r, roomCalcs, concreteCalcs, brcCalcs };
     });
   }, [rooms, settings]);
 
@@ -81,6 +88,8 @@ export function CalculatorShell() {
       totalCementBags: 0,
       totalSandTonnes: 0,
       totalBallastTonnes: 0,
+      totalSandWheelbarrows: 0,
+      totalBallastWheelbarrows: 0,
     };
 
     const aggregated = perRoomCalculations.reduce((acc, p) => {
@@ -91,6 +100,8 @@ export function CalculatorShell() {
       acc.totalCementBags += p.concreteCalcs.cementBags;
       acc.totalSandTonnes += p.concreteCalcs.sandTonnes;
       acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
+      acc.totalSandWheelbarrows += p.concreteCalcs.sandWheelbarrows;
+      acc.totalBallastWheelbarrows += p.concreteCalcs.ballastWheelbarrows;
       return acc;
     }, initialTotals);
     

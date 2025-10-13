@@ -9,19 +9,17 @@ export interface Room {
 export interface CalculationDefaults {
   blockLength: number;
   blockWidth: number;
-  beamSpacing: number; // New setting
+  beamSpacing: number;
   beamSectionW: number;
   beamSectionH: number;
   toppingThickness: number;
   brcRollLength: number;
   brcRollWidth: number;
-
-  // Concrete Calculation Defaults
   concreteMixRatioCement: number;
   concreteMixRatioSand: number;
   concreteMixRatioBallast: number;
-  wastagePercentage: number; // e.g., 10 for 10%
-  wheelbarrowVolume: number; // m³
+  wastagePercentage: number;
+  wheelbarrowVolume: number;
   wheelbarrowsPerTonne: number;
 }
 
@@ -31,7 +29,7 @@ export interface RoomCalculation {
   shorter: number;
   longer: number;
   beamCount: number;
-  beamSpaces: number; // This is 'Rows' in the new logic
+  beamSpaces: number;
   blocksPerBeamRow: number;
   totalBlocks: number;
   totalBeamLength: number;
@@ -42,10 +40,11 @@ export interface ConcreteCalculation {
   beamsVolume: number;
   toppingVolume: number;
   totalConcrete: number;
-  // Raw materials
-  cementBags: number; // 50kg bags
+  cementBags: number;
   sandTonnes: number;
   ballastTonnes: number;
+  sandWheelbarrows: number;
+  ballastWheelbarrows: number;
 }
 
 export interface BrcCalculation {
@@ -54,25 +53,23 @@ export interface BrcCalculation {
   metresOfBRC: number;
 }
 
-const m = (mm: number) => mm / 1000; // convert mm to meters
+const m = (mm: number) => mm / 1000;
 
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
-  beamSpacing: 0.6, // New default based on user spec
+  beamSpacing: 0.6,
   beamSectionW: m(120),
   beamSectionH: m(40),
-  toppingThickness: 0.05, // 50mm
+  toppingThickness: 0.05,
   brcRollLength: 48,
   brcRollWidth: 2.4,
-
-  // Concrete Defaults (Local Ratio Method)
   concreteMixRatioCement: 1,
   concreteMixRatioSand: 2,
   concreteMixRatioBallast: 4,
-  wastagePercentage: 10, // 10%
-  wheelbarrowVolume: 0.065, // m³
-  wheelbarrowsPerTonne: 6, // 1 tonne = 6 wheelbarrows
+  wastagePercentage: 10,
+  wheelbarrowVolume: 0.065,
+  wheelbarrowsPerTonne: 6,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -87,26 +84,11 @@ export function calcRoomBlocksAndBeams(
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
-  // 1. Calculate the Number of Rows (Beam Spaces)
-  // Each row is spaced at 0.6m intervals along the longer side.
   const beamSpaces = longer > 0 && C.beamSpacing > 0 ? ceil(longer / C.beamSpacing) : 0;
-
-  // 2. Calculate the Number of Beams
-  // There is always one more beam than the number of rows.
-  const beamCount = beamSpaces + 1;
-
-  // 3. Calculate the Total Length of Beams
-  // Each beam runs along the shorter side of the room.
+  const beamCount = beamSpaces > 0 ? beamSpaces + 1 : 0;
   const totalBeamLength = beamCount * shorter;
-
-  // 4. Calculate the Number of Blocks per Row
-  // Each block has a width of 0.2m, which runs parallel to the flat beams.
   const blocksPerBeamRow = shorter > 0 && C.blockWidth > 0 ? ceil(shorter / C.blockWidth) : 0;
-
-  // 5. Calculate the Total Number of Blocks
-  // Multiply the number of rows by the number of blocks per row.
   const totalBlocks = beamSpaces * blocksPerBeamRow;
-
 
   return {
     length: lengthMeters,
@@ -114,7 +96,7 @@ export function calcRoomBlocksAndBeams(
     shorter,
     longer,
     beamCount,
-    beamSpaces, // Represents 'Rows' from the spec
+    beamSpaces,
     blocksPerBeamRow,
     totalBlocks,
     totalBeamLength,
@@ -128,14 +110,12 @@ export function calcConcrete(
   const C = { ...DEFAULTS, ...opts };
   const area = roomCalc.length * roomCalc.width;
 
-  const beamRibVolume =
-    roomCalc.totalBeamLength * C.beamSectionW * C.beamSectionH;
+  const beamRibVolume = roomCalc.totalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
   const totalConcreteVolume = beamRibVolume + toppingVolume;
   
   const wastageFactor = 1 + (C.wastagePercentage / 100);
 
-  // --- Local Wheelbarrow Ratio Method ---
   const { 
     concreteMixRatioCement, 
     concreteMixRatioSand, 
@@ -147,32 +127,27 @@ export function calcConcrete(
   let cementBags = 0;
   let sandTonnes = 0;
   let ballastTonnes = 0;
+  let sandWheelbarrows = 0;
+  let ballastWheelbarrows = 0;
 
-  if (totalConcreteVolume > 0) {
-    // Total parts in one batch (1 bag cement is 1 part)
+  if (totalConcreteVolume > 0 && wheelbarrowVolume > 0) {
     const totalRatioParts = concreteMixRatioCement + concreteMixRatioSand + concreteMixRatioBallast;
-    
-    // Volume of one batch of concrete in m³
     const oneBatchVolume = totalRatioParts * wheelbarrowVolume;
     
-    // How many bags of cement are needed per m³ of concrete
     const bagsPerM3 = oneBatchVolume > 0 ? (1 / oneBatchVolume) * concreteMixRatioCement : 0;
-    
-    // How many wheelbarrows of sand are needed per m³ of concrete
     const sandWBPerM3 = bagsPerM3 * concreteMixRatioSand;
-    
-    // How many wheelbarrows of ballast are needed per m³ of concrete
     const ballastWBPerM3 = bagsPerM3 * concreteMixRatioBallast;
 
-    // Calculate total materials for the given concrete volume, including wastage
-    const totalCementBags = totalConcreteVolume * bagsPerM3 * wastageFactor;
-    const totalSandWB = totalConcreteVolume * sandWBPerM3 * wastageFactor;
-    const totalBallastWB = totalConcreteVolume * ballastWBPerM3 * wastageFactor;
+    const rawCementBags = totalConcreteVolume * bagsPerM3;
+    const rawSandWB = totalConcreteVolume * sandWBPerM3;
+    const rawBallastWB = totalConcreteVolume * ballastWBPerM3;
 
-    // Convert to final units
-    cementBags = ceil(totalCementBags);
-    sandTonnes = wheelbarrowsPerTonne > 0 ? totalSandWB / wheelbarrowsPerTonne : 0;
-    ballastTonnes = wheelbarrowsPerTonne > 0 ? totalBallastWB / wheelbarrowsPerTonne : 0;
+    cementBags = ceil(rawCementBags * wastageFactor);
+    sandWheelbarrows = ceil(rawSandWB * wastageFactor);
+    ballastWheelbarrows = ceil(rawBallastWB * wastageFactor);
+
+    sandTonnes = wheelbarrowsPerTonne > 0 ? sandWheelbarrows / wheelbarrowsPerTonne : 0;
+    ballastTonnes = wheelbarrowsPerTonne > 0 ? ballastWheelbarrows / wheelbarrowsPerTonne : 0;
   }
   
   return { 
@@ -183,6 +158,8 @@ export function calcConcrete(
     cementBags,
     sandTonnes,
     ballastTonnes,
+    sandWheelbarrows,
+    ballastWheelbarrows,
   };
 }
 

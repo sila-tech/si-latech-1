@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { useActionState } from 'react';
@@ -34,9 +35,16 @@ import {
 import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, RoomCalculation } from '@/lib/calculator';
+import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+
+type PerRoomCalculation = {
+  room: Room;
+  roomCalcs: RoomCalculation;
+  concreteCalcs: ConcreteCalculation;
+  brcCalcs: BrcCalculation;
+};
 
 type ActionsCardProps = {
   totals: {
@@ -47,13 +55,12 @@ type ActionsCardProps = {
     totalCementBags: number;
     totalSandTonnes: number;
     totalBallastTonnes: number;
+    totalSandWheelbarrows: number;
+    totalBallastWheelbarrows: number;
     brc: { rollsNeeded: number };
   };
   setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
-  perRoomCalculations: {
-    room: Room;
-    roomCalcs: RoomCalculation;
-  }[];
+  perRoomCalculations: PerRoomCalculation[];
 };
 
 type ClientInfo = {
@@ -77,21 +84,21 @@ function SubmitButton({
   );
 }
 
-const ClientInfoDialog = ({ onGenerateClick, onGenerateBreakdownClick, showBreakdownButton = false }: { onGenerateClick?: (clientInfo: ClientInfo) => void; onGenerateBreakdownClick?: (clientInfo: ClientInfo) => void; showBreakdownButton?: boolean; }) => {
-  const [clientInfo, setClientInfo] = useState<ClientInfo>({
-    clientName: '',
-    projectName: '',
-    projectLocation: '',
-    clientContact: '',
-    contactPerson: '',
-  });
+const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: (clientInfo: ClientInfo) => void; }) => {
+  const [clientName, setClientName] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [projectLocation, setProjectLocation] = useState('');
+  const [clientContact, setClientContact] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
 
   const handleGenerate = () => {
-    if (onGenerateClick) {
-      onGenerateClick(clientInfo);
-    } else if (onGenerateBreakdownClick) {
-      onGenerateBreakdownClick(clientInfo);
-    }
+    onGenerateClick({
+      clientName,
+      projectName,
+      projectLocation,
+      clientContact,
+      contactPerson,
+    });
   }
 
   return (
@@ -106,24 +113,24 @@ const ClientInfoDialog = ({ onGenerateClick, onGenerateBreakdownClick, showBreak
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="clientName">Client Name</Label>
-            <Input id="clientName" value={clientInfo.clientName} onChange={(e) => setClientInfo({...clientInfo, clientName: e.target.value})} placeholder="e.g., John Doe" />
+            <Input id="clientName" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="e.g., John Doe" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="clientContact">Client Contact</Label>
-            <Input id="clientContact" value={clientInfo.clientContact} onChange={(e) => setClientInfo({...clientInfo, clientContact: e.target.value})} placeholder="e.g., +254 7..."/>
+            <Input id="clientContact" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="e.g., +254 7..."/>
           </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="projectName">Project Name</Label>
-          <Input id="projectName" value={clientInfo.projectName} onChange={(e) => setClientInfo({...clientInfo, projectName: e.target.value})} placeholder="e.g., Residential House"/>
+          <Input id="projectName" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Residential House"/>
         </div>
         <div className="space-y-2">
           <Label htmlFor="projectLocation">Project Location</Label>
-          <Input id="projectLocation" value={clientInfo.projectLocation} onChange={(e) => setClientInfo({...clientInfo, projectLocation: e.target.value})} placeholder="e.g., Karen, Nairobi" />
+          <Input id="projectLocation" value={projectLocation} onChange={(e) => setProjectLocation(e.target.value)} placeholder="e.g., Karen, Nairobi" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="contactPerson">Site Contact Person</Label>
-          <Input id="contactPerson" value={clientInfo.contactPerson} onChange={(e) => setClientInfo({...clientInfo, contactPerson: e.target.value})} placeholder="e.g., Site Foreman" />
+          <Input id="contactPerson" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} placeholder="e.g., Site Foreman" />
         </div>
       </div>
       <DialogFooter>
@@ -149,21 +156,18 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     const doc = new jsPDF();
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#2563EB'; // HSL(217, 91%, 60%)
+    const primaryColor = '#2563EB';
 
-    // Pricing constants
     const BLOCK_PRICE = 85;
     const BEAM_PRICE_PER_METER = 545;
     const VAT_RATE = 0.16;
 
-    // Calculations
     const blocksTotal = totalBlocks * BLOCK_PRICE;
     const beamsTotal = totalBeamLength * BEAM_PRICE_PER_METER;
     const subtotal = blocksTotal + beamsTotal;
     const vat = subtotal * VAT_RATE;
     const grandTotal = subtotal + vat;
 
-    // --- PDF Styling and Layout ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(primaryColor);
@@ -174,7 +178,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.setTextColor(100);
     doc.text('Beam & Block Slab Quotation / Tax Invoice', 14, 30);
 
-
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
@@ -183,7 +186,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text('Email: info@silatech.co.ke', 145, 30);
     doc.text('VAT Registration No.: P051XXXXXXX', 145, 35);
 
-    // Invoice To / Ship To sections
     const invoiceToX = 14;
     const shipToX = 110;
     const startY = 45;
@@ -203,8 +205,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, startY + 11);
     doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, startY + 16);
     
-    // Invoice metadata
-    doc.setFont('helvetica', 'normal');
     const metaX = 14;
     const metaY = startY + 30;
     doc.text(`Invoice No.:`, metaX, metaY);
@@ -218,8 +218,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text(`Due on Receipt`, metaX + 30, metaY + 10);
     doc.text(`${invoiceDate}`, metaX + 30, metaY + 15);
 
-
-    // Invoice Table
     const tableColumn = ['DATE', 'DESCRIPTION', 'VAT', 'QTY', 'UNIT', 'RATE (KSH)', 'AMOUNT (KSH)'];
     const tableRows = [
       [invoiceDate, 'Beam & Block Slab Works – Blocks', '16% S', totalBlocks, 'pcs', BLOCK_PRICE.toFixed(2), blocksTotal.toFixed(2)],
@@ -239,7 +237,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
       }
     });
 
-    // Totals Section
     let finalY = (doc as any).lastAutoTable.finalY;
     const totalsX = 130;
     const totalsValueX = 200;
@@ -253,14 +250,11 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text('TOTAL: ', totalsX, finalY + 22, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 22, { align: 'right' });
     
-    // Balance due has a box around it
     doc.setFillColor(240,240,240);
     doc.roundedRect(totalsX - 60, finalY + 27, 85, 10, 3, 3, 'F');
     doc.text('BALANCE DUE: ', totalsX, finalY + 33, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 33, { align: 'right' });
 
-
-    // VAT Summary
     finalY = finalY + 45;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -279,7 +273,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     
     finalY = (doc as any).lastAutoTable.finalY;
 
-    // Notes Section
     finalY = Math.max(finalY, finalY + 10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -291,9 +284,8 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     finalY += 5;
     doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, finalY);
 
-
     doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
-    setInvoiceDialogOpen(false); // Close dialog after download
+    setInvoiceDialogOpen(false);
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
@@ -303,7 +295,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
 
-    // --- PDF Styling and Layout ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(primaryColor);
@@ -314,7 +305,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.setTextColor(100);
     doc.text('Slab Materials Schedule', 14, 30);
     
-    // Client and Project Info
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
     doc.text('PROJECT DETAILS', 14, 45);
@@ -324,11 +314,9 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text(`Project: ${clientInfo.projectName}`, 14, 56);
     doc.text(`Location: ${clientInfo.projectLocation}`, 14, 61);
 
-    // Schedule metadata
     doc.text(`Schedule No.: ${scheduleNumber}`, 145, 51);
     doc.text(`Date: ${scheduleDate}`, 145, 56);
 
-    // Materials Table
     const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
     const tableRows = [
       ['Cement (50kg bags)', totalCementBags, 'bags', 'Includes 10% wastage'],
@@ -352,7 +340,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
 
     let finalY = (doc as any).lastAutoTable.finalY;
     
-    // Notes Section
     finalY += 15;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -365,7 +352,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text('2. This schedule is for materials required for the slab only and excludes other structural elements.', 14, finalY);
 
     doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
-    setScheduleDialogOpen(false); // Close dialog after download
+    setScheduleDialogOpen(false);
   };
 
   const handleDownloadBreakdownReport = (clientInfo: ClientInfo) => {
@@ -374,11 +361,10 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     const reportNumber = `BRK-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
 
-    // --- Header ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(primaryColor);
-    doc.text('SI-LATECH', 14, 22);
+    doc.text('SI-LATECH CONSTRUCTION LTD', 14, 22);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
@@ -392,43 +378,41 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
 
     let currentY = 60;
 
-    // --- Per-Room Breakdown ---
-    perRoomCalculations.forEach(({ room, roomCalcs }) => {
-      if (currentY > 250) { // Add new page if content overflows
+    perRoomCalculations.forEach(({ room, roomCalcs, concreteCalcs, brcCalcs }) => {
+      if (currentY > 220) {
         doc.addPage();
         currentY = 20;
       }
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(primaryColor);
-      doc.text(`Room Name: ${room.name}`, 14, currentY);
-      currentY += 7;
+      doc.text(`Room: ${room.name} — ${roomCalcs.shorter.toFixed(2)} m × ${roomCalcs.longer.toFixed(2)} m`, 14, currentY);
+      currentY += 8;
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(50);
-      doc.text(`Room Size: ${roomCalcs.longer.toFixed(2)} m × ${roomCalcs.shorter.toFixed(2)} m`, 14, currentY);
-      currentY += 10;
-      
       const body = [
-        ['Beams', `${roomCalcs.shorter.toFixed(2)} m × ${roomCalcs.beamCount} beams`, `Total Beam Length: ${roomCalcs.totalBeamLength.toFixed(2)} m`],
-        ['Blocks', `${roomCalcs.beamSpaces} rows × ${roomCalcs.blocksPerBeamRow} blocks`, `Total Blocks: ${roomCalcs.totalBlocks} pcs`],
+          [`Beams:`, `${roomCalcs.shorter.toFixed(2)} m × ${roomCalcs.beamCount} beams`],
+          [`Total beam length:`, `${roomCalcs.totalBeamLength.toFixed(2)} m`],
+          [`Blocks:`, `${roomCalcs.totalBlocks} pcs`],
+          [`Concrete volume (beams + topping):`, `${concreteCalcs.totalConcrete.toFixed(3)} m³`],
+          [`BRC (A98, ${brcCalcs.areaPerRoll} m² per sheet):`, `${brcCalcs.rollsNeeded} sheets`],
+          [`Cement:`, `${concreteCalcs.cementBags} bags (50 kg)`],
+          [`Sand:`, `${concreteCalcs.sandTonnes.toFixed(2)} t — ${concreteCalcs.sandWheelbarrows} wheelbarrows`],
+          [`Ballast:`, `${concreteCalcs.ballastTonnes.toFixed(2)} t — ${concreteCalcs.ballastWheelbarrows} wheelbarrows`],
       ];
-
+      
       (doc as any).autoTable({
-        startY: currentY,
-        body: body,
-        theme: 'grid',
-        styles: { fontSize: 10, cellPadding: 2 },
-        columnStyles: {
-            0: { fontStyle: 'bold' }
-        }
+          startY: currentY,
+          body: body,
+          theme: 'plain',
+          styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
+          columnStyles: {
+              0: { fontStyle: 'bold', cellWidth: 80 },
+              1: { cellWidth: 'auto' }
+          },
       });
-      currentY = (doc as any).lastAutoTable.finalY + 15;
+      currentY = (doc as any).lastAutoTable.finalY + 10;
     });
 
-
-    // --- Project Totals ---
     if (currentY > 240) {
       doc.addPage();
       currentY = 20;
@@ -439,20 +423,29 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
     doc.text('PROJECT TOTALS', 14, currentY);
     currentY += 7;
 
+    const totalsBody = [
+        ['Total blocks:', `${totals.totalBlocks} pcs`],
+        ['Total beam length:', `${totals.totalBeamLength.toFixed(2)} m`],
+        ['Total concrete:', `${totals.totalConcreteVolume.toFixed(3)} m³`],
+        ['Total BRC sheets:', `${totals.brc.rollsNeeded} sheets`],
+        ['Total cement:', `${totals.totalCementBags} bags`],
+        ['Total sand:', `${totals.totalSandTonnes.toFixed(2)} t — ${totals.totalSandWheelbarrows} wb`],
+        ['Total ballast:', `${totals.totalBallastTonnes.toFixed(2)} t — ${totals.totalBallastWheelbarrows} wb`],
+    ];
+
     (doc as any).autoTable({
-      head: [['Item', 'Total', 'Unit']],
-      body: [
-        ['Total Blocks', totals.totalBlocks, 'pcs'],
-        ['Total Beam Length', totals.totalBeamLength.toFixed(2), 'm'],
-      ],
-      startY: currentY,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255 },
-      styles: { fontSize: 10 }
+        startY: currentY,
+        body: totalsBody,
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 1 },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 80 },
+            1: { cellWidth: 'auto' }
+        }
     });
+
     currentY = (doc as any).lastAutoTable.finalY + 15;
 
-    // --- Notes ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(primaryColor);
