@@ -31,11 +31,12 @@ import {
   Wand2,
   List,
   FileDown,
+  Warehouse,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation } from '@/lib/calculator';
+import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation, AggregatedRoomGroup } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -47,6 +48,7 @@ type PerRoomCalculation = {
 };
 
 type ActionsCardProps = {
+  rooms: Room[];
   totals: {
     totalArea: number;
     totalBlocks: number;
@@ -61,6 +63,7 @@ type ActionsCardProps = {
   };
   setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
   perRoomCalculations: PerRoomCalculation[];
+  aggregatedBreakdown: AggregatedRoomGroup[];
 };
 
 type ClientInfo = {
@@ -84,71 +87,73 @@ function SubmitButton({
   );
 }
 
-const ClientInfoDialog = ({ onGenerateClick }: { onGenerateClick: (clientInfo: ClientInfo) => void; }) => {
-  const [clientName, setClientName] = useState('');
-  const [projectName, setProjectName] = useState('');
-  const [projectLocation, setProjectLocation] = useState('');
-  const [clientContact, setClientContact] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
+const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenChange }: { onGenerateClick: (clientInfo: ClientInfo) => void; title: string; description: string; open: boolean, onOpenChange: (open: boolean) => void; }) => {
+  const [clientInfo, setClientInfo] = useState<ClientInfo>({
+    clientName: '',
+    projectName: '',
+    projectLocation: '',
+    clientContact: '',
+    contactPerson: '',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setClientInfo(prev => ({ ...prev, [id]: value }));
+  };
 
   const handleGenerate = () => {
-    onGenerateClick({
-      clientName,
-      projectName,
-      projectLocation,
-      clientContact,
-      contactPerson,
-    });
-  }
+    onGenerateClick(clientInfo);
+  };
 
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle>Client Information</DialogTitle>
-        <DialogDescription>
-          Please fill in the client details for the document.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="space-y-4 py-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="clientName">Client Name</Label>
-            <Input id="clientName" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="e.g., John Doe" />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="clientName">Client Name</Label>
+              <Input id="clientName" value={clientInfo.clientName} onChange={handleChange} placeholder="e.g., John Doe" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientContact">Client Contact</Label>
+              <Input id="clientContact" value={clientInfo.clientContact} onChange={handleChange} placeholder="e.g., +254 7..."/>
+            </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="clientContact">Client Contact</Label>
-            <Input id="clientContact" value={clientContact} onChange={(e) => setClientContact(e.target.value)} placeholder="e.g., +254 7..."/>
+            <Label htmlFor="projectName">Project Name</Label>
+            <Input id="projectName" value={clientInfo.projectName} onChange={handleChange} placeholder="e.g., Residential House"/>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="projectLocation">Project Location</Label>
+            <Input id="projectLocation" value={clientInfo.projectLocation} onChange={handleChange} placeholder="e.g., Karen, Nairobi" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contactPerson">Site Contact Person</Label>
+            <Input id="contactPerson" value={clientInfo.contactPerson} onChange={handleChange} placeholder="e.g., Site Foreman" />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="projectName">Project Name</Label>
-          <Input id="projectName" value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="e.g., Residential House"/>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="projectLocation">Project Location</Label>
-          <Input id="projectLocation" value={projectLocation} onChange={(e) => setProjectLocation(e.target.value)} placeholder="e.g., Karen, Nairobi" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="contactPerson">Site Contact Person</Label>
-          <Input id="contactPerson" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} placeholder="e.g., Site Foreman" />
-        </div>
-      </div>
-      <DialogFooter>
-        <DialogClose asChild>
-          <Button type="button" variant="secondary">Cancel</Button>
-        </DialogClose>
-        <Button onClick={handleGenerate}>Generate & Download</Button>
-      </DialogFooter>
-    </>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="secondary">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleGenerate}>Generate & Download</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
 
-export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCardProps) {
+export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedBreakdown }: ActionsCardProps) {
   const { toast } = useToast();
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
+  const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
   
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
@@ -394,7 +399,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
           [`Total beam length:`, `${roomCalcs.totalBeamLength.toFixed(2)} m`],
           [`Blocks:`, `${roomCalcs.totalBlocks} pcs`],
           [`Concrete volume (beams + topping):`, `${concreteCalcs.totalConcrete.toFixed(3)} m³`],
-          [`BRC (A98, ${brcCalcs.areaPerRoll} m² per sheet):`, `${brcCalcs.rollsNeeded} sheets`],
+          [`BRC (A98, ${brcCalcs.areaPerRoll} m² per roll):`, `${brcCalcs.rollsNeeded} rolls`],
           [`Cement:`, `${concreteCalcs.cementBags} bags (50 kg)`],
           [`Sand:`, `${concreteCalcs.sandTonnes.toFixed(2)} t — ${concreteCalcs.sandWheelbarrows} wheelbarrows`],
           [`Ballast:`, `${concreteCalcs.ballastTonnes.toFixed(2)} t — ${concreteCalcs.ballastWheelbarrows} wheelbarrows`],
@@ -427,7 +432,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
         ['Total blocks:', `${totals.totalBlocks} pcs`],
         ['Total beam length:', `${totals.totalBeamLength.toFixed(2)} m`],
         ['Total concrete:', `${totals.totalConcreteVolume.toFixed(3)} m³`],
-        ['Total BRC sheets:', `${totals.brc.rollsNeeded} sheets`],
+        ['Total BRC rolls:', `${totals.brc.rollsNeeded} rolls`],
         ['Total cement:', `${totals.totalCementBags} bags`],
         ['Total sand:', `${totals.totalSandTonnes.toFixed(2)} t — ${totals.totalSandWheelbarrows} wb`],
         ['Total ballast:', `${totals.totalBallastTonnes.toFixed(2)} t — ${totals.totalBallastWheelbarrows} wb`],
@@ -467,6 +472,102 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
 
     doc.save(`SI-LATECH-Breakdown-Report-${reportNumber}.pdf`);
     setBreakdownDialogOpen(false);
+  };
+  
+  const handleDownloadAggregatedBreakdown = (clientInfo: ClientInfo) => {
+    const doc = new jsPDF();
+    const reportDate = new Date().toLocaleDateString('en-GB');
+    const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
+    const primaryColor = '#2563EB';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(primaryColor);
+    doc.text('SI-LATECH CONSTRUCTION LTD', 14, 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text('Aggregated Beams & Blocks Breakdown', 14, 30);
+    
+    doc.setFontSize(10);
+    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 40);
+    doc.text(`Client: ${clientInfo.clientName}`, 14, 45);
+    doc.text(`Date: ${reportDate}`, 14, 50);
+
+    let currentY = 60;
+
+    aggregatedBreakdown.forEach(group => {
+        if (currentY > 240) {
+            doc.addPage();
+            currentY = 20;
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(primaryColor);
+        doc.text(`Room Size: ${group.shorter.toFixed(2)} m × ${group.longer.toFixed(2)} m — Count: ${group.roomCount} rooms`, 14, currentY);
+        currentY += 8;
+
+        const body = [
+            [`Beams:`, `${group.beamLengthEach.toFixed(2)} m × ${group.beamsPerRoom} beams × ${group.roomCount} rooms`],
+            [`Total beams (group):`, `${group.totalBeams} beams`],
+            [`Total beam length (group):`, `${group.totalBeamLength.toFixed(2)} m`],
+            [],
+            [`Blocks:`, `${group.blocksPerRoom} pcs × ${group.roomCount} rooms`],
+            [`Total blocks (group):`, `${group.totalBlocks} pcs`],
+        ];
+        
+        (doc as any).autoTable({
+            startY: currentY,
+            body: body,
+            theme: 'plain',
+            styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
+            columnStyles: {
+                0: { fontStyle: 'bold', cellWidth: 80 },
+                1: { cellWidth: 'auto' }
+            },
+        });
+        currentY = (doc as any).lastAutoTable.finalY;
+        doc.setDrawColor(200);
+        doc.line(14, currentY + 5, 196, currentY + 5);
+        currentY += 10;
+    });
+
+    if (currentY > 250) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT TOTALS', 14, currentY);
+    currentY += 7;
+
+    const totalBeams = aggregatedBreakdown.reduce((sum, g) => sum + g.totalBeams, 0);
+    const totalBeamLength = aggregatedBreakdown.reduce((sum, g) => sum + g.totalBeamLength, 0);
+    const totalBlocks = aggregatedBreakdown.reduce((sum, g) => sum + g.totalBlocks, 0);
+
+    const totalsBody = [
+        ['Total distinct room sizes:', `${aggregatedBreakdown.length}`],
+        ['Total beams (all groups):', `${totalBeams} beams`],
+        ['Total beam length (all):', `${totalBeamLength.toFixed(2)} m`],
+        ['Total blocks (all):', `${totalBlocks} pcs`],
+    ];
+
+    (doc as any).autoTable({
+        startY: currentY,
+        body: totalsBody,
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 1 },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 80 },
+            1: { cellWidth: 'auto' }
+        }
+    });
+
+    doc.save(`SI-LATECH-Aggregated-Report-${reportNumber}.pdf`);
+    setAggregatedDialogOpen(false);
   };
 
 
@@ -514,135 +615,149 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations }: ActionsCa
   }, [quoteState, toast]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline">Project Actions</CardTitle>
-        <CardDescription>
-          Generate documents, use AI to analyze plans, or get a quote.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-        
-        <Dialog open={isInvoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="secondary" className="w-full">
-              <Download /> Download Invoice
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <ClientInfoDialog onGenerateClick={handleDownloadInvoice} />
-          </DialogContent>
-        </Dialog>
-        
-        <Dialog open={isScheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full">
-              <List /> Material Schedule
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <ClientInfoDialog onGenerateClick={handleDownloadMaterialSchedule} />
-          </DialogContent>
-        </Dialog>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">Project Actions</CardTitle>
+          <CardDescription>
+            Generate documents, use AI to analyze plans, or get a quote.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <Button variant="secondary" className="w-full" onClick={() => setInvoiceDialogOpen(true)}>
+            <Download /> Download Invoice
+          </Button>
+          
+          <Button variant="outline" className="w-full" onClick={() => setScheduleDialogOpen(true)}>
+            <List /> Material Schedule
+          </Button>
 
-        <Dialog open={isBreakdownDialogOpen} onOpenChange={setBreakdownDialogOpen}>
+          <Button variant="outline" className="w-full" onClick={() => setBreakdownDialogOpen(true)}>
+              <FileDown /> Detailed Report
+          </Button>
+          
+          <Button variant="outline" className="w-full" onClick={() => setAggregatedDialogOpen(true)}>
+              <Warehouse /> Aggregated Report
+          </Button>
+
+          <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" className="w-full">
-                    <FileDown /> Breakdown Report
-                </Button>
+              <Button className="w-full">
+                <Upload /> Upload Plan (AI)
+              </Button>
             </DialogTrigger>
             <DialogContent>
-                <ClientInfoDialog onGenerateClick={handleDownloadBreakdownReport} />
+              <DialogHeader>
+                <DialogTitle>Analyze Building Plan</DialogTitle>
+                <DialogDescription>
+                  Upload a PDF or image of your building plan. Our AI will analyze
+                  it and automatically populate the room dimensions.
+                </DialogDescription>
+              </DialogHeader>
+              <form action={uploadFormAction} className="space-y-4">
+                <div className="grid w-full max-w-sm items-center gap-1.5">
+                  <Label htmlFor="planFile">Plan File</Label>
+                  <Input id="planFile" name="planFile" type="file" required accept=".pdf,image/*"/>
+                </div>
+                <DialogFooter>
+                  <DialogClose ref={uploadDialogCloseRef} asChild>
+                    <Button type="button" variant="secondary">Cancel</Button>
+                  </DialogClose>
+                  <SubmitButton>
+                    <Wand2 /> Analyze
+                  </SubmitButton>
+                </DialogFooter>
+              </form>
             </DialogContent>
-        </Dialog>
+          </Dialog>
+          
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="accent" className="w-full">
+                <FileText /> Generate Quote (AI)
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+               <form action={quoteFormAction}>
+                  <DialogHeader>
+                    <DialogTitle>Generate Monetary Quote</DialogTitle>
+                    <DialogDescription>
+                      Enter your region to get an AI-generated quote based on the
+                      calculated material quantities.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="my-4">
+                    <Label htmlFor="region">Region</Label>
+                    <Input id="region" name="region" placeholder="e.g., Nairobi, Kenya" required/>
+                    {quoteState?.error && <p className="text-sm text-destructive mt-1">{quoteState.error}</p>}
+                  </div>
+                  {/* Hidden inputs to pass totals */}
+                  <input type="hidden" name="blocks" value={totals.totalBlocks} />
+                  <input type="hidden" name="beamLength" value={totals.totalBeamLength} />
+                  <input type="hidden" name="concreteVolume" value={totals.totalConcreteVolume} />
+                  <input type="hidden" name="brcRolls" value={totals.brc.rollsNeeded} />
+                  <DialogFooter>
+                     <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                     <SubmitButton><Wand2/> Generate</SubmitButton>
+                  </DialogFooter>
+               </form>
+            </DialogContent>
+          </Dialog>
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="w-full">
-              <Upload /> Upload Plan (AI)
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Analyze Building Plan</DialogTitle>
-              <DialogDescription>
-                Upload a PDF or image of your building plan. Our AI will analyze
-                it and automatically populate the room dimensions.
-              </DialogDescription>
-            </DialogHeader>
-            <form action={uploadFormAction} className="space-y-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Label htmlFor="planFile">Plan File</Label>
-                <Input id="planFile" name="planFile" type="file" required accept=".pdf,image/*"/>
+          {/* Dialog to show quote result */}
+          <Dialog open={isQuoteResultOpen} onOpenChange={setQuoteResultOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Your Generated Quote</DialogTitle>
+                <DialogDescription>
+                  Here is the estimated quote based on your project details and region.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="my-4 rounded-md border bg-muted p-4">
+                <Textarea
+                    readOnly
+                    value={quoteState.data?.quote || 'No quote available.'}
+                    className="h-64 font-code text-sm"
+                />
               </div>
               <DialogFooter>
-                <DialogClose ref={uploadDialogCloseRef} asChild>
-                  <Button type="button" variant="secondary">Cancel</Button>
-                </DialogClose>
-                <SubmitButton>
-                  <Wand2 /> Analyze
-                </SubmitButton>
+                <Button onClick={() => setQuoteResultOpen(false)}>Close</Button>
               </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-        
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="accent" className="w-full xl:col-span-2">
-              <FileText /> Generate Quote (AI)
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-             <form action={quoteFormAction}>
-                <DialogHeader>
-                  <DialogTitle>Generate Monetary Quote</DialogTitle>
-                  <DialogDescription>
-                    Enter your region to get an AI-generated quote based on the
-                    calculated material quantities.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="my-4">
-                  <Label htmlFor="region">Region</Label>
-                  <Input id="region" name="region" placeholder="e.g., Nairobi, Kenya" required/>
-                  {quoteState?.error && <p className="text-sm text-destructive mt-1">{quoteState.error}</p>}
-                </div>
-                {/* Hidden inputs to pass totals */}
-                <input type="hidden" name="blocks" value={totals.totalBlocks} />
-                <input type="hidden" name="beamLength" value={totals.totalBeamLength} />
-                <input type="hidden" name="concreteVolume" value={totals.totalConcreteVolume} />
-                <input type="hidden" name="brcRolls" value={totals.brc.rollsNeeded} />
-                <DialogFooter>
-                   <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                   <SubmitButton><Wand2/> Generate</SubmitButton>
-                </DialogFooter>
-             </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
 
-        {/* Dialog to show quote result */}
-        <Dialog open={isQuoteResultOpen} onOpenChange={setQuoteResultOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Your Generated Quote</DialogTitle>
-              <DialogDescription>
-                Here is the estimated quote based on your project details and region.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="my-4 rounded-md border bg-muted p-4">
-              <Textarea
-                  readOnly
-                  value={quoteState.data?.quote || 'No quote available.'}
-                  className="h-64 font-code text-sm"
-              />
-            </div>
-            <DialogFooter>
-              <Button onClick={() => setQuoteResultOpen(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        </CardContent>
+      </Card>
 
-      </CardContent>
-    </Card>
+      <ClientInfoDialog
+        open={isInvoiceDialogOpen}
+        onOpenChange={setInvoiceDialogOpen}
+        onGenerateClick={handleDownloadInvoice}
+        title="Download Invoice"
+        description="Please fill in client details for the invoice."
+      />
+      <ClientInfoDialog
+        open={isScheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+        onGenerateClick={handleDownloadMaterialSchedule}
+        title="Download Material Schedule"
+        description="Please fill in client details for the schedule."
+      />
+      <ClientInfoDialog
+        open={isBreakdownDialogOpen}
+        onOpenChange={setBreakdownDialogOpen}
+        onGenerateClick={handleDownloadBreakdownReport}
+        title="Download Detailed Breakdown Report"
+        description="Please fill in client details for the report."
+      />
+       <ClientInfoDialog
+        open={isAggregatedDialogOpen}
+        onOpenChange={setAggregatedDialogOpen}
+        onGenerateClick={handleDownloadAggregatedBreakdown}
+        title="Download Aggregated Beams & Blocks Report"
+        description="Please fill in client details for the report."
+      />
+    </>
   );
 }

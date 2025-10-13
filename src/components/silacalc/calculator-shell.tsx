@@ -8,12 +8,14 @@ import type {
   RoomCalculation,
   ConcreteCalculation,
   BrcCalculation,
+  AggregatedRoomGroup,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
   calcRoomBlocksAndBeams,
   calcConcrete,
   calcBRC,
+  getAggregatedRoomBreakdown,
 } from '@/lib/calculator';
 import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
@@ -22,7 +24,7 @@ import { TotalsCard } from './totals-card';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-type PerRoomCalculation = {
+export type PerRoomCalculation = {
   room: Room;
   roomCalcs: RoomCalculation;
   concreteCalcs: ConcreteCalculation;
@@ -33,6 +35,7 @@ export function CalculatorShell() {
   const [rooms, setRooms] = useState<Room[]>([
     { id: '1', name: 'Living room', length: 5, width: 4.5 },
     { id: '2', name: 'Bedroom 1', length: 4, width: 3.8 },
+    { id: '3', name: 'Kitchen', length: 4.5, width: 5 },
   ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
 
@@ -79,6 +82,11 @@ export function CalculatorShell() {
     });
   }, [rooms, settings]);
 
+  const aggregatedBreakdown: AggregatedRoomGroup[] = useMemo(() => {
+    return getAggregatedRoomBreakdown(rooms, settings);
+  }, [rooms, settings]);
+
+
   const totals = useMemo(() => {
     const initialTotals = {
       totalArea: 0,
@@ -117,7 +125,13 @@ export function CalculatorShell() {
     <div className="container mx-auto max-w-7xl">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-          <ActionsCard totals={totals} setRooms={setRoomsFromPlan} perRoomCalculations={perRoomCalculations} />
+          <ActionsCard 
+            totals={totals} 
+            setRooms={setRoomsFromPlan} 
+            perRoomCalculations={perRoomCalculations}
+            aggregatedBreakdown={aggregatedBreakdown}
+            rooms={rooms}
+          />
           
           <div className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
