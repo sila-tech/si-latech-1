@@ -10,37 +10,6 @@ import {
 } from '@/ai/flows/generate-monetary-quote';
 import { z } from 'zod';
 
-const fileToDataURI = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('FileReader did not return a string.'));
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
-const readFileAsBuffer = (file: File): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result instanceof ArrayBuffer) {
-        resolve(Buffer.from(reader.result));
-      } else {
-        reject(new Error('Failed to read file as ArrayBuffer.'));
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
-  });
-};
-
-
 export type PlanUploadState = {
   message?: string;
   data?: PlanAnalysisUploadOutput;
@@ -63,7 +32,8 @@ export async function handlePlanUpload(
   }
 
   try {
-    const buffer = await readFileAsBuffer(file);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const planDataUri = `data:${file.type};base64,${buffer.toString('base64')}`;
 
     const result = await planAnalysisUpload({ planDataUri });
