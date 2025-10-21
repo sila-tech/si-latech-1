@@ -53,17 +53,16 @@ const planAnalysisUploadFlow = ai.defineFlow(
       model: googleAI.model('gemini-1.5-pro-latest'),
       prompt: [
           {
-            text: `You are an expert architect specializing in reading building plans.
+            text: `You are an expert architect specializing in reading building plans. Your task is to analyze the provided building plan and extract its structure in a detailed, organized manner.
 
-Your task is to analyze the provided building plan document (which could be an image or a PDF) and extract its structure in a detailed, organized manner.
-
-Follow these steps:
-1.  Identify each floor level shown in the plan (e.g., "Ground Floor", "First Floor", "Second Floor").
-2.  For each floor, identify every labeled room and carefully measure its internal dimensions (length and width) in meters. Assume standard architectural scales if not explicitly stated.
-3.  For each floor, also identify and count other significant features like balconies, verandas, or patios.
-4.  Structure the output with a list of floors. Each floor object should contain the floor's name, a list of its rooms with their dimensions, and a list of any other features found.
-
-Ensure the dimensions are as accurate as possible. If a room has an irregular shape, provide the main rectangular dimensions.
+CRITICAL INSTRUCTIONS:
+1.  **Detect Units**: First, determine if the dimensions are in meters or in feet and inches (e.g., 10' 4"). This is the most important step.
+2.  **Convert to Meters**: If dimensions are in feet and inches, you MUST convert them to meters. Use the conversion: 1 foot = 0.3048 meters, 1 inch = 0.0254 meters. The final output for length and width MUST be in meters.
+3.  **Extract Structure**:
+    *   Identify each floor level (e.g., "Ground Floor", "First Floor").
+    *   For each floor, identify every labeled room and find its internal dimensions (length and width).
+    *   For each floor, also identify and count other features like balconies, verandas, or patios.
+4.  **Output Format**: Structure the output as a JSON object that strictly follows the provided schema. Ensure all dimensions are accurate and represented in METERS. If a room has an irregular shape, provide the main rectangular dimensions.
 `,
           },
           {
