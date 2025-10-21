@@ -1,8 +1,8 @@
-
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
+import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -155,6 +155,10 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
   const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
   
+  const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
     const { totalBlocks, totalBeamLength } = totals;
@@ -570,6 +574,31 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     setAggregatedDialogOpen(false);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        setFilePreview(loadEvent.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+  };
+  
+  const handleUploadDialogChange = (open: boolean) => {
+    if (!open) {
+      // Reset form when dialog closes
+      setFilePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      // Also reset server action state if needed
+      // This is a bit trickier, might need a dedicated reset function if useActionState doesn't auto-reset
+    }
+    setUploadDialogOpen(open);
+  }
 
   const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, { message: '' });
   const [quoteState, quoteFormAction] = useActionState(handleGenerateQuote, { message: '' });
@@ -589,6 +618,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
         );
         setRooms(allRooms);
       }
+      handleUploadDialogChange(false);
       uploadDialogCloseRef.current?.click();
     }
     if (uploadState.error) {
@@ -644,13 +674,13 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
               <Warehouse /> Aggregated Report
           </Button>
 
-          <Dialog>
+          <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
             <DialogTrigger asChild>
               <Button className="w-full">
                 <Upload /> Upload Plan (AI)
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Analyze Building Plan</DialogTitle>
                 <DialogDescription>
@@ -659,9 +689,28 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
                 </DialogDescription>
               </DialogHeader>
               <form action={uploadFormAction} className="space-y-4">
+                {filePreview && (
+                  <div className="my-4 rounded-md border bg-muted p-2 max-h-[400px] overflow-auto">
+                    {filePreview.startsWith('data:image') ? (
+                       <Image src={filePreview} alt="Plan preview" width={550} height={300} className="w-full h-auto object-contain" />
+                    ) : (
+                      <object data={filePreview} type="application/pdf" width="100%" height="400px">
+                        <p>PDF preview is not available in your browser. You can still upload the file.</p>
+                      </object>
+                    )}
+                  </div>
+                )}
                 <div className="grid w-full max-w-sm items-center gap-1.5">
                   <Label htmlFor="planFile">Plan File</Label>
-                  <Input id="planFile" name="planFile" type="file" required accept=".pdf,image/*"/>
+                  <Input 
+                    id="planFile" 
+                    name="planFile" 
+                    type="file" 
+                    required 
+                    accept=".pdf,image/*"
+                    onChange={handleFileChange}
+                    ref={fileInputRef}
+                  />
                 </div>
                 <DialogFooter>
                   <DialogClose ref={uploadDialogCloseRef} asChild>
