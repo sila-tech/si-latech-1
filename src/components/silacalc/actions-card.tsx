@@ -32,7 +32,7 @@ import {
   FileDown,
   Warehouse,
 } from 'lucide-react';
-import { handlePlanUpload, handleGenerateQuote, QuoteState, PlanUploadState } from '@/lib/actions';
+import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation, AggregatedRoomGroup } from '@/lib/calculator';
@@ -169,13 +169,10 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
 
     const BLOCK_PRICE = 85;
     const BEAM_PRICE_PER_METER = 545;
-    const VAT_RATE = 0.16;
 
     const blocksTotal = totalBlocks * BLOCK_PRICE;
     const beamsTotal = totalBeamLength * BEAM_PRICE_PER_METER;
-    const subtotal = blocksTotal + beamsTotal;
-    const vat = subtotal * VAT_RATE;
-    const grandTotal = subtotal + vat;
+    const grandTotal = blocksTotal + beamsTotal;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
@@ -185,7 +182,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('Beam & Block Slab Quotation / Tax Invoice', 14, 30);
+    doc.text('Beam & Block Slab Quotation', 14, 30);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -193,7 +190,6 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     doc.text('Head Office: Juja, Kenya', 145, 20);
     doc.text('Tel: +254 741 557960', 145, 25);
     doc.text('Email: info@silatech.co.ke', 145, 30);
-    doc.text('VAT Registration No.: P051XXXXXXX', 145, 35);
 
     const invoiceToX = 14;
     const shipToX = 110;
@@ -227,10 +223,10 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     doc.text(`Due on Receipt`, metaX + 30, metaY + 10);
     doc.text(`${invoiceDate}`, metaX + 30, metaY + 15);
 
-    const tableColumn = ['DATE', 'DESCRIPTION', 'VAT', 'QTY', 'UNIT', 'RATE (KSH)', 'AMOUNT (KSH)'];
+    const tableColumn = ['DATE', 'DESCRIPTION', 'QTY', 'UNIT', 'RATE (KSH)', 'AMOUNT (KSH)'];
     const tableRows = [
-      [invoiceDate, 'Beam & Block Slab Works – Blocks', '16% S', totalBlocks, 'pcs', BLOCK_PRICE.toFixed(2), blocksTotal.toFixed(2)],
-      [invoiceDate, 'Flat Beams (in metres)', '16% S', totalBeamLength.toFixed(2), 'm', BEAM_PRICE_PER_METER.toFixed(2), beamsTotal.toFixed(2)],
+      [invoiceDate, 'Beam & Block Slab Works – Blocks', totalBlocks, 'pcs', BLOCK_PRICE.toFixed(2), blocksTotal.toFixed(2)],
+      [invoiceDate, 'Flat Beams (in metres)', totalBeamLength.toFixed(2), 'm', BEAM_PRICE_PER_METER.toFixed(2), beamsTotal.toFixed(2)],
     ];
 
     (doc as any).autoTable({
@@ -241,8 +237,8 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
       headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
       styles: { fontSize: 9 },
       columnStyles: {
+        4: { halign: 'right' },
         5: { halign: 'right' },
-        6: { halign: 'right' },
       }
     });
 
@@ -250,37 +246,14 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     const totalsX = 130;
     const totalsValueX = 200;
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('SUBTOTAL: ', totalsX, finalY + 10, { align: 'right' });
-    doc.text(`Ksh ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 10, { align: 'right' });
-    doc.text('VAT @16%: ', totalsX, finalY + 15, { align: 'right' });
-    doc.text(`Ksh ${vat.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 15, { align: 'right' });
     doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL: ', totalsX, finalY + 22, { align: 'right' });
-    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 22, { align: 'right' });
     
     doc.setFillColor(240,240,240);
-    doc.roundedRect(totalsX - 60, finalY + 27, 85, 10, 3, 3, 'F');
-    doc.text('BALANCE DUE: ', totalsX, finalY + 33, { align: 'right' });
-    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 33, { align: 'right' });
+    doc.roundedRect(totalsX - 60, finalY + 8, 85, 10, 3, 3, 'F');
+    doc.text('BALANCE DUE: ', totalsX, finalY + 14, { align: 'right' });
+    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 14, { align: 'right' });
 
-    finalY = finalY + 45;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
-    doc.text('VAT SUMMARY', 14, finalY);
-    (doc as any).autoTable({
-      head: [['RATE', 'VAT (Ksh)', 'NET (Ksh)']],
-      body: [['16%', vat.toFixed(2), subtotal.toFixed(2)]],
-      startY: finalY + 2,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 9 },
-      bodyStyles: { textColor: 50 },
-      tableWidth: 80,
-    });
-    
-    finalY = (doc as any).lastAutoTable.finalY;
+    finalY = finalY + 30;
 
     finalY = Math.max(finalY, finalY + 10);
     doc.setFont('helvetica', 'bold');
