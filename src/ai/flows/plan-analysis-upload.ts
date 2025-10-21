@@ -52,18 +52,20 @@ Ensure that the room dimensions are as accurate as possible.
 Output should be a JSON array of objects, where each object represents a room and contains the room's name, length, and width in meters.
 
 Example output:
-[
-  {
-    "name": "Living Room",
-    "length": 5.5,
-    "width": 4.2
-  },
-  {
-    "name": "Bedroom 1",
-    "length": 3.8,
-    "width": 3.0
-  }
-]
+{
+  "roomDimensions": [
+    {
+      "name": "Living Room",
+      "length": 5.5,
+      "width": 4.2
+    },
+    {
+      "name": "Bedroom 1",
+      "length": 3.8,
+      "width": 3.0
+    }
+  ]
+}
 `,
 });
 
