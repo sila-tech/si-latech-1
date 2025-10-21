@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const PlanAnalysisUploadInputSchema = z.object({
@@ -76,7 +77,15 @@ const planAnalysisUploadFlow = ai.defineFlow(
     outputSchema: PlanAnalysisUploadOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await ai.generate({
+      model: googleAI.model('gemini-pro-vision'),
+      prompt: await prompt.render({input}),
+      output: {
+        format: 'json',
+        schema: PlanAnalysisUploadOutputSchema,
+      },
+    });
+
     return output!;
   }
 );
