@@ -19,8 +19,13 @@ export interface CalculationDefaults {
   concreteMixRatioSand: number;
   concreteMixRatioBallast: number;
   wastagePercentage: number;
-  wheelbarrowVolume: number;
-  wheelbarrowsPerTonne: number;
+  wheelbarrowVolume: number; // Note: This is now for display/reference, not core calculation
+  wheelbarrowsPerTonne: number; // Note: This is now for display/reference, not core calculation
+  dryVolumeFactor: number;
+  cementBulkDensity: number;
+  sandBulkDensity: number;
+  aggregateBulkDensity: number;
+  cementBagWeight: number;
 }
 
 export interface RoomCalculation {
@@ -37,13 +42,13 @@ export interface RoomCalculation {
 
 export interface ConcreteCalculation {
   area: number;
-  beamsVolume: number;
-  toppingVolume: number;
-  totalConcrete: number;
+  wetVolume: number; // Was totalConcrete
+  dryVolume: number;
   cementBags: number;
   sandTonnes: number;
   ballastTonnes: number;
-  sandWheelbarrows: number;
+  // Kept for potential display, but not used in core calculation logic
+  sandWheelbarrows: number; 
   ballastWheelbarrows: number;
 }
 
@@ -79,11 +84,19 @@ export const DEFAULTS: CalculationDefaults = {
   toppingThickness: 0.05,
   brcRollLength: 48,
   brcRollWidth: 2.4,
+  // Mix ratio
   concreteMixRatioCement: 1,
   concreteMixRatioSand: 2,
-  concreteMixRatioBallast: 3,
+  concreteMixRatioBallast: 4, // Changed from 3 to 4 to match example
   wastagePercentage: 10,
-  wheelbarrowVolume: 0.065,
+  // New density & conversion factors from user spec
+  dryVolumeFactor: 1.54,
+  cementBulkDensity: 1440, // kg/m³
+  sandBulkDensity: 1600, // kg/m³
+  aggregateBulkDensity: 1500, // kg/m³
+  cementBagWeight: 50, // kg
+  // Kept for reference but not used in main calculation now
+  wheelbarrowVolume: 0.065, 
   wheelbarrowsPerTonne: 6,
 };
 
@@ -126,48 +139,67 @@ export function calcConcrete(
   const C = { ...DEFAULTS, ...opts };
   const area = roomCalc.length * roomCalc.width;
 
+  // Wet Volume Calculation
   const beamRibVolume = roomCalc.totalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
-  const totalConcreteVolume = beamRibVolume + toppingVolume;
+  const V_wet = beamRibVolume + toppingVolume;
+
+  // A. Assumptions & Inputs
+  const F_dry = C.dryVolumeFactor;
+  const pC = C.concreteMixRatioCement;
+  const pS = C.concreteMixRatioSand;
+  const pA = C.concreteMixRatioBallast;
+  const rho_c = C.cementBulkDensity;
+  const rho_s = C.sandBulkDensity;
+  const rho_a = C.aggregateBulkDensity;
+  const bag_kg = C.cementBagWeight;
+  const wastage_factor = 1 + (C.wastagePercentage / 100);
+
+  // B. Formulas
+  // 1. Dry Volume
+  const V_dry = V_wet * F_dry;
+
+  // 2. Total Parts
+  const totalParts = pC + pS + pA;
+  if (totalParts === 0) {
+    return {
+      area, wetVolume: V_wet, dryVolume: 0, cementBags: 0, sandTonnes: 0, ballastTonnes: 0, sandWheelbarrows: 0, ballastWheelbarrows: 0
+    };
+  }
+
+  // 3. Material Volumes (m³)
+  const V_cement = (pC / totalParts) * V_dry;
+  const V_sand = (pS / totalParts) * V_dry;
+  const V_agg = (pA / totalParts) * V_dry;
   
-  const wastageFactor = 1 + (C.wastagePercentage / 100);
+  // 4. Mass (kg) - before wastage
+  const m_cement = V_cement * rho_c;
+  const m_sand = V_sand * rho_s;
+  const m_agg = V_agg * rho_a;
 
-  const { 
-    concreteMixRatioCement, 
-    concreteMixRatioSand, 
-    concreteMixRatioBallast,
-    wheelbarrowVolume,
-    wheelbarrowsPerTonne,
-  } = C;
+  // 5. Apply Wastage
+  const m_cement_w = m_cement * wastage_factor;
+  const m_sand_w = m_sand * wastage_factor;
+  const m_agg_w = m_agg * wastage_factor;
 
-  const totalRatioParts = concreteMixRatioCement + concreteMixRatioSand + concreteMixRatioBallast;
-  const batchVolume = totalRatioParts * wheelbarrowVolume;
+  // 6. Convert to Purchase Units
+  const bags = bag_kg > 0 ? ceil(m_cement_w / bag_kg) : 0;
+  const sand_t = m_sand_w / 1000;
+  const agg_t = m_agg_w / 1000;
 
-  const bagsPerM3 = batchVolume > 0 ? (1 / batchVolume) * concreteMixRatioCement : 0;
-  const sandWBPerM3 = batchVolume > 0 ? (bagsPerM3 * concreteMixRatioSand) : 0;
-  const ballastWBPerM3 = batchVolume > 0 ? (bagsPerM3 * concreteMixRatioBallast) : 0;
+  // For display only
+  const sandWheelbarrows = ceil(sand_t * C.wheelbarrowsPerTonne);
+  const ballastWheelbarrows = ceil(agg_t * C.wheelbarrowsPerTonne);
 
-  const rawCementBags = totalConcreteVolume * bagsPerM3;
-  const rawSandWB = totalConcreteVolume * sandWBPerM3;
-  const rawBallastWB = totalConcreteVolume * ballastWBPerM3;
-
-  const cementBags = ceil(rawCementBags * wastageFactor);
-  const sandWheelbarrows = ceil(rawSandWB * wastageFactor);
-  const ballastWheelbarrows = ceil(rawBallastWB * wastageFactor);
-  
-  const sandTonnes = wheelbarrowsPerTonne > 0 ? sandWheelbarrows / wheelbarrowsPerTonne : 0;
-  const ballastTonnes = wheelbarrowsPerTonne > 0 ? ballastWheelbarrows / wheelbarrowsPerTonne : 0;
-  
   return { 
-    area, 
-    beamsVolume: beamRibVolume, 
-    toppingVolume, 
-    totalConcrete: totalConcreteVolume,
-    cementBags,
-    sandTonnes,
-    ballastTonnes,
-    sandWheelbarrows,
-    ballastWheelbarrows,
+    area,
+    wetVolume: V_wet,
+    dryVolume: V_dry,
+    cementBags: bags,
+    sandTonnes: sand_t,
+    ballastTonnes: agg_t,
+    sandWheelbarrows: sandWheelbarrows,
+    ballastWheelbarrows: ballastWheelbarrows
   };
 }
 

@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -94,7 +95,7 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
          <div className="flex items-center gap-2">
             <Beaker className="h-5 w-5 text-primary" />
             <div>
-                <div className="font-semibold">{concreteCalcs.totalConcrete.toFixed(3)}m³</div>
+                <div className="font-semibold">{concreteCalcs.wetVolume.toFixed(3)}m³</div>
                 <div className="text-muted-foreground">Concrete</div>
             </div>
          </div>

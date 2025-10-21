@@ -82,7 +82,7 @@ export function TotalsCard({ totals }: TotalsCardProps) {
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                  <span className="text-muted-foreground flex items-center gap-2">
-                    <Beaker className="w-4 h-4" /> Total Concrete
+                    <Beaker className="w-4 h-4" /> Total Wet Concrete
                 </span>
                 <span className="font-semibold">
                     {totalConcreteVolume.toFixed(3)} m³
@@ -95,11 +95,11 @@ export function TotalsCard({ totals }: TotalsCardProps) {
                 </li>
                 <li className="flex items-center justify-between">
                     <span className="text-muted-foreground">Sand</span>
-                    <span className="font-semibold">{totalSandTonnes.toFixed(3)} tonnes</span>
+                    <span className="font-semibold">{totalSandTonnes.toFixed(2)} tonnes</span>
                 </li>
                 <li className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Ballast</span>
-                    <span className="font-semibold">{totalBallastTonnes.toFixed(3)} tonnes</span>
+                    <span className="text-muted-foreground">Ballast / Aggregate</span>
+                    <span className="font-semibold">{totalBallastTonnes.toFixed(2)} tonnes</span>
                 </li>
             </ul>
         </div>

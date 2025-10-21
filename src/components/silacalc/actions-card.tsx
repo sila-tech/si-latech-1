@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -302,10 +303,10 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
     const tableRows = [
       ['Cement (50kg bags)', totalCementBags, 'bags', 'Includes 10% wastage'],
-      ['Sand', totalSandTonnes.toFixed(3), 'tonnes', 'Includes 10% wastage'],
-      ['Ballast', totalBallastTonnes.toFixed(3), 'tonnes', 'Includes 10% wastage'],
+      ['Sand', totalSandTonnes.toFixed(2), 'tonnes', 'Includes 10% wastage'],
+      ['Ballast / Coarse Aggregate', totalBallastTonnes.toFixed(2), 'tonnes', 'Includes 10% wastage'],
       ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total area of ${totals.totalArea.toFixed(2)} m²`],
-      ['Total Concrete Needed', totalConcreteVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+      ['Total Wet Concrete Volume', totalConcreteVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
     ];
 
     (doc as any).autoTable({
@@ -375,11 +376,11 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
           [`Beams:`, `${roomCalcs.shorter.toFixed(2)} m × ${roomCalcs.beamCount} beams`],
           [`Total beam length:`, `${roomCalcs.totalBeamLength.toFixed(2)} m`],
           [`Blocks:`, `${roomCalcs.totalBlocks} pcs`],
-          [`Concrete volume (beams + topping):`, `${concreteCalcs.totalConcrete.toFixed(3)} m³`],
+          [`Wet concrete volume:`, `${concreteCalcs.wetVolume.toFixed(3)} m³`],
           [`BRC (A98, ${brcCalcs.areaPerRoll.toFixed(2)} m² per roll):`, `${brcCalcs.rollsNeeded} rolls`],
           [`Cement:`, `${concreteCalcs.cementBags} bags (50 kg)`],
-          [`Sand:`, `${concreteCalcs.sandTonnes.toFixed(2)} t — ${concreteCalcs.sandWheelbarrows} wheelbarrows`],
-          [`Ballast:`, `${concreteCalcs.ballastTonnes.toFixed(2)} t — ${concreteCalcs.ballastWheelbarrows} wheelbarrows`],
+          [`Sand:`, `${concreteCalcs.sandTonnes.toFixed(2)} t`],
+          [`Ballast:`, `${concreteCalcs.ballastTonnes.toFixed(2)} t`],
       ];
       
       (doc as any).autoTable({
@@ -408,11 +409,11 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     const totalsBody = [
         ['Total blocks:', `${totals.totalBlocks} pcs`],
         ['Total beam length:', `${totals.totalBeamLength.toFixed(2)} m`],
-        ['Total concrete:', `${totals.totalConcreteVolume.toFixed(3)} m³`],
+        ['Total wet concrete:', `${totals.totalConcreteVolume.toFixed(3)} m³`],
         ['Total BRC rolls:', `${totals.brc.rollsNeeded} rolls`],
         ['Total cement:', `${totals.totalCementBags} bags`],
-        ['Total sand:', `${totals.totalSandTonnes.toFixed(2)} t — ${totals.totalSandWheelbarrows} wb`],
-        ['Total ballast:', `${totals.totalBallastTonnes.toFixed(2)} t — ${totals.totalBallastWheelbarrows} wb`],
+        ['Total sand:', `${totals.totalSandTonnes.toFixed(2)} t`],
+        ['Total ballast:', `${totals.totalBallastTonnes.toFixed(2)} t`],
     ];
 
     (doc as any).autoTable({

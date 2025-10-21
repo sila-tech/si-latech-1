@@ -92,11 +92,12 @@ export function CalculatorShell() {
       totalArea: 0,
       totalBlocks: 0,
       totalBeamLength: 0,
-      totalConcreteVolume: 0,
+      totalConcreteVolume: 0, // This will be total WET concrete
       totalCementBags: 0,
       totalSandTonnes: 0,
       totalBallastTonnes: 0,
-      totalSandWheelbarrows: 0,
+      // The wheelbarrow counts are illustrative and summed up.
+      totalSandWheelbarrows: 0, 
       totalBallastWheelbarrows: 0,
       wastagePercentage: settings.wastagePercentage,
     };
@@ -105,7 +106,7 @@ export function CalculatorShell() {
       acc.totalArea += p.concreteCalcs.area;
       acc.totalBlocks += p.roomCalcs.totalBlocks;
       acc.totalBeamLength += p.roomCalcs.totalBeamLength;
-      acc.totalConcreteVolume += p.concreteCalcs.totalConcrete;
+      acc.totalConcreteVolume += p.concreteCalcs.wetVolume;
       acc.totalCementBags += p.concreteCalcs.cementBags;
       acc.totalSandTonnes += p.concreteCalcs.sandTonnes;
       acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
@@ -115,6 +116,12 @@ export function CalculatorShell() {
     }, initialTotals);
     
     const brc = calcBRC(aggregated.totalArea, settings);
+
+    // Rounding totals for display
+    aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
+    aggregated.totalSandWheelbarrows = Math.ceil(aggregated.totalSandWheelbarrows);
+    aggregated.totalBallastWheelbarrows = Math.ceil(aggregated.totalBallastWheelbarrows);
+
 
     return {
       ...aggregated,

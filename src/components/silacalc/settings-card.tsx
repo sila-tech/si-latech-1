@@ -31,11 +31,17 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
     { key: 'blockWidth', label: 'Block Width (m)' },
     { key: 'beamSpacing', label: 'Beam Spacing (m)'},
     { key: 'toppingThickness', label: 'Topping Thickness (m)' },
-    { key: 'brcRollWidth', label: 'BRC Roll Width (m)' },
-    { key: 'brcRollLength', label: 'BRC Roll Length (m)' },
     { key: 'beamSectionW', label: 'Beam Section W (m)' },
     { key: 'beamSectionH', label: 'Beam Section H (m)' },
     { key: 'wastagePercentage', label: 'Wastage (%)' },
+    { key: 'dryVolumeFactor', label: 'Dry Volume Factor'},
+  ];
+
+  const densitySettings = [
+    { key: 'cementBulkDensity', label: 'Cement Density (kg/m³)' },
+    { key: 'sandBulkDensity', label: 'Sand Density (kg/m³)' },
+    { key: 'aggregateBulkDensity', label: 'Aggregate Density (kg/m³)' },
+    { key: 'cementBagWeight', label: 'Cement Bag Wt (kg)'},
   ];
   
   const concreteRatioSettings = [
@@ -44,9 +50,9 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
     { key: 'concreteMixRatioBallast', label: 'Ballast' },
   ];
 
-  const concreteMaterialSettings = [
-    { key: 'wheelbarrowVolume', label: 'Wheelbarrow Vol. (m³)'},
-    { key: 'wheelbarrowsPerTonne', label: 'Wheelbarrows per Tonne'},
+  const brcSettings = [
+    { key: 'brcRollWidth', label: 'BRC Roll Width (m)' },
+    { key: 'brcRollLength', label: 'BRC Roll Length (m)' },
   ];
 
   return (
@@ -86,7 +92,7 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
 
         <div>
           <Label className="text-base font-medium">Concrete Mix Ratio (by Volume)</Label>
-          <p className="text-xs text-muted-foreground mb-2">e.g., 1 Bag Cement : 2 Wheelbarrows Sand : 4 Wheelbarrows Ballast</p>
+          <p className="text-xs text-muted-foreground mb-2">e.g., 1 part Cement : 2 parts Sand : 4 parts Ballast</p>
           <div className="grid grid-cols-3 gap-x-2">
               {concreteRatioSettings.map(({ key, label }) => (
                 <div className="space-y-2" key={key}>
@@ -105,8 +111,10 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
           </div>
         </div>
 
+        <Separator />
+
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-          {concreteMaterialSettings.map(({ key, label }) => (
+          {densitySettings.map(({ key, label }) => (
             <div className="space-y-2" key={key}>
               <Label htmlFor={key} className="text-sm">
                 {label}
@@ -122,7 +130,33 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
                   )
                 }
                 min="0"
-                step="0.001"
+                step="1"
+                placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
+              />
+            </div>
+          ))}
+        </div>
+
+        <Separator />
+        
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+          {brcSettings.map(({ key, label }) => (
+            <div className="space-y-2" key={key}>
+              <Label htmlFor={key} className="text-sm">
+                {label}
+              </Label>
+              <Input
+                id={key}
+                type="number"
+                value={settings[key as keyof CalculationDefaults]}
+                onChange={(e) =>
+                  handleSettingChange(
+                    key as keyof CalculationDefaults,
+                    e.target.value
+                  )
+                }
+                min="0"
+                step="0.1"
                 placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
               />
             </div>
