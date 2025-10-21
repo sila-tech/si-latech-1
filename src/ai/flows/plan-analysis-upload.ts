@@ -16,7 +16,7 @@ const PlanAnalysisUploadInputSchema = z.object({
   planDataUri: z
     .string()
     .describe(
-      "A building plan, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A building plan (PDF or image), as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type PlanAnalysisUploadInput = z.infer<typeof PlanAnalysisUploadInputSchema>;
@@ -42,13 +42,20 @@ export async function planAnalysisUpload(input: PlanAnalysisUploadInput): Promis
   return planAnalysisUploadFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'planAnalysisUploadPrompt',
-  input: {schema: PlanAnalysisUploadInputSchema},
-  output: {schema: PlanAnalysisUploadOutputSchema},
-  prompt: `You are an expert architect specializing in reading building plans.
+const planAnalysisUploadFlow = ai.defineFlow(
+  {
+    name: 'planAnalysisUploadFlow',
+    inputSchema: PlanAnalysisUploadInputSchema,
+    outputSchema: PlanAnalysisUploadOutputSchema,
+  },
+  async ({ planDataUri }) => {
+    const { output } = await ai.generate({
+      model: googleAI.model('gemini-1.5-pro-latest'),
+      prompt: [
+          {
+            text: `You are an expert architect specializing in reading building plans.
 
-Your task is to analyze the provided building plan image and extract its structure in a detailed, organized manner.
+Your task is to analyze the provided building plan document (which could be an image or a PDF) and extract its structure in a detailed, organized manner.
 
 Follow these steps:
 1.  Identify each floor level shown in the plan (e.g., "Ground Floor", "First Floor", "Second Floor").
@@ -56,24 +63,15 @@ Follow these steps:
 3.  For each floor, also identify and count other significant features like balconies, verandas, or patios.
 4.  Structure the output with a list of floors. Each floor object should contain the floor's name, a list of its rooms with their dimensions, and a list of any other features found.
 
-Analyze the following building plan:
-
-Plan: {{media url=planDataUri}}
-
 Ensure the dimensions are as accurate as possible. If a room has an irregular shape, provide the main rectangular dimensions.
 `,
-});
-
-const planAnalysisUploadFlow = ai.defineFlow(
-  {
-    name: 'planAnalysisUploadFlow',
-    inputSchema: PlanAnalysisUploadInputSchema,
-    outputSchema: PlanAnalysisUploadOutputSchema,
-  },
-  async input => {
-    const {output} = await ai.generate({
-      model: googleAI.model('gemini-pro-vision'),
-      prompt: await prompt.render({input}),
+          },
+          {
+            media: {
+              url: planDataUri,
+            },
+          },
+        ],
       output: {
         format: 'json',
         schema: PlanAnalysisUploadOutputSchema,
