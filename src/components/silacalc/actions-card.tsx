@@ -583,8 +583,11 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
         title: 'Success',
         description: uploadState.message,
       });
-      if (uploadState.data?.roomDimensions) {
-        setRooms(uploadState.data.roomDimensions);
+      if (uploadState.data?.floors) {
+        const allRooms = uploadState.data.floors.flatMap(floor => 
+            floor.rooms.map(room => ({...room, name: `${floor.floorName} - ${room.name}`}))
+        );
+        setRooms(allRooms);
       }
       uploadDialogCloseRef.current?.click();
     }

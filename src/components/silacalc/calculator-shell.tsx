@@ -98,6 +98,7 @@ export function CalculatorShell() {
       totalBallastTonnes: 0,
       totalSandWheelbarrows: 0,
       totalBallastWheelbarrows: 0,
+      wastagePercentage: settings.wastagePercentage,
     };
 
     const aggregated = perRoomCalculations.reduce((acc, p) => {

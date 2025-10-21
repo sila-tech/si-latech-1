@@ -22,14 +22,20 @@ const PlanAnalysisUploadInputSchema = z.object({
 export type PlanAnalysisUploadInput = z.infer<typeof PlanAnalysisUploadInputSchema>;
 
 const PlanAnalysisUploadOutputSchema = z.object({
-  roomDimensions: z
-    .array(z.object({
+  floors: z.array(z.object({
+    floorName: z.string().describe('The name of the floor, e.g., "Ground Floor", "First Floor".'),
+    rooms: z.array(z.object({
       name: z.string().describe('The name of the room.'),
       length: z.number().describe('The length of the room in meters.'),
       width: z.number().describe('The width of the room in meters.'),
-    }))
-    .describe('An array of room dimensions extracted from the plan.'),
+    })).describe('An array of rooms with their dimensions found on this floor.'),
+    otherFeatures: z.array(z.object({
+        name: z.string().describe('The name of the feature, e.g., "Balcony", "Veranda".'),
+        count: z.number().describe('The number of instances of this feature.'),
+    })).describe('A list of other identified features on the floor.'),
+  })).describe('An array of floors identified in the plan.'),
 });
+
 export type PlanAnalysisUploadOutput = z.infer<typeof PlanAnalysisUploadOutputSchema>;
 
 export async function planAnalysisUpload(input: PlanAnalysisUploadInput): Promise<PlanAnalysisUploadOutput> {
@@ -40,33 +46,21 @@ const prompt = ai.definePrompt({
   name: 'planAnalysisUploadPrompt',
   input: {schema: PlanAnalysisUploadInputSchema},
   output: {schema: PlanAnalysisUploadOutputSchema},
-  prompt: `You are an expert architect specializing in reading building plans and extracting room dimensions.
+  prompt: `You are an expert architect specializing in reading building plans.
 
-You will use this information to identify the rooms in the plan, determine their dimensions (length and width in meters), and extract their labels.
+Your task is to analyze the provided building plan image and extract its structure in a detailed, organized manner.
 
-Analyze the following building plan and provide room dimensions.
+Follow these steps:
+1.  Identify each floor level shown in the plan (e.g., "Ground Floor", "First Floor", "Second Floor").
+2.  For each floor, identify every labeled room and carefully measure its internal dimensions (length and width) in meters. Assume standard architectural scales if not explicitly stated.
+3.  For each floor, also identify and count other significant features like balconies, verandas, or patios.
+4.  Structure the output with a list of floors. Each floor object should contain the floor's name, a list of its rooms with their dimensions, and a list of any other features found.
+
+Analyze the following building plan:
 
 Plan: {{media url=planDataUri}}
 
-Ensure that the room dimensions are as accurate as possible.
-
-Output should be a JSON array of objects, where each object represents a room and contains the room's name, length, and width in meters.
-
-Example output:
-{
-  "roomDimensions": [
-    {
-      "name": "Living Room",
-      "length": 5.5,
-      "width": 4.2
-    },
-    {
-      "name": "Bedroom 1",
-      "length": 3.8,
-      "width": 3.0
-    }
-  ]
-}
+Ensure the dimensions are as accurate as possible. If a room has an irregular shape, provide the main rectangular dimensions.
 `,
 });
 
