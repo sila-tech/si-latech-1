@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import {
@@ -33,7 +32,7 @@ import {
   FileDown,
   Warehouse,
 } from 'lucide-react';
-import { handlePlanUpload, handleGenerateQuote } from '@/lib/actions';
+import { handlePlanUpload, handleGenerateQuote, QuoteState, PlanUploadState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation, AggregatedRoomGroup } from '@/lib/calculator';
@@ -158,6 +157,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
   const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
@@ -403,7 +403,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
           [`Total beam length:`, `${roomCalcs.totalBeamLength.toFixed(2)} m`],
           [`Blocks:`, `${roomCalcs.totalBlocks} pcs`],
           [`Concrete volume (beams + topping):`, `${concreteCalcs.totalConcrete.toFixed(3)} m³`],
-          [`BRC (A98, ${brcCalcs.areaPerRoll} m² per roll):`, `${brcCalcs.rollsNeeded} rolls`],
+          [`BRC (A98, ${brcCalcs.areaPerRoll.toFixed(2)} m² per roll):`, `${brcCalcs.rollsNeeded} rolls`],
           [`Cement:`, `${concreteCalcs.cementBags} bags (50 kg)`],
           [`Sand:`, `${concreteCalcs.sandTonnes.toFixed(2)} t — ${concreteCalcs.sandWheelbarrows} wheelbarrows`],
           [`Ballast:`, `${concreteCalcs.ballastTonnes.toFixed(2)} t — ${concreteCalcs.ballastWheelbarrows} wheelbarrows`],
@@ -594,58 +594,39 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      // Also reset server action state if needed
-      // This is a bit trickier, might need a dedicated reset function if useActionState doesn't auto-reset
+      formRef.current?.reset();
     }
     setUploadDialogOpen(open);
   }
 
-  const [uploadState, uploadFormAction] = useActionState(handlePlanUpload, { message: '' });
-  const [quoteState, quoteFormAction] = useActionState(handleGenerateQuote, { message: '' });
-  
-  const uploadDialogCloseRef = useRef<HTMLButtonElement>(null);
+  const [quoteState, setQuoteState] = useState<QuoteState>({});
   const [isQuoteResultOpen, setQuoteResultOpen] = useState(false);
 
-  useEffect(() => {
-    if (uploadState.message && uploadState.data) {
-      toast({
-        title: 'Success',
-        description: uploadState.message,
-      });
-      if (uploadState.data?.floors) {
-        const allRooms = uploadState.data.floors.flatMap(floor => 
+  async function handleQuoteFormSubmit(formData: FormData) {
+    const result = await handleGenerateQuote(formData);
+    setQuoteState(result);
+    if (result.data) {
+        toast({ title: 'Success', description: result.message });
+        setQuoteResultOpen(true);
+    } else if (result.error) {
+        toast({ title: 'Quote Error', description: result.error, variant: 'destructive' });
+    }
+  }
+
+  async function handlePlanFormSubmit(formData: FormData) {
+    const result = await handlePlanUpload(formData);
+    if (result.data?.floors) {
+        const allRooms = result.data.floors.flatMap(floor => 
             floor.rooms.map(room => ({...room, name: `${floor.floorName} - ${room.name}`}))
         );
         setRooms(allRooms);
-      }
-      handleUploadDialogChange(false);
-      uploadDialogCloseRef.current?.click();
+        toast({ title: 'Success', description: result.message });
+        handleUploadDialogChange(false);
+    } else if (result.error) {
+        toast({ title: 'Upload Error', description: result.error, variant: 'destructive' });
     }
-    if (uploadState.error) {
-      toast({
-        title: 'Upload Error',
-        description: uploadState.error,
-        variant: 'destructive',
-      });
-    }
-  }, [uploadState, toast, setRooms]);
+  }
 
-  useEffect(() => {
-    if (quoteState.message && quoteState.data) {
-      toast({
-        title: 'Success',
-        description: quoteState.message,
-      });
-      setQuoteResultOpen(true);
-    }
-    if (quoteState.error) {
-      toast({
-        title: 'Quote Error',
-        description: quoteState.error,
-        variant: 'destructive',
-      });
-    }
-  }, [quoteState, toast]);
 
   return (
     <>
@@ -688,7 +669,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
                   it and automatically populate the room dimensions.
                 </DialogDescription>
               </DialogHeader>
-              <form action={uploadFormAction} className="space-y-4">
+              <form action={handlePlanFormSubmit} ref={formRef} className="space-y-4">
                 {filePreview && (
                   <div className="my-4 rounded-md border bg-muted p-2 max-h-[400px] overflow-auto">
                     {filePreview.startsWith('data:image') ? (
@@ -713,7 +694,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
                   />
                 </div>
                 <DialogFooter>
-                  <DialogClose ref={uploadDialogCloseRef} asChild>
+                  <DialogClose asChild>
                     <Button type="button" variant="secondary">Cancel</Button>
                   </DialogClose>
                   <SubmitButton>
@@ -731,7 +712,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
               </Button>
             </DialogTrigger>
             <DialogContent>
-               <form action={quoteFormAction}>
+               <form action={handleQuoteFormSubmit}>
                   <DialogHeader>
                     <DialogTitle>Generate Monetary Quote</DialogTitle>
                     <DialogDescription>

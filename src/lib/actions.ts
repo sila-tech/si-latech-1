@@ -6,7 +6,6 @@ import {
 } from '@/ai/flows/plan-analysis-upload';
 import {
   generateMonetaryQuote,
-  GenerateMonetaryQuoteInput,
 } from '@/ai/flows/generate-monetary-quote';
 import { z } from 'zod';
 
@@ -17,7 +16,6 @@ export type PlanUploadState = {
 };
 
 export async function handlePlanUpload(
-  prevState: PlanUploadState,
   formData: FormData
 ): Promise<PlanUploadState> {
   const file = formData.get('planFile') as File;
@@ -40,8 +38,9 @@ export async function handlePlanUpload(
     return { message: 'Plan analyzed successfully.', data: result };
   } catch (error) {
     console.error('Plan analysis failed:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return {
-      error: 'Failed to analyze the plan. Please try again with a different file.',
+      error: `Failed to analyze the plan. ${errorMessage}`,
     };
   }
 }
@@ -54,22 +53,21 @@ export type QuoteState = {
 
 const QuoteSchema = z.object({
   region: z.string().min(1, { message: 'Region is required.' }),
-  blocks: z.number(),
-  beamLength: z.number(),
-  concreteVolume: z.number(),
-  brcRolls: z.number(),
+  blocks: z.coerce.number(),
+  beamLength: z.coerce.number(),
+  concreteVolume: z.coerce.number(),
+  brcRolls: z.coerce.number(),
 });
 
 export async function handleGenerateQuote(
-  prevState: QuoteState,
   formData: FormData
 ): Promise<QuoteState> {
   const validatedFields = QuoteSchema.safeParse({
     region: formData.get('region'),
-    blocks: Number(formData.get('blocks')),
-    beamLength: Number(formData.get('beamLength')),
-    concreteVolume: Number(formData.get('concreteVolume')),
-    brcRolls: Number(formData.get('brcRolls')),
+    blocks: formData.get('blocks'),
+    beamLength: formData.get('beamLength'),
+    concreteVolume: formData.get('concreteVolume'),
+    brcRolls: formData.get('brcRolls'),
   });
 
   if (!validatedFields.success) {
