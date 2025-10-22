@@ -42,7 +42,7 @@ export type ProjectTotals = {
   totalBeamProfitValue: number;
   totalBlockCommission: number;
   totalProjectProfit: number;
-  lintelLength: number;
+  totalLintelLength: number; // This is the new field for lintel length.
   totalConcreteVolume: number;
   totalCementBags: number;
   totalSandTonnes: number;
@@ -74,7 +74,7 @@ export function CalculatorShell() {
     { id: '15', name: 'Lobby (Main)', length: 3.8, width: 1.0 },
   ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
-  const [lintelLength, setLintelLength] = useState<number>(0);
+  const [lintelLength, setLintelLength] = useState<number>(0); // This is from the AI analysis
 
 
   const addRoom = () => {
@@ -142,6 +142,11 @@ export function CalculatorShell() {
       totalBallastTonnes: 0,
       wastagePercentage: settings.wastagePercentage,
     };
+    
+    // Calculate total lintel length from current rooms
+    const totalLintelLength = rooms.reduce((sum, room) => {
+        return sum + 2 * (room.length + room.width);
+    }, 0);
 
     const aggregated = perRoomCalculations.reduce((acc, p) => {
       acc.totalArea += p.concreteCalcs.area;
@@ -165,8 +170,8 @@ export function CalculatorShell() {
 
     const brc = calcBRC(aggregated.totalArea, settings);
     
-    // Calculate lintel concrete
-    const lintel = calcLintelConcrete(lintelLength, settings);
+    // Calculate lintel concrete using the new per-room perimeter sum
+    const lintel = calcLintelConcrete(totalLintelLength, settings);
 
     // Rounding totals for display
     aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
@@ -174,10 +179,10 @@ export function CalculatorShell() {
     return {
       ...aggregated,
       brc,
-      lintelLength,
+      totalLintelLength,
       lintel,
     };
-  }, [perRoomCalculations, settings, lintelLength]);
+  }, [perRoomCalculations, settings, rooms]);
 
   return (
     <div className="container mx-auto max-w-7xl">
@@ -186,7 +191,7 @@ export function CalculatorShell() {
           <ActionsCard 
             totals={totals} 
             setRooms={setRoomsFromPlan}
-            setLintelLength={setLintelLength}
+            setLintelLength={setLintelLength} // This is now used for AI output, but main calc uses room data
             perRoomCalculations={perRoomCalculations}
             aggregatedBreakdown={aggregatedBreakdown}
             rooms={rooms}

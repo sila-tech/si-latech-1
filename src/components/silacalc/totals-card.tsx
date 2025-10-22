@@ -19,7 +19,7 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
     totalActualBeamLength,
     totalInvoiceBeamLength,
     totalProjectProfit,
-    lintelLength,
+    totalLintelLength,
     totalConcreteVolume,
     totalCementBags,
     totalSandTonnes,
@@ -108,7 +108,7 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
             </ul>
         </div>
         
-        {lintelLength > 0 && (
+        {totalLintelLength > 0 && (
           <>
             <Separator />
             <div className="space-y-2">
