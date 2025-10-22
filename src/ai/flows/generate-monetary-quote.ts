@@ -47,8 +47,8 @@ Region: ${input.region}
 
 Consider regional pricing variances when generating the quote. Include a breakdown of the costs for each material.
 
-Return the quote in a clear and concise format. Do NOT wrap the output in JSON.
-`,
+Return the quote in a clear and concise format.`,
+      output: { format: 'text' },
     });
     return text;
   }
