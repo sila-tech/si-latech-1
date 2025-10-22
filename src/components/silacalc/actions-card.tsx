@@ -365,49 +365,57 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
 
+    // Aggregate beams by length
+    const beamAggregates = new Map<number, number>();
+    perRoomCalculations.forEach(p => {
+        const length = p.roomCalcs.shorter;
+        const count = p.roomCalcs.actualBeamCount;
+        beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);
+    });
+
+    const tableColumn = ['BEAM LENGTH (m)', 'TOTAL PIECES'];
+    const tableRows = Array.from(beamAggregates.entries())
+        .sort((a, b) => a[0] - b[0]) // Sort by beam length
+        .map(([length, count]) => ([
+            length.toFixed(2),
+            count.toString()
+        ]));
+
+    const totalPieces = tableRows.reduce((sum, row) => sum + parseInt(row[1]), 0);
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('Promax Customization Order', 14, 22);
+    doc.text('Promax Manufacturing Order', 14, 22);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.text(`Project Name: ${clientInfo.projectName}`, 14, 32);
     doc.text(`Date: ${reportDate}`, 14, 37);
 
-    const tableColumn = ['ROOM NAME', 'BEAM LENGTH (m)', 'ACTUAL BEAM COUNT', 'TOTAL LENGTH (m)'];
-    const tableRows = perRoomCalculations.map(p => ([
-      p.room.name,
-      p.roomCalcs.shorter.toFixed(2),
-      p.roomCalcs.actualBeamCount,
-      p.roomCalcs.actualTotalBeamLength.toFixed(2)
-    ]));
-
     (doc as any).autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 45,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10 },
-      columnStyles: {
-        1: { halign: 'right' },
-        2: { halign: 'right' },
-        3: { halign: 'right' },
-      }
+        head: [tableColumn],
+        body: tableRows,
+        startY: 45,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 10 },
+        columnStyles: {
+            1: { halign: 'right' },
+        }
     });
 
     let finalY = (doc as any).lastAutoTable.finalY;
-    
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Actual Beam Length:', 14, finalY + 10);
-    doc.text(`${totals.totalActualBeamLength.toFixed(2)} m`, 196, finalY + 10, { align: 'right' });
+    doc.text('Total Beam Pieces:', 14, finalY + 10);
+    doc.text(`${totalPieces} pcs`, 196, finalY + 10, { align: 'right' });
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text('This breakdown is for manufacturing purposes only and contains the exact beam quantities to be supplied.', 14, finalY + 20);
+    doc.text('This breakdown is for manufacturing purposes and contains the exact beam quantities and lengths to be produced.', 14, finalY + 20);
 
     doc.save(`Promax-Breakdown-${reportNumber}.pdf`);
     setBreakdownDialogOpen(false);
@@ -678,9 +686,9 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
 
     const totalsBody = [
         ['Total 3x2 Pieces', `${totals.timber.total3x2pieces} pcs`],
-        ['Total 3x2 Length', `${totals.timber.total3x2m.toFixed(2)} m (${totals.timber.total3x2ft.toFixed(2)} ft)`],
+        ['Total 3x2 Length', `${totals.timber.total3x2m.toFixed(2)}m (${totals.timber.total3x2ft.toFixed(2)} ft)`],
         [],
-        ['Total 6x1 Length', `${totals.timber.total6x1m.toFixed(2)} m (${totals.timber.total6x1ft.toFixed(2)} ft)`],
+        ['Total 6x1 Length', `${totals.timber.total6x1m.toFixed(2)}m (${totals.timber.total6x1ft.toFixed(2)} ft)`],
         [],
         ['Total Props Required', `${totals.timber.totalProps} pcs`],
     ];
@@ -961,5 +969,3 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     </>
   );
 }
-
-    
