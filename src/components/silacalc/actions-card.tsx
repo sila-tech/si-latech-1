@@ -282,7 +282,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
-    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel, timber } = totals;
+    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel, timber, lintelSteel } = totals;
     
     const combinedCementBags = totalCementBags + lintel.cementBags;
     const combinedSandTonnes = totalSandTonnes + lintel.sandTonnes;
@@ -323,6 +323,8 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
       ['Ballast / Coarse Aggregate', combinedBallastTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
       ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total slab area of ${totals.totalArea.toFixed(2)} m²`],
       ['Total Wet Concrete Volume', combinedWetVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+      [`D${lintelSteel.longitudinal.diameter} Steel Bars`, lintelSteel.longitudinal.barsToOrder, 'pcs', `12m lengths for lintel longitudinals`],
+      [`D${lintelSteel.stirrups.diameter} Steel Bars`, lintelSteel.stirrups.barsToOrder, 'pcs', `12m lengths for lintel stirrups`],
       ['3x2 Timber', `${timber.total3x2m.toFixed(2)}m (${timber.total3x2ft.toFixed(2)} ft)`, 'length', `${timber.total3x2pieces} total pieces`],
       ['6x1 Timber', `${timber.total6x1m.toFixed(2)}m (${timber.total6x1ft.toFixed(2)} ft)`, 'length', 'For slab side shuttering'],
       ['Props', timber.totalProps, 'pcs', 'For supporting 3x2 timbers'],

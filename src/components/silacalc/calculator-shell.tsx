@@ -11,6 +11,7 @@ import type {
   AggregatedRoomGroup,
   LintelCalculation,
   TimberAndPropsCalculation,
+  LintelSteelCalculation,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
@@ -20,6 +21,7 @@ import {
   calcLintelConcrete,
   getAggregatedRoomBreakdown,
   calcTimberAndProps,
+  calcLintelSteel,
 } from '@/lib/calculator';
 import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
@@ -46,16 +48,13 @@ export type ProjectTotals = {
   totalBeamProfitValue: number;
   totalBlockCommission: number;
   totalProjectProfit: number;
-  totalLintelLength: number; // This is the new field for lintel length.
+  totalLintelLength: number;
   totalConcreteVolume: number;
   totalCementBags: number;
   totalSandTonnes: number;
   totalBallastTonnes: number;
   wastagePercentage: number;
-  brc: {
-    rollsNeeded: number;
-    areaPerRoll: number;
-  };
+  brc: BrcCalculation;
   lintel: LintelCalculation;
   timber: {
     total3x2pieces: number;
@@ -65,6 +64,7 @@ export type ProjectTotals = {
     total6x1ft: number;
     totalProps: number;
   };
+  lintelSteel: LintelSteelCalculation;
 };
 
 export function CalculatorShell() {
@@ -86,7 +86,7 @@ export function CalculatorShell() {
     { id: '15', name: 'Lobby (Main)', length: 3.8, width: 1.0 },
   ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
-  const [lintelLength, setLintelLength] = useState<number>(0); // This is from the AI analysis
+  const [lintelLength, setLintelLength] = useState<number>(0);
 
 
   const addRoom = () => {
@@ -149,7 +149,7 @@ export function CalculatorShell() {
       totalBeamProfitValue: 0,
       totalBlockCommission: 0,
       totalProjectProfit: 0,
-      totalConcreteVolume: 0, // This will be total WET concrete for SLAB
+      totalConcreteVolume: 0,
       totalCementBags: 0,
       totalSandTonnes: 0,
       totalBallastTonnes: 0,
@@ -164,7 +164,6 @@ export function CalculatorShell() {
       }
     };
     
-    // Calculate total lintel length from current rooms
     const totalLintelLength = rooms.reduce((sum, room) => {
         return sum + 2 * (room.length + room.width);
     }, 0);
@@ -179,12 +178,10 @@ export function CalculatorShell() {
       acc.totalSandTonnes += p.concreteCalcs.sandTonnes;
       acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
       
-      // Accumulate new profit fields
       acc.totalBeamProfitValue += p.roomCalcs.beamProfitValue;
       acc.totalBlockCommission += p.roomCalcs.blockCommission;
       acc.totalProjectProfit += p.roomCalcs.totalRoomProfit;
 
-      // Accumulate timber totals
       acc.timber.total3x2pieces += p.timberCalcs.pieces3x2;
       acc.timber.total3x2m += p.timberCalcs.total3x2m;
       acc.timber.total3x2ft += p.timberCalcs.total3x2ft;
@@ -196,17 +193,13 @@ export function CalculatorShell() {
     
     aggregated.totalProfitBeamLength = aggregated.totalInvoiceBeamLength - aggregated.totalActualBeamLength;
     
-    // Calculate total props
     if (settings.propSpacing > 0) {
       aggregated.timber.totalProps = Math.ceil(aggregated.timber.total3x2m / settings.propSpacing);
     }
 
     const brc = calcBRC(aggregated.totalArea, settings);
-    
-    // Calculate lintel concrete using the new per-room perimeter sum
     const lintel = calcLintelConcrete(totalLintelLength, settings);
-
-    // Rounding totals for display
+    const lintelSteel = calcLintelSteel(totalLintelLength, settings);
     aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
 
     return {
@@ -214,6 +207,7 @@ export function CalculatorShell() {
       brc,
       totalLintelLength,
       lintel,
+      lintelSteel,
     };
   }, [perRoomCalculations, settings, rooms]);
 
@@ -224,7 +218,7 @@ export function CalculatorShell() {
           <ActionsCard 
             totals={totals} 
             setRooms={setRoomsFromPlan}
-            setLintelLength={setLintelLength} // This is now used for AI output, but main calc uses room data
+            setLintelLength={setLintelLength}
             perRoomCalculations={perRoomCalculations}
             aggregatedBreakdown={aggregatedBreakdown}
             rooms={rooms}

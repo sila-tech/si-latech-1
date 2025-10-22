@@ -48,6 +48,17 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
     { key: 'propSpacing', label: 'Prop Spacing (m)' },
   ];
 
+  const steelSettings = [
+      { key: 'num_longitudinal', label: '# Longitudinal Bars'},
+      { key: 'dia_longitudinal', label: 'Longitudinal Ø (mm)'},
+      { key: 'dia_stirrup', label: 'Stirrup Ø (mm)'},
+      { key: 'stirrup_spacing', label: 'Stirrup Spacing (m)'},
+      { key: 'cover', label: 'Concrete Cover (m)'},
+      { key: 'hook_length', label: 'Hook Length (m)'},
+      { key: 'steel_wastage_pct', label: 'Steel Wastage (%)'},
+      { key: 'standard_bar_length', label: 'Std Bar Length (m)'},
+  ];
+
   const densitySettings = [
     { key: 'cementBulkDensity', label: 'Cement Density (kg/m³)' },
     { key: 'sandBulkDensity', label: 'Sand Density (kg/m³)' },
@@ -126,6 +137,28 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
               </div>
             ))}
           </div>
+        </div>
+
+        <Separator />
+
+        <div>
+            <Label className="text-base font-medium">Lintel Steel</Label>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-2">
+                {steelSettings.map(({ key, label }) => (
+                    <div className="space-y-2" key={key}>
+                        <Label htmlFor={key} className="text-sm">{label}</Label>
+                        <Input
+                            id={key}
+                            type="number"
+                            value={settings[key as keyof CalculationDefaults]}
+                            onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
+                            min="0"
+                            step={key.includes('dia') || key.includes('num') ? "1" : "0.01"}
+                            placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
+                        />
+                    </div>
+                ))}
+            </div>
         </div>
 
         <Separator />

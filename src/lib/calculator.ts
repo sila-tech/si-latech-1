@@ -30,10 +30,18 @@ export interface CalculationDefaults {
   blockCommissionRate: number;
   lintelHeight: number;
   lintelWidth: number;
-  // New Timber and Props settings
   timber3x2Spacing: number;
   timber6x1PerimeterMultiplier: number;
   propSpacing: number;
+  // Lintel Steel
+  num_longitudinal: number;
+  dia_longitudinal: number;
+  dia_stirrup: number;
+  stirrup_spacing: number;
+  cover: number;
+  hook_length: number;
+  steel_wastage_pct: number;
+  standard_bar_length: number;
 }
 
 export interface RoomCalculation {
@@ -54,7 +62,6 @@ export interface RoomCalculation {
   invoiceTotalBeamLength: number;
   profitBeamLength: number;
   
-  // New Profit Fields
   beamProfitValue: number;
   blockCommission: number;
   totalRoomProfit: number;
@@ -62,12 +69,11 @@ export interface RoomCalculation {
 
 export interface ConcreteCalculation {
   area: number;
-  wetVolume: number; // Was totalConcrete
+  wetVolume: number; 
   dryVolume: number;
   cementBags: number;
   sandTonnes: number;
   ballastTonnes: number;
-  // Kept for potential display, but not used in core calculation logic
   sandWheelbarrows: number; 
   ballastWheelbarrows: number;
 }
@@ -78,7 +84,6 @@ export interface BrcCalculation {
   metresOfBRC: number;
 }
 
-// New type for Lintel Calculations
 export interface LintelCalculation {
     totalLintelLength: number;
     crossSectionalArea: number;
@@ -95,7 +100,6 @@ export interface LintelCalculation {
     ballastTonnes: number;
 }
 
-// New type for Timber and Props
 export interface TimberAndPropsCalculation {
   pieces3x2: number;
   lengthEach3x2: number;
@@ -106,8 +110,6 @@ export interface TimberAndPropsCalculation {
   total6x1ft: number;
 }
 
-
-// New type for aggregated breakdown
 export interface AggregatedRoomGroup {
   sizeKey: string;
   shorter: number;
@@ -119,6 +121,34 @@ export interface AggregatedRoomGroup {
   totalBeamLength: number;
   blocksPerRoom: number;
   totalBlocks: number;
+}
+
+export interface LintelSteelBarCalculation {
+    diameter: number;
+    unitWeight: number;
+    linearMetersRequired: number;
+    linearMetersWithWastage: number;
+    massRequired: number;
+    massWithWastage: number;
+    barsToOrder: number;
+    orderedLength: number;
+    orderedMass: number;
+    leftoverLength: number;
+}
+
+export interface LintelSteelCalculation {
+    longitudinal: LintelSteelBarCalculation;
+    stirrups: LintelSteelBarCalculation & {
+        count: number;
+        lengthEach: number;
+    };
+    totals: {
+        lm_with_waste: number;
+        kg_with_waste: number;
+        ordered_kg: number;
+        total_bars_ordered: number;
+        total_leftover_length: number;
+    };
 }
 
 
@@ -133,28 +163,33 @@ export const DEFAULTS: CalculationDefaults = {
   toppingThickness: 0.05,
   brcRollLength: 48,
   brcRollWidth: 2.4,
-  // Mix ratio
   concreteMixRatioCement: 1,
   concreteMixRatioSand: 2,
-  concreteMixRatioBallast: 4, // Changed from 3 to 4 to match example
+  concreteMixRatioBallast: 4,
   wastagePercentage: 10,
-  // New density & conversion factors from user spec
   dryVolumeFactor: 1.54,
-  cementBulkDensity: 1440, // kg/m³
-  sandBulkDensity: 1600, // kg/m³
-  aggregateBulkDensity: 1500, // kg/m³
-  cementBagWeight: 50, // kg
-  // Kept for reference but not used in main calculation now
+  cementBulkDensity: 1440, 
+  sandBulkDensity: 1600, 
+  aggregateBulkDensity: 1500, 
+  cementBagWeight: 50, 
   wheelbarrowVolume: 0.065, 
   wheelbarrowsPerTonne: 6,
   profitBeamsPerRoom: 2,
-  blockCommissionRate: 10, // KSh per block
-  lintelHeight: 0.4,
-  lintelWidth: 0.2,
-  // Timber & Props
+  blockCommissionRate: 10, 
+  lintelHeight: 0.2, // Swapped to match example
+  lintelWidth: 0.4, // Swapped to match example
   timber3x2Spacing: 0.6,
   timber6x1PerimeterMultiplier: 6,
   propSpacing: 0.6,
+  // Lintel Steel Defaults
+  num_longitudinal: 4,
+  dia_longitudinal: 12,
+  dia_stirrup: 8,
+  stirrup_spacing: 0.20,
+  cover: 0.03,
+  hook_length: 0.10,
+  steel_wastage_pct: 5,
+  standard_bar_length: 12.0,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -185,7 +220,6 @@ export function calcRoomBlocksAndBeams(
   const invoiceTotalBeamLength = invoiceBeamCount * shorter;
   const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
 
-  // New profit calculations
   const beamProfitValue = profitBeamLength * beamPricePerMeter;
   const blockCommission = totalBlocks * C.blockCommissionRate;
   const totalRoomProfit = beamProfitValue + blockCommission;
@@ -218,12 +252,10 @@ export function calcConcrete(
   const C = { ...DEFAULTS, ...opts };
   const area = roomCalc.length * roomCalc.width;
 
-  // Wet Volume Calculation - Should be based on ACTUAL beams supplied
   const beamRibVolume = roomCalc.actualTotalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
   const V_wet = beamRibVolume + toppingVolume;
 
-  // A. Assumptions & Inputs
   const F_dry = C.dryVolumeFactor;
   const pC = C.concreteMixRatioCement;
   const pS = C.concreteMixRatioSand;
@@ -234,11 +266,8 @@ export function calcConcrete(
   const bag_kg = C.cementBagWeight;
   const wastage_factor = 1 + (C.wastagePercentage / 100);
 
-  // B. Formulas
-  // 1. Dry Volume
   const V_dry = V_wet * F_dry;
 
-  // 2. Total Parts
   const totalParts = pC + pS + pA;
   if (totalParts === 0) {
     return {
@@ -246,27 +275,22 @@ export function calcConcrete(
     };
   }
 
-  // 3. Material Volumes (m³)
   const V_cement = (pC / totalParts) * V_dry;
   const V_sand = (pS / totalParts) * V_dry;
   const V_agg = (pA / totalParts) * V_dry;
   
-  // 4. Mass (kg) - before wastage
   const m_cement = V_cement * rho_c;
   const m_sand = V_sand * rho_s;
   const m_agg = V_agg * rho_a;
 
-  // 5. Apply Wastage
   const m_cement_w = m_cement * wastage_factor;
   const m_sand_w = m_sand * wastage_factor;
   const m_agg_w = m_agg * wastage_factor;
 
-  // 6. Convert to Purchase Units
   const bags = bag_kg > 0 ? ceil(m_cement_w / bag_kg) : 0;
   const sand_t = m_sand_w / 1000;
   const agg_t = m_agg_w / 1000;
 
-  // For display only
   const sandWheelbarrows = ceil(sand_t * C.wheelbarrowsPerTonne);
   const ballastWheelbarrows = ceil(agg_t * C.wheelbarrowsPerTonne);
 
@@ -297,32 +321,25 @@ export function calcLintelConcrete(
         };
     }
     
-    // 4) Cross-sectional area & wet volume
     const crossSectionalArea = C.lintelHeight * C.lintelWidth;
     const wetVolume = totalLintelLength * crossSectionalArea;
-
-    // 5) Convert to dry volume
     const dryVolume = wetVolume * C.dryVolumeFactor;
     
-    // 6) Split V_dry by mix ratio
     const totalParts = C.concreteMixRatioCement + C.concreteMixRatioSand + C.concreteMixRatioBallast;
     
     const cementVolume = totalParts > 0 ? (C.concreteMixRatioCement / totalParts) * dryVolume : 0;
     const sandVolume = totalParts > 0 ? (C.concreteMixRatioSand / totalParts) * dryVolume : 0;
     const ballastVolume = totalParts > 0 ? (C.concreteMixRatioBallast / totalParts) * dryVolume : 0;
 
-    // 7) Convert volumes -> mass (kg)
     const cementMass = cementVolume * C.cementBulkDensity;
     const sandMass = sandVolume * C.sandBulkDensity;
     const ballastMass = ballastVolume * C.aggregateBulkDensity;
 
-    // 8) Apply wastage
     const wastageFactor = 1 + (C.wastagePercentage / 100);
     const cementMassWastage = cementMass * wastageFactor;
     const sandMassWastage = sandMass * wastageFactor;
     const ballastMassWastage = ballastMass * wastageFactor;
 
-    // 9) Convert to purchase units
     const cementBags = C.cementBagWeight > 0 ? ceil(cementMassWastage / C.cementBagWeight) : 0;
     const sandTonnes = sandMassWastage / 1000;
     const ballastTonnes = ballastMassWastage / 1000;
@@ -364,14 +381,12 @@ export function calcTimberAndProps(
   const shorter = Math.min(room.length, room.width);
   const longer = Math.max(room.length, room.width);
 
-  // 3x2 Timber Calculation
   const rows = C.timber3x2Spacing > 0 ? ceil(shorter / C.timber3x2Spacing) : 0;
-  const pieces3x2 = rows + 1; // pieces = rows + 1
+  const pieces3x2 = rows + 1;
   const lengthEach3x2 = longer;
   const total3x2m = pieces3x2 * lengthEach3x2;
   const total3x2ft = total3x2m * METERS_TO_FEET;
 
-  // 6x1 Timber Calculation
   const perimeter = 2 * (longer + shorter);
   const total6x1m = perimeter * C.timber6x1PerimeterMultiplier;
   const total6x1ft = total6x1m * METERS_TO_FEET;
@@ -387,10 +402,85 @@ export function calcTimberAndProps(
   };
 }
 
+const calcUnitWeight = (diameter: number) => 0.006165 * Math.pow(diameter, 2);
+
+export function calcLintelSteel(
+  totalLintelLength: number,
+  opts: Partial<CalculationDefaults> = {}
+): LintelSteelCalculation {
+  const C = { ...DEFAULTS, ...opts };
+  const wastageFactor = 1 + C.steel_wastage_pct / 100;
+  
+  // Longitudinal Bars
+  const w_long = calcUnitWeight(C.dia_longitudinal);
+  const lm_long = totalLintelLength * C.num_longitudinal;
+  const kg_long = lm_long * w_long;
+  const lm_long_w = lm_long * wastageFactor;
+  const kg_long_w = kg_long * wastageFactor;
+  const n_bars_long = C.standard_bar_length > 0 ? ceil(lm_long_w / C.standard_bar_length) : 0;
+  const ordered_length_long = n_bars_long * C.standard_bar_length;
+  const ordered_kg_long = ordered_length_long * w_long;
+
+  // Stirrups
+  const w_stirrup = calcUnitWeight(C.dia_stirrup);
+  const stirrups_count = C.stirrup_spacing > 0 ? ceil(totalLintelLength / C.stirrup_spacing) : 0;
+  const internal_width = C.lintelWidth - 2 * C.cover;
+  const internal_height = C.lintelHeight - 2 * C.cover;
+  const stirrup_perim = 2 * (internal_width + internal_height);
+  const stirrup_length = stirrup_perim + 2 * C.hook_length;
+  const lm_stirrup = stirrups_count * stirrup_length;
+  const kg_stirrup = lm_stirrup * w_stirrup;
+  const lm_stirrup_w = lm_stirrup * wastageFactor;
+  const kg_stirrup_w = kg_stirrup * wastageFactor;
+  const n_bars_stirrup = C.standard_bar_length > 0 ? ceil(lm_stirrup_w / C.standard_bar_length) : 0;
+  const ordered_length_stirrup = n_bars_stirrup * C.standard_bar_length;
+  const ordered_kg_stirrup = ordered_length_stirrup * w_stirrup;
+
+  const longitudinalResult: LintelSteelBarCalculation = {
+      diameter: C.dia_longitudinal,
+      unitWeight: w_long,
+      linearMetersRequired: lm_long,
+      linearMetersWithWastage: lm_long_w,
+      massRequired: kg_long,
+      massWithWastage: kg_long_w,
+      barsToOrder: n_bars_long,
+      orderedLength: ordered_length_long,
+      orderedMass: ordered_kg_long,
+      leftoverLength: ordered_length_long - lm_long_w,
+  };
+
+  const stirrupsResult: LintelSteelBarCalculation & { count: number, lengthEach: number } = {
+      diameter: C.dia_stirrup,
+      count: stirrups_count,
+      lengthEach: stirrup_length,
+      unitWeight: w_stirrup,
+      linearMetersRequired: lm_stirrup,
+      linearMetersWithWastage: lm_stirrup_w,
+      massRequired: kg_stirrup,
+      massWithWastage: kg_stirrup_w,
+      barsToOrder: n_bars_stirrup,
+      orderedLength: ordered_length_stirrup,
+      orderedMass: ordered_kg_stirrup,
+      leftoverLength: ordered_length_stirrup - lm_stirrup_w,
+  };
+  
+  return {
+      longitudinal: longitudinalResult,
+      stirrups: stirrupsResult,
+      totals: {
+        lm_with_waste: lm_long_w + lm_stirrup_w,
+        kg_with_waste: kg_long_w + kg_stirrup_w,
+        ordered_kg: ordered_kg_long + ordered_kg_stirrup,
+        total_bars_ordered: n_bars_long + n_bars_stirrup,
+        total_leftover_length: (ordered_length_long - lm_long_w) + (ordered_length_stirrup - lm_stirrup_w),
+      }
+  };
+}
+
+
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
 
-  // Dummy beam price, not used for final profit calcs but needed for function signature
   const BEAM_PRICE = 545; 
 
   rooms.forEach(room => {

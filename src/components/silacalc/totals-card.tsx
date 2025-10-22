@@ -28,6 +28,7 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
     brc,
     lintel,
     timber,
+    lintelSteel,
   } = totals;
   return (
     <Card className="sticky top-24">
@@ -134,6 +135,25 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
                   <li className="flex items-center justify-between">
                       <span className="text-muted-foreground">Ballast / Aggregate</span>
                       <span className="font-semibold">{lintel.ballastTonnes.toFixed(2)} tonnes</span>
+                  </li>
+              </ul>
+            </div>
+             <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-construction"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v-4"/><path d="M12 14v-4"/><path d="M7 14v-4"/><path d="M17 18v4"/><path d="M12 18v4"/><path d="M7 18v4"/></svg>
+                      Lintel Steel
+                  </span>
+              </div>
+              <ul className="space-y-1 pl-6 text-xs">
+                  <li className="flex items-center justify-between">
+                      <span className="text-muted-foreground">D{lintelSteel.longitudinal.diameter} Bars</span>
+                      <span className="font-semibold">{lintelSteel.longitudinal.barsToOrder} pcs</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                      <span className="text-muted-foreground">D{lintelSteel.stirrups.diameter} Bars (Stirrups)</span>
+                      <span className="font-semibold">{lintelSteel.stirrups.barsToOrder} pcs</span>
                   </li>
               </ul>
             </div>
