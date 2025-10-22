@@ -29,7 +29,7 @@ const PlanAnalysisUploadOutputSchema = z.object({
       width: z.number().describe('The width of the room in meters.'),
     })).describe('An array of rooms and other spaces (like verandas and lobbies) with their dimensions found on this floor.'),
   })).describe('An array of floors identified in the plan.'),
-  lintelLength: z.number().describe('The total length of the running beams (lintel) around the outer perimeter of the building in meters.'),
+  lintelLength: z.number().describe('The total length of the running beams (lintel) around all walls of the building in meters.'),
 });
 
 export type PlanAnalysisUploadOutput = z.infer<typeof PlanAnalysisUploadOutputSchema>;
@@ -58,8 +58,8 @@ CRITICAL INSTRUCTIONS:
     *   For each floor, identify EVERY labeled space and treat it as a "room". This includes primary rooms (e.g., "Bedroom"), as well as other features like "Veranda", "Lobby", "Patio", "Balcony", etc.
     *   For every one of these spaces, find its internal dimensions (length and width).
 4.  **Calculate Lintel Length**:
-    *   Identify the outer perimeter of the entire building structure shown on the plan.
-    *   Calculate the total length of this continuous outer perimeter. This value represents the total length of the lintel beam.
+    *   For every single room you identify, calculate its individual perimeter (2 * length + 2 * width).
+    *   Sum the perimeters of ALL identified rooms together. This final sum represents the total length of the lintel beam running along all internal and external walls.
     *   Return this value in meters as 'lintelLength'.
 5.  **Output Format**: Structure the output as a JSON object that strictly follows the provided schema. Ensure all dimensions are accurate and represented in METERS. If a space has an irregular shape, provide the main rectangular dimensions. Do not include features you cannot find dimensions for.
 `,
