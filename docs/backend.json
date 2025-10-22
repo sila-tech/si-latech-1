@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "Room": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Room",
+      "type": "object",
+      "description": "Represents a room with its dimensions and calculated material requirements within the SilaCalc application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the room."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the room (e.g., Living Room, Bedroom 1)."
+        },
+        "length": {
+          "type": "number",
+          "description": "Length of the room in meters."
+        },
+        "width": {
+          "type": "number",
+          "description": "Width of the room in meters."
+        },
+        "blocks": {
+          "type": "number",
+          "description": "Number of blocks required for the room."
+        },
+        "halfBlocks": {
+          "type": "number",
+          "description": "Number of half-blocks recommended for the room."
+        },
+        "beamLength": {
+          "type": "number",
+          "description": "Total length of beams required for the room in meters."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "length",
+        "width",
+        "blocks",
+        "beamLength"
+      ]
+    },
+    "Project": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Project",
+      "type": "object",
+      "description": "Represents a construction project, encompassing multiple rooms and overall material requirements.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the project."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the project."
+        },
+        "rooms": {
+          "type": "array",
+          "description": "References to Rooms. (Relationship: Project 1:N Room)",
+          "items": {
+            "type": "string"
+          }
+        },
+        "totalArea": {
+          "type": "number",
+          "description": "Total area of the project in square meters."
+        },
+        "totalBlocks": {
+          "type": "number",
+          "description": "Total number of blocks required for the project."
+        },
+        "totalBeamLength": {
+          "type": "number",
+          "description": "Total length of beams required for the project in meters."
+        },
+        "totalConcreteVolume": {
+          "type": "number",
+          "description": "Total volume of concrete required for the project in cubic meters."
+        },
+        "brcRollsNeeded": {
+          "type": "number",
+          "description": "Number of BRC rolls needed for the project."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "totalArea",
+        "totalBlocks",
+        "totalBeamLength",
+        "totalConcreteVolume",
+        "brcRollsNeeded"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/projects/{projectId}",
+        "definition": {
+          "entityName": "Project",
+          "schema": {
+            "$ref": "#/backend/entities/Project"
+          },
+          "description": "Stores project data, owned by the user. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns the project."
+            },
+            {
+              "name": "projectId",
+              "description": "The unique ID of the project."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to organize project and room data for the SilaCalc application, prioritizing security, scalability, and maintainability. It leverages path-based ownership for user-specific data and denormalization to ensure authorization independence. Projects and Rooms are stored under the user's ID to maintain data privacy and ownership. This structure facilitates secure list operations (QAPs) by ensuring that users can only access data within their designated paths and avoids the need for complex filtering in security rules.\n\nSpecifically, each user has their own collection of projects under `/users/{userId}/projects/{projectId}`. Each project then implicitly contains rooms. Even though the Project entity contains an array of room ID references, authorization rules are based on the parent-child relationship formed by this path. This structure avoids the need for `get()` calls in security rules when checking authorization, promoting Authorization Independence.\n\nThe `rooms` property in the Project entity is not used directly for security rules, but serves an organizational purpose. Security rules should focus on the path-based ownership established by `/users/{userId}/projects/{projectId}` to ensure proper access control."
+  }
+}
