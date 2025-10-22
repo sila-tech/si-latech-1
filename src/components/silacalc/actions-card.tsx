@@ -159,6 +159,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
 
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
@@ -588,8 +589,18 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     }
   }
 
-  async function handlePlanFormSubmit(formData: FormData) {
+  async function handlePlanFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmittingPlan(true);
+    
+    if (!formRef.current) {
+      setIsSubmittingPlan(false);
+      return;
+    };
+    
+    const formData = new FormData(formRef.current);
     const result = await handlePlanUpload(formData);
+    
     if (result.data?.floors) {
         const allRooms = result.data.floors.flatMap(floor => 
             floor.rooms.map(room => ({...room, name: `${floor.floorName} - ${room.name}`}))
@@ -600,6 +611,8 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     } else if (result.error) {
         toast({ title: 'Upload Error', description: result.error, variant: 'destructive' });
     }
+    
+    setIsSubmittingPlan(false);
   }
 
 
@@ -644,7 +657,7 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
                   it and automatically populate the room dimensions.
                 </DialogDescription>
               </DialogHeader>
-              <form action={handlePlanFormSubmit} ref={formRef} className="space-y-4">
+              <form onSubmit={handlePlanFormSubmit} ref={formRef} className="space-y-4">
                 {filePreview && (
                   <div className="my-4 rounded-md border bg-muted p-2 max-h-[400px] overflow-auto">
                     {filePreview.startsWith('data:image') ? (
@@ -672,9 +685,10 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
                   <DialogClose asChild>
                     <Button type="button" variant="secondary">Cancel</Button>
                   </DialogClose>
-                  <SubmitButton>
+                  <Button type="submit" disabled={isSubmittingPlan}>
+                    {isSubmittingPlan && <Loader2 className="mr-2 animate-spin" />}
                     <Wand2 /> Analyze
-                  </SubmitButton>
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
