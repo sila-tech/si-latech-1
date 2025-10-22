@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 import {z} from 'genkit';
 
 const PlanAnalysisUploadInputSchema = z.object({
@@ -46,6 +47,7 @@ const planAnalysisUploadFlow = ai.defineFlow(
   },
   async ({ planDataUri }) => {
     const { output } = await ai.generate({
+      model: googleAI.model('gemini-1.5-flash'),
       prompt: [
           {
             text: `You are an expert architect specializing in reading building plans. Your task is to analyze the provided building plan and extract its structure in a detailed, organized manner.
