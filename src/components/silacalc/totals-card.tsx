@@ -6,32 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Beaker, BrickWall, MoveHorizontal } from 'lucide-react';
+import { Beaker, BrickWall, MoveHorizontal, DollarSign } from 'lucide-react';
 import { Separator } from '../ui/separator';
+import type { ProjectTotals } from './calculator-shell';
 
-type TotalsCardProps = {
-  totals: {
-    totalArea: number;
-    totalBlocks: number;
-    totalBeamLength: number;
-    lintelLength: number;
-    totalConcreteVolume: number;
-    totalCementBags: number;
-    totalSandTonnes: number;
-    totalBallastTonnes: number;
-    wastagePercentage: number;
-    brc: {
-      rollsNeeded: number;
-      areaPerRoll: number;
-    };
-  };
-};
 
-export function TotalsCard({ totals }: TotalsCardProps) {
+export function TotalsCard({ totals }: { totals: ProjectTotals }) {
   const {
     totalArea,
     totalBlocks,
-    totalBeamLength,
+    totalActualBeamLength,
+    totalInvoiceBeamLength,
+    totalProfitValue,
     lintelLength,
     totalConcreteVolume,
     totalCementBags,
@@ -56,6 +42,15 @@ export function TotalsCard({ totals }: TotalsCardProps) {
           </div>
           <span className="font-bold text-lg">{totalArea.toFixed(2)} m²</span>
         </div>
+        
+        <div className="flex items-center justify-between rounded-lg border p-3 bg-green-950/70 border-green-500/20">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-6 h-6 text-green-400" />
+            <span className="font-medium text-green-300">Total Profit</span>
+          </div>
+          <span className="font-bold text-lg text-white">KSh {totalProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+        </div>
+
         <ul className="space-y-2 text-sm">
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
@@ -65,9 +60,15 @@ export function TotalsCard({ totals }: TotalsCardProps) {
           </li>
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
-              <MoveHorizontal className="w-4 h-4" /> Total Flat Beam Length
+              <MoveHorizontal className="w-4 h-4" /> Actual Beam Length
             </span>
-            <span className="font-semibold">{totalBeamLength.toFixed(2)} m</span>
+            <span className="font-semibold">{totalActualBeamLength.toFixed(2)} m</span>
+          </li>
+          <li className="flex items-center justify-between">
+            <span className="text-muted-foreground flex items-center gap-2">
+              <MoveHorizontal className="w-4 h-4 text-amber-500" /> Invoiced Beam Length
+            </span>
+            <span className="font-semibold text-amber-400">{totalInvoiceBeamLength.toFixed(2)} m</span>
           </li>
           {lintelLength > 0 && (
             <li className="flex items-center justify-between">

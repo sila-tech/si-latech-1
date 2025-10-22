@@ -30,6 +30,25 @@ export type PerRoomCalculation = {
   brcCalcs: BrcCalculation;
 };
 
+export type ProjectTotals = {
+  totalArea: number;
+  totalBlocks: number;
+  totalActualBeamLength: number;
+  totalInvoiceBeamLength: number;
+  totalProfitBeamLength: number;
+  totalProfitValue: number;
+  lintelLength: number;
+  totalConcreteVolume: number;
+  totalCementBags: number;
+  totalSandTonnes: number;
+  totalBallastTonnes: number;
+  wastagePercentage: number;
+  brc: {
+    rollsNeeded: number;
+    areaPerRoll: number;
+  };
+};
+
 export function CalculatorShell() {
   const [rooms, setRooms] = useState<Room[]>([
     { id: '1', name: 'Master Bedroom', length: 3.8, width: 3.8 },
@@ -100,41 +119,42 @@ export function CalculatorShell() {
   }, [rooms, settings]);
 
 
-  const totals = useMemo(() => {
+  const totals: ProjectTotals = useMemo(() => {
+    const BEAM_PRICE_PER_METER = 545; // TODO: Make configurable
+
     const initialTotals = {
       totalArea: 0,
       totalBlocks: 0,
-      totalBeamLength: 0,
+      totalActualBeamLength: 0,
+      totalInvoiceBeamLength: 0,
+      totalProfitBeamLength: 0,
+      totalProfitValue: 0,
       totalConcreteVolume: 0, // This will be total WET concrete
       totalCementBags: 0,
       totalSandTonnes: 0,
       totalBallastTonnes: 0,
-      // The wheelbarrow counts are illustrative and summed up.
-      totalSandWheelbarrows: 0, 
-      totalBallastWheelbarrows: 0,
       wastagePercentage: settings.wastagePercentage,
     };
 
     const aggregated = perRoomCalculations.reduce((acc, p) => {
       acc.totalArea += p.concreteCalcs.area;
       acc.totalBlocks += p.roomCalcs.totalBlocks;
-      acc.totalBeamLength += p.roomCalcs.totalBeamLength;
+      acc.totalActualBeamLength += p.roomCalcs.actualTotalBeamLength;
+      acc.totalInvoiceBeamLength += p.roomCalcs.invoiceTotalBeamLength;
       acc.totalConcreteVolume += p.concreteCalcs.wetVolume;
       acc.totalCementBags += p.concreteCalcs.cementBags;
       acc.totalSandTonnes += p.concreteCalcs.sandTonnes;
       acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
-      acc.totalSandWheelbarrows += p.concreteCalcs.sandWheelbarrows;
-      acc.totalBallastWheelbarrows += p.concreteCalcs.ballastWheelbarrows;
       return acc;
     }, initialTotals);
     
+    aggregated.totalProfitBeamLength = aggregated.totalInvoiceBeamLength - aggregated.totalActualBeamLength;
+    aggregated.totalProfitValue = aggregated.totalProfitBeamLength * BEAM_PRICE_PER_METER;
+
     const brc = calcBRC(aggregated.totalArea, settings);
 
     // Rounding totals for display
     aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
-    aggregated.totalSandWheelbarrows = Math.ceil(aggregated.totalSandWheelbarrows);
-    aggregated.totalBallastWheelbarrows = Math.ceil(aggregated.totalBallastWheelbarrows);
-
 
     return {
       ...aggregated,

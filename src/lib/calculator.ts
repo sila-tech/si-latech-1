@@ -25,6 +25,7 @@ export interface CalculationDefaults {
   sandBulkDensity: number;
   aggregateBulkDensity: number;
   cementBagWeight: number;
+  profitBeamsPerRoom: number;
 }
 
 export interface RoomCalculation {
@@ -32,11 +33,18 @@ export interface RoomCalculation {
   width: number;
   shorter: number;
   longer: number;
-  beamCount: number;
+  
+  actualBeamCount: number;
+  profitBeams: number;
+  invoiceBeamCount: number;
+
   beamSpaces: number; // This is the 'Rows' in the spec
   blocksPerBeamRow: number;
   totalBlocks: number;
-  totalBeamLength: number;
+  
+  actualTotalBeamLength: number;
+  invoiceTotalBeamLength: number;
+  profitBeamLength: number;
 }
 
 export interface ConcreteCalculation {
@@ -97,6 +105,7 @@ export const DEFAULTS: CalculationDefaults = {
   // Kept for reference but not used in main calculation now
   wheelbarrowVolume: 0.065, 
   wheelbarrowsPerTonne: 6,
+  profitBeamsPerRoom: 2,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -112,10 +121,17 @@ export function calcRoomBlocksAndBeams(
   const longer = Math.max(lengthMeters, widthMeters);
 
   const beamSpaces = longer > 0 && C.beamSpacing > 0 ? ceil(longer / C.beamSpacing) : 0;
-  const beamCount = beamSpaces > 0 ? beamSpaces + 1 : 0;
+  
+  const actualBeamCount = beamSpaces > 0 ? beamSpaces + 1 : 0;
+  const profitBeams = C.profitBeamsPerRoom;
+  const invoiceBeamCount = actualBeamCount + profitBeams;
+
   const blocksPerBeamRow = shorter > 0 && C.blockWidth > 0 ? ceil(shorter / C.blockWidth) : 0;
   const totalBlocks = beamSpaces * blocksPerBeamRow;
-  const totalBeamLength = beamCount * shorter;
+  
+  const actualTotalBeamLength = actualBeamCount * shorter;
+  const invoiceTotalBeamLength = invoiceBeamCount * shorter;
+  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
   
 
   return {
@@ -123,11 +139,15 @@ export function calcRoomBlocksAndBeams(
     width: widthMeters,
     shorter,
     longer,
-    beamCount,
+    actualBeamCount,
+    profitBeams,
+    invoiceBeamCount,
     beamSpaces, // rows
     blocksPerBeamRow,
     totalBlocks,
-    totalBeamLength,
+    actualTotalBeamLength,
+    invoiceTotalBeamLength,
+    profitBeamLength,
   };
 }
 
@@ -138,8 +158,8 @@ export function calcConcrete(
   const C = { ...DEFAULTS, ...opts };
   const area = roomCalc.length * roomCalc.width;
 
-  // Wet Volume Calculation
-  const beamRibVolume = roomCalc.totalBeamLength * C.beamSectionW * C.beamSectionH;
+  // Wet Volume Calculation - Should be based on ACTUAL beams supplied
+  const beamRibVolume = roomCalc.actualTotalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
   const V_wet = beamRibVolume + toppingVolume;
 
@@ -233,7 +253,7 @@ export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationD
       const { calcs, rooms: groupedRooms } = group;
       const roomCount = groupedRooms.length;
 
-      const beamsPerRoom = calcs.beamCount;
+      const beamsPerRoom = calcs.actualBeamCount;
       const beamLengthEach = calcs.shorter;
       const totalGroupBeams = beamsPerRoom * roomCount;
       const totalGroupBeamLength = totalGroupBeams * beamLengthEach;
