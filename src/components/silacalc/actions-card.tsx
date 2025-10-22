@@ -132,7 +132,8 @@ export function ActionsCard() {
   const { 
     rooms, 
     setRooms, 
-    setLintelLength, 
+    setLintelLength,
+    lintelLength, 
     settings,
     totals, 
     perRoomCalculations, 
