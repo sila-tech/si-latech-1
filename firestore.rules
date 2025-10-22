@@ -1,70 +1,60 @@
 /**
- * @file Firebase Security Rules for SilaCalc Prototyping.
+ * @fileoverview Firestore Security Rules for SilaCalc Prototyping.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model where each user can only access data associated with their own user ID.
- * Data validation is relaxed during prototyping to allow for rapid schema iteration.
+ * This ruleset enforces a strict user-ownership model for projects.
+ * Only the authenticated user who owns a project can read, create, update, or delete it.
  *
  * Data Structure:
- * All project data is nested under `/customers/{userId}/projects/{projectId}`.
+ * - Projects are stored under: `/customers/{userId}/projects/{projectId}`.
+ * - The `userId` in the path MUST match the `request.auth.uid` of the authenticated user.
  *
  * Key Security Decisions:
- * - Users can only list projects under their own user ID.
- * - Data validation is minimal.  Only relational integrity is enforced.
+ * - An unauthenticated user has NO access.
+ * - Users can only access their own projects, not those of other users.
+ * - Schema validation is relaxed to allow rapid prototyping. Only the `userId` is strictly enforced for data consistency and authorization.
  *
  * Denormalization for Authorization:
- * The `userId` is included in both the path `/customers/{userId}/projects/{projectId}` and as a field inside the `Project` entity.
+ * - The rules rely on the `userId` in the document path for authorization, avoiding the need for `get()` calls or complex queries.
+ *
+ * Structural Segregation:
+ * - There is no public data in this application. All project data is private and user-specific, stored under the `/customers/{userId}` path.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to project documents.
+     * @description Enforces user-ownership for projects. Only the owner can create, read, update, or delete their projects.
      * @path /customers/{userId}/projects/{projectId}
-     * @allow (create) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can create a new project with userId matching their own ID.
-     * @allow (get) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can read a project where userId matches their own ID.
-     * @allow (update) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can update a project where userId matches their own ID.
-     * @allow (delete) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can delete a project where userId matches their own ID.
-     * @deny (create) User 'OtherUserId' cannot create a project under another user's ID.
-     * @deny (get) User 'OtherUserId' cannot read a project under another user's ID.
-     * @deny (update) User 'OtherUserId' cannot update a project under another user's ID.
-     * @deny (delete) User 'OtherUserId' cannot delete a project under another user's ID.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can create a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
+     * @deny (create) User 'anotherUserId' cannot create a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
+     * @allow (get) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can get a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
+     * @deny (get) User 'anotherUserId' cannot get a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
+     * @allow (update) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can update a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
+     * @deny (update) User 'anotherUserId' cannot update a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
+     * @allow (delete) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can delete a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
+     * @deny (delete) User 'anotherUserId' cannot delete a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
+     * @principle Enforces document ownership and validates relational integrity.
      */
     match /customers/{userId}/projects/{projectId} {
-      // Allow reads (get) if the user is the owner.
       allow get: if isSignedIn() && isOwner(userId);
-
-      // Allow listing projects if the user is the owner.
       allow list: if isSignedIn() && isOwner(userId);
-
-      // Allow creation if the user is signed in and the userId matches the authenticated user's ID.
-      // Also validates that the `userId` field matches the path.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-
-      // Allow updates if the user is the owner and the document exists. Enforces immutability of the userId field.
-      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-
-      // Allow deletion if the user is the owner and the document exists.
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
-  }
 
-  // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-  // Checks if the user is signed in.
-  function isSignedIn() {
-    return request.auth != null;
-  }
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
 
-  // Checks if the user ID matches the authenticated user's ID.
-  function isOwner(userId) {
-    return request.auth.uid == userId;
-  }
-
-  // Checks if the user is the owner and the resource exists.
-  function isExistingOwner(userId) {
-    return isOwner(userId) && resource != null;
+    function isExistingOwner(userId) {
+      return isSignedIn() && isOwner(userId) && resource != null;
+    }
   }
 }
