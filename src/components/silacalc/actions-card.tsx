@@ -173,7 +173,8 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
 
     const blocksTotal = totalBlocks * BLOCK_PRICE;
     const beamsTotal = totalBeamLength * BEAM_PRICE_PER_METER;
-    const grandTotal = blocksTotal + beamsTotal;
+    const subtotal = blocksTotal + beamsTotal;
+    const grandTotal = subtotal; // No tax
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
@@ -649,9 +650,9 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
                     {filePreview.startsWith('data:image') ? (
                        <Image src={filePreview} alt="Plan preview" width={550} height={300} className="w-full h-auto object-contain" />
                     ) : (
-                      <object data={filePreview} type="application/pdf" width="100%" height="400px">
+                      <iframe src={filePreview} width="100%" height="400px" title="PDF Preview">
                         <p>PDF preview is not available in your browser. You can still upload the file.</p>
-                      </object>
+                      </iframe>
                     )}
                   </div>
                 )}
