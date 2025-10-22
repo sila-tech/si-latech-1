@@ -34,31 +34,16 @@ import {
   Warehouse,
   DollarSign,
   Hammer,
+  Sheet,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation, AggregatedRoomGroup, TimberAndPropsCalculation } from '@/lib/calculator';
-import type { ProjectTotals } from './calculator-shell';
+import type { Room, AggregatedRoomGroup } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-
-type PerRoomCalculation = {
-  room: Room;
-  roomCalcs: RoomCalculation;
-  concreteCalcs: ConcreteCalculation;
-  brcCalcs: BrcCalculation;
-  timberCalcs: TimberAndPropsCalculation;
-};
-
-type ActionsCardProps = {
-  rooms: Room[];
-  totals: ProjectTotals;
-  setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
-  setLintelLength: (length: number) => void;
-  perRoomCalculations: PerRoomCalculation[];
-  aggregatedBreakdown: AggregatedRoomGroup[];
-};
+import { useCalculator } from '@/context/calculator-context';
+import Link from 'next/link';
 
 type ClientInfo = {
   clientName: string;
@@ -142,13 +127,20 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
 };
 
 
-export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomCalculations, aggregatedBreakdown }: ActionsCardProps) {
+export function ActionsCard() {
+  const { 
+    rooms, 
+    setRooms, 
+    setLintelLength, 
+    totals, 
+    perRoomCalculations, 
+    aggregatedBreakdown 
+  } = useCalculator();
   const { toast } = useToast();
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
   const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
-  const [isProfitReportDialogOpen, setProfitReportDialogOpen] = useState(false);
   const [isTimberScheduleOpen, setTimberScheduleOpen] = useState(false);
   
   const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -516,113 +508,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.save(`SI-LATECH-Aggregated-Report-${reportNumber}.pdf`);
     setAggregatedDialogOpen(false);
   };
-  
-  const handleDownloadProfitReport = (clientInfo: ClientInfo) => {
-    const doc = new jsPDF();
-    const reportDate = new Date().toLocaleDateString('en-GB');
-    const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#16A34A'; // Green for profit
     
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(primaryColor);
-    doc.text('SI-LATECH INTERNAL PROFIT REPORT', 14, 22);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100);
-    doc.text(`Project: ${clientInfo.projectName}`, 14, 32);
-    doc.text(`Date: ${reportDate}`, 14, 37);
-
-    let currentY = 45;
-
-    perRoomCalculations.forEach((p, index) => {
-        const { room, roomCalcs } = p;
-
-        if (currentY > 240) { 
-            doc.addPage();
-            currentY = 20;
-        }
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(primaryColor);
-        doc.text(room.name, 14, currentY);
-        currentY += 7;
-
-        const body = [
-            ['Actual Beams', `${roomCalcs.actualBeamCount} × ${roomCalcs.shorter.toFixed(2)} m = ${roomCalcs.actualTotalBeamLength.toFixed(2)} m`],
-            ['Invoice Beams', `${roomCalcs.invoiceBeamCount} × ${roomCalcs.shorter.toFixed(2)} m = ${roomCalcs.invoiceTotalBeamLength.toFixed(2)} m`],
-            ['Profit Beams', `${roomCalcs.profitBeams} × ${roomCalcs.shorter.toFixed(2)} m = ${roomCalcs.profitBeamLength.toFixed(2)} m`],
-            ['Beam Profit', `KSh ${roomCalcs.beamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-            ['', ''], 
-            ['Blocks Supplied', `${roomCalcs.totalBlocks} pcs`],
-            ['Block Commission', `KSh ${roomCalcs.blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-            ['', ''], 
-            ['Room Profit', `KSh ${roomCalcs.totalRoomProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-        ];
-
-        (doc as any).autoTable({
-            startY: currentY,
-            body: body,
-            theme: 'plain',
-            styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 45 },
-                1: { cellWidth: 'auto', halign: 'right' }
-            },
-        });
-        
-        currentY = (doc as any).lastAutoTable.finalY;
-        
-        doc.setDrawColor(220); // Light gray line
-        doc.setLineDash([1, 1], 0);
-        doc.line(14, currentY + 4, 196, currentY + 4);
-        doc.setLineDash([], 0);
-        currentY += 10;
-    });
-
-    if (currentY > 250) { 
-        doc.addPage();
-        currentY = 20;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(primaryColor);
-    doc.text('PROJECT TOTALS', 14, currentY);
-    currentY += 10;
-
-    const totalsBody = [
-        ['Total Beam Profit', `KSh ${totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-        ['Total Block Commission', `KSh ${totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-    ];
-
-     (doc as any).autoTable({
-        startY: currentY,
-        body: totalsBody,
-        theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 1 },
-        columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 60 },
-            1: { cellWidth: 'auto', halign: 'right' }
-        },
-    });
-    currentY = (doc as any).lastAutoTable.finalY;
-
-    currentY += 5;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(232, 245, 233); // Light green background
-    doc.roundedRect(14, currentY, 182, 12, 3, 3, 'F');
-    doc.text('TOTAL PROJECT PROFIT', 20, currentY + 8);
-    doc.text(`KSh ${totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 196, currentY + 8, { align: 'right' });
-
-
-    doc.save(`Profit-Report-${reportNumber}.pdf`);
-    setProfitReportDialogOpen(false);
-  };
-  
   const handleDownloadTimberSchedule = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
     const reportDate = new Date().toLocaleDateString('en-GB');
@@ -811,11 +697,17 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
               <Warehouse /> Aggregated Report
           </Button>
 
+          <Button variant="outline" className="w-full text-green-600 border-green-600/50 hover:bg-green-100 hover:text-green-700" asChild>
+            <Link href="/profit">
+              <Sheet /> Internal Report
+            </Link>
+          </Button>
+
           
 
           <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
             <DialogTrigger asChild>
-              <Button className="w-full col-span-2 lg:col-span-3">
+              <Button className="w-full col-span-2 lg:col-span-1">
                 <Upload /> Upload Plan (AI)
               </Button>
             </DialogTrigger>
@@ -866,7 +758,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="accent" className="w-full col-span-2 lg:col-span-3">
+              <Button variant="accent" className="w-full col-span-2 lg:col-span-2">
                 <FileText /> Generate Quote (AI)
               </Button>
             </DialogTrigger>
@@ -949,13 +841,6 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
         onGenerateClick={handleDownloadAggregatedBreakdown}
         title="Download Aggregated Report"
         description="Please fill in client details for the report."
-      />
-       <ClientInfoDialog
-        open={isProfitReportDialogOpen}
-        onOpenChange={setProfitReportDialogOpen}
-        onGenerateClick={handleDownloadProfitReport}
-        title="Download Internal Profit Report"
-        description="Please fill in project details for the internal report."
       />
       <ClientInfoDialog
         open={isTimberScheduleOpen}

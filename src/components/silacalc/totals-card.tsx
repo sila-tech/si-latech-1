@@ -9,10 +9,11 @@ import {
 } from '@/components/ui/card';
 import { Beaker, BrickWall, MoveHorizontal, DollarSign, Hammer } from 'lucide-react';
 import { Separator } from '../ui/separator';
-import type { ProjectTotals } from './calculator-shell';
+import { useCalculator } from '@/context/calculator-context';
 
 
-export function TotalsCard({ totals }: { totals: ProjectTotals }) {
+export function TotalsCard() {
+  const { totals } = useCalculator();
   const {
     totalArea,
     totalBlocks,

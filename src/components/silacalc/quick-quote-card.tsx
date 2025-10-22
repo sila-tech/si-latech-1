@@ -16,12 +16,10 @@ import { Label } from '@/components/ui/label';
 import { Calculator, Wand2 } from 'lucide-react';
 import type { Room } from '@/lib/calculator';
 import { useToast } from '@/hooks/use-toast';
+import { useCalculator } from '@/context/calculator-context';
 
-type QuickQuoteCardProps = {
-  setRooms: (rooms: Room[]) => void;
-};
-
-export function QuickQuoteCard({ setRooms }: QuickQuoteCardProps) {
+export function QuickQuoteCard() {
+  const { setRooms } = useCalculator();
   const [area, setArea] = useState<number | ''>('');
   const { toast } = useToast();
 

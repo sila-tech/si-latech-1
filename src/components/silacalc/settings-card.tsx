@@ -12,13 +12,11 @@ import { Label } from '@/components/ui/label';
 import type { CalculationDefaults } from '@/lib/calculator';
 import { DEFAULTS } from '@/lib/calculator';
 import { Separator } from '../ui/separator';
+import { useCalculator } from '@/context/calculator-context';
 
-type SettingsCardProps = {
-  settings: CalculationDefaults;
-  setSettings: React.Dispatch<React.SetStateAction<CalculationDefaults>>;
-};
+export function SettingsCard() {
+  const { settings, setSettings } = useCalculator();
 
-export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
   const handleSettingChange = (
     key: keyof CalculationDefaults,
     value: string
