@@ -6,12 +6,83 @@ import Link from 'next/link';
 import { useCalculator } from '@/context/calculator-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Separator } from '@/components/ui/separator';
+import { withProtection } from '@/components/auth/with-protection';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 function ProfitReportPage() {
     const { perRoomCalculations, totals } = useCalculator();
+
+    const handleDownload = () => {
+        const doc = new jsPDF();
+        const reportDate = new Date().toLocaleDateString('en-GB');
+        const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
+        const primaryColor = '#10B981'; // Green
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(primaryColor);
+        doc.text('SI-LATECH - Internal Profit Report', 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Date: ${reportDate}`, 14, 30);
+        doc.text(`Report ID: ${reportNumber}`, 14, 35);
+        
+        // --- Summary Section ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor);
+        doc.text('Project Profit Summary', 14, 50);
+
+        (doc as any).autoTable({
+            startY: 55,
+            theme: 'plain',
+            body: [
+                ['Total Beam Profit', `KSh ${totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Total Block Commission', `KSh ${totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                [{ content: 'Total Project Profit', styles: { fontStyle: 'bold' } }, { content: `KSh ${totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold' } }],
+            ],
+            styles: { fontSize: 11, cellPadding: 2 },
+            columnStyles: {
+                1: { halign: 'right' }
+            }
+        });
+
+        // --- Per-Room Breakdown ---
+        let finalY = (doc as any).lastAutoTable.finalY;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor);
+        doc.text('Per-Room Breakdown', 14, finalY + 15);
+
+        const tableColumn = ['Room', 'Beam Profit (KSh)', 'Block Commission (KSh)', 'Total Room Profit (KSh)'];
+        const tableRows = perRoomCalculations.map(p => ([
+            `${p.room.name} (${p.room.width}m x ${p.room.length}m)`,
+            p.roomCalcs.beamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+            p.roomCalcs.blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+            p.roomCalcs.totalRoomProfit.toLocaleString('en-US', { minimumFractionDigits: 2 }),
+        ]));
+
+        (doc as any).autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: finalY + 20,
+            theme: 'grid',
+            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9 },
+            columnStyles: {
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right', fontStyle: 'bold' },
+            }
+        });
+        
+        doc.save(`Internal-Profit-Report-${reportNumber}.pdf`);
+    };
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -23,12 +94,17 @@ function ProfitReportPage() {
                             <h1 className="text-3xl font-bold tracking-tight font-headline">Internal Profit Report</h1>
                             <p className="text-muted-foreground">A detailed breakdown of profit margins for the current project.</p>
                         </div>
-                        <Button asChild variant="outline">
-                            <Link href="/">
-                                <ArrowLeft />
-                                Back to Calculator
-                            </Link>
-                        </Button>
+                        <div className="flex items-center gap-2">
+                           <Button onClick={handleDownload}>
+                                <Download /> Download PDF
+                           </Button>
+                           <Button asChild variant="outline">
+                                <Link href="/">
+                                    <ArrowLeft />
+                                    Back to Calculator
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
 
                     {perRoomCalculations.length > 0 ? (
@@ -110,4 +186,4 @@ function ProfitReportPage() {
     );
 }
 
-export default ProfitReportPage;
+export default withProtection(ProfitReportPage, 'Sila4927');
