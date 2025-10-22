@@ -78,7 +78,7 @@ export async function handleGenerateQuote(
 
   try {
     const result = await generateMonetaryQuote(validatedFields.data);
-    return { message: 'Quote generated successfully.', data: result };
+    return { message: 'Quote generated successfully.', data: { quote: result } };
   } catch (error) {
     console.error('Quote generation failed:', error);
     return {

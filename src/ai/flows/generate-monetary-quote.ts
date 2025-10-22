@@ -20,43 +20,36 @@ const GenerateMonetaryQuoteInputSchema = z.object({
 });
 export type GenerateMonetaryQuoteInput = z.infer<typeof GenerateMonetaryQuoteInputSchema>;
 
-const GenerateMonetaryQuoteOutputSchema = z.object({
-  quote: z.string().describe('The monetary quote, including a breakdown of costs.'),
-});
-export type GenerateMonetaryQuoteOutput = z.infer<typeof GenerateMonetaryQuoteOutputSchema>;
+// The output is now a simple string.
+export type GenerateMonetaryQuoteOutput = string;
 
 export async function generateMonetaryQuote(input: GenerateMonetaryQuoteInput): Promise<GenerateMonetaryQuoteOutput> {
   return generateMonetaryQuoteFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateMonetaryQuotePrompt',
-  input: {schema: GenerateMonetaryQuoteInputSchema},
-  output: {schema: GenerateMonetaryQuoteOutputSchema},
-  prompt: `You are a construction cost estimator. Based on the material quantities and the region provided, you will generate a monetary quote.
-
-Material Quantities:
-- Blocks: {{{blocks}}}
-- Beam Length: {{{beamLength}}} meters
-- Concrete Volume: {{{concreteVolume}}} cubic meters
-- BRC Rolls: {{{brcRolls}}}
-
-Region: {{{region}}}
-
-Consider regional pricing variances when generating the quote. Include a breakdown of the costs for each material.
-
-Return the quote in a clear and concise format.
-`,
-});
-
 const generateMonetaryQuoteFlow = ai.defineFlow(
   {
     name: 'generateMonetaryQuoteFlow',
     inputSchema: GenerateMonetaryQuoteInputSchema,
-    outputSchema: GenerateMonetaryQuoteOutputSchema,
+    outputSchema: z.string(), // Expect a raw string as output.
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const { text } = await ai.generate({
+      prompt: `You are a construction cost estimator. Based on the material quantities and the region provided, you will generate a monetary quote.
+
+Material Quantities:
+- Blocks: ${input.blocks}
+- Beam Length: ${input.beamLength} meters
+- Concrete Volume: ${input.concreteVolume} cubic meters
+- BRC Rolls: ${input.brcRolls}
+
+Region: ${input.region}
+
+Consider regional pricing variances when generating the quote. Include a breakdown of the costs for each material.
+
+Return the quote in a clear and concise format. Do NOT wrap the output in JSON.
+`,
+    });
+    return text;
   }
 );
