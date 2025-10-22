@@ -24,14 +24,10 @@ const PlanAnalysisUploadOutputSchema = z.object({
   floors: z.array(z.object({
     floorName: z.string().describe('The name of the floor, e.g., "Ground Floor", "First Floor".'),
     rooms: z.array(z.object({
-      name: z.string().describe('The name of the room.'),
+      name: z.string().describe('The name of the room. This includes primary rooms, verandas, lobbies, and other labeled spaces.'),
       length: z.number().describe('The length of the room in meters.'),
       width: z.number().describe('The width of the room in meters.'),
-    })).describe('An array of rooms with their dimensions found on this floor.'),
-    otherFeatures: z.array(z.object({
-        name: z.string().describe('The name of the feature, e.g., "Balcony", "Veranda".'),
-        count: z.number().describe('The number of instances of this feature.'),
-    })).describe('A list of other identified features on the floor.'),
+    })).describe('An array of rooms and other spaces (like verandas and lobbies) with their dimensions found on this floor.'),
   })).describe('An array of floors identified in the plan.'),
 });
 
@@ -56,11 +52,11 @@ const planAnalysisUploadFlow = ai.defineFlow(
 CRITICAL INSTRUCTIONS:
 1.  **Detect Units**: First, determine if the dimensions are in meters or in feet and inches (e.g., 10' 4"). This is the most important step.
 2.  **Convert to Meters**: If dimensions are in feet and inches, you MUST convert them to meters. Use the conversion: 1 foot = 0.3048 meters, 1 inch = 0.0254 meters. The final output for length and width MUST be in meters.
-3.  **Extract Structure**:
+3.  **Extract All Spaces as Rooms**:
     *   Identify each floor level (e.g., "Ground Floor", "First Floor").
-    *   For each floor, identify every labeled room and find its internal dimensions (length and width).
-    *   For each floor, also identify and count other features like balconies, verandas, or patios.
-4.  **Output Format**: Structure the output as a JSON object that strictly follows the provided schema. Ensure all dimensions are accurate and represented in METERS. If a room has an irregular shape, provide the main rectangular dimensions.
+    *   For each floor, identify EVERY labeled space and treat it as a "room". This includes primary rooms (e.g., "Bedroom"), as well as other features like "Veranda", "Lobby", "Patio", "Balcony", etc.
+    *   For every one of these spaces, find its internal dimensions (length and width).
+4.  **Output Format**: Structure the output as a JSON object that strictly follows the provided schema. Ensure all dimensions are accurate and represented in METERS. If a space has an irregular shape, provide the main rectangular dimensions. Do not include features you cannot find dimensions for.
 `,
           },
           {
