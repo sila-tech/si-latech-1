@@ -811,9 +811,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
               <Warehouse /> Aggregated Report
           </Button>
 
-          <Button variant="destructive" className="w-full" onClick={() => setProfitReportDialogOpen(true)}>
-              <DollarSign /> Profit Report
-          </Button>
+          
 
           <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
             <DialogTrigger asChild>
