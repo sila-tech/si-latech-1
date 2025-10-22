@@ -79,8 +79,8 @@ export function CalculatorShell() {
       {
         id: crypto.randomUUID(),
         name: `Room ${rooms.length + 1}`,
-        length: 4,
-        width: 3,
+        length: 0,
+        width: 0,
       },
     ]);
   };

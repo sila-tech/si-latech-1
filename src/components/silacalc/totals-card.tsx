@@ -18,7 +18,6 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
     totalBlocks,
     totalActualBeamLength,
     totalInvoiceBeamLength,
-    totalProjectProfit,
     totalLintelLength,
     totalConcreteVolume,
     totalCementBags,
@@ -47,14 +46,6 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
           <span className="font-bold text-lg">{totalArea.toFixed(2)} m²</span>
         </div>
         
-        <div className="flex items-center justify-between rounded-lg border p-3 bg-green-950/70 border-green-500/20">
-          <div className="flex items-center gap-3">
-            <DollarSign className="w-6 h-6 text-green-400" />
-            <span className="font-medium text-green-300">Total Project Profit</span>
-          </div>
-          <span className="font-bold text-lg text-white">KSh {totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-        </div>
-
         <ul className="space-y-2 text-sm">
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
