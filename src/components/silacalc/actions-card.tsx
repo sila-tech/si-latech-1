@@ -62,6 +62,7 @@ type ActionsCardProps = {
     brc: { rollsNeeded: number };
   };
   setRooms: (rooms: { name: string; length: number; width: number }[]) => void;
+  setLintelLength: (length: number) => void;
   perRoomCalculations: PerRoomCalculation[];
   aggregatedBreakdown: AggregatedRoomGroup[];
 };
@@ -148,7 +149,7 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
 };
 
 
-export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedBreakdown }: ActionsCardProps) {
+export function ActionsCard({ totals, setRooms, setLintelLength, perRoomCalculations, aggregatedBreakdown }: ActionsCardProps) {
   const { toast } = useToast();
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -601,11 +602,16 @@ export function ActionsCard({ totals, setRooms, perRoomCalculations, aggregatedB
     const formData = new FormData(formRef.current);
     const result = await handlePlanUpload(formData);
     
-    if (result.data?.floors) {
-        const allRooms = result.data.floors.flatMap(floor => 
-            floor.rooms.map(room => ({...room, name: `${floor.floorName} - ${room.name}`}))
-        );
-        setRooms(allRooms);
+    if (result.data) {
+        if (result.data.floors) {
+          const allRooms = result.data.floors.flatMap(floor => 
+              floor.rooms.map(room => ({...room, name: `${floor.floorName} - ${room.name}`}))
+          );
+          setRooms(allRooms);
+        }
+        if (result.data.lintelLength) {
+          setLintelLength(result.data.lintelLength);
+        }
         toast({ title: 'Success', description: result.message });
         handleUploadDialogChange(false);
     } else if (result.error) {

@@ -50,6 +50,8 @@ export function CalculatorShell() {
     { id: '15', name: 'Lobby (Main)', length: 3.8, width: 1.0 },
   ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
+  const [lintelLength, setLintelLength] = useState<number>(0);
+
 
   const addRoom = () => {
     setRooms([
@@ -138,8 +140,9 @@ export function CalculatorShell() {
     return {
       ...aggregated,
       brc,
+      lintelLength,
     };
-  }, [perRoomCalculations, settings]);
+  }, [perRoomCalculations, settings, lintelLength]);
 
   return (
     <div className="container mx-auto max-w-7xl">
@@ -147,7 +150,8 @@ export function CalculatorShell() {
         <div className="space-y-8 lg:col-span-2">
           <ActionsCard 
             totals={totals} 
-            setRooms={setRoomsFromPlan} 
+            setRooms={setRoomsFromPlan}
+            setLintelLength={setLintelLength}
             perRoomCalculations={perRoomCalculations}
             aggregatedBreakdown={aggregatedBreakdown}
             rooms={rooms}
