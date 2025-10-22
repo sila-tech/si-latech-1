@@ -27,6 +27,7 @@ export interface CalculationDefaults {
   aggregateBulkDensity: number;
   cementBagWeight: number;
   profitBeamsPerRoom: number;
+  blockCommissionRate: number;
 }
 
 export interface RoomCalculation {
@@ -46,6 +47,11 @@ export interface RoomCalculation {
   actualTotalBeamLength: number;
   invoiceTotalBeamLength: number;
   profitBeamLength: number;
+  
+  // New Profit Fields
+  beamProfitValue: number;
+  blockCommission: number;
+  totalRoomProfit: number;
 }
 
 export interface ConcreteCalculation {
@@ -107,6 +113,7 @@ export const DEFAULTS: CalculationDefaults = {
   wheelbarrowVolume: 0.065, 
   wheelbarrowsPerTonne: 6,
   profitBeamsPerRoom: 2,
+  blockCommissionRate: 10, // KSh per block
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -114,7 +121,8 @@ const ceil = (v: number) => Math.ceil(v);
 export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
-  opts: Partial<CalculationDefaults> = {}
+  opts: Partial<CalculationDefaults> = {},
+  beamPricePerMeter: number
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
 
@@ -133,6 +141,11 @@ export function calcRoomBlocksAndBeams(
   const actualTotalBeamLength = actualBeamCount * shorter;
   const invoiceTotalBeamLength = invoiceBeamCount * shorter;
   const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
+
+  // New profit calculations
+  const beamProfitValue = profitBeamLength * beamPricePerMeter;
+  const blockCommission = totalBlocks * C.blockCommissionRate;
+  const totalRoomProfit = beamProfitValue + blockCommission;
   
 
   return {
@@ -149,6 +162,9 @@ export function calcRoomBlocksAndBeams(
     actualTotalBeamLength,
     invoiceTotalBeamLength,
     profitBeamLength,
+    beamProfitValue,
+    blockCommission,
+    totalRoomProfit,
   };
 }
 
@@ -237,8 +253,11 @@ export function calcBRC(
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
 
+  // Dummy beam price, not used for final profit calcs but needed for function signature
+  const BEAM_PRICE = 545; 
+
   rooms.forEach(room => {
-      const roomCalcs = calcRoomBlocksAndBeams(room.length, room.width, settings);
+      const roomCalcs = calcRoomBlocksAndBeams(room.length, room.width, settings, BEAM_PRICE);
       const { shorter, longer } = roomCalcs;
       const sizeKey = `${shorter.toFixed(2)}x${longer.toFixed(2)}`;
 

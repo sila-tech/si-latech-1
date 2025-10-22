@@ -500,61 +500,101 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#16A34A'; // Green for profit
-    const BEAM_PRICE_PER_METER = 545;
-
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('Internal Profit Report', 14, 22);
+    doc.text('SI-LATECH INTERNAL PROFIT REPORT', 14, 22);
 
-    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
     doc.text(`Project: ${clientInfo.projectName}`, 14, 32);
-    doc.text(`Client: ${clientInfo.clientName}`, 14, 37);
-    doc.text(`Date: ${reportDate}`, 145, 32);
+    doc.text(`Date: ${reportDate}`, 14, 37);
 
-    const tableColumn = ['ROOM NAME', 'PROFIT BEAMS', 'PROFIT LENGTH (m)', 'PROFIT VALUE (KSh)'];
-    const tableRows = perRoomCalculations.map(p => {
-      const profitValue = p.roomCalcs.profitBeamLength * BEAM_PRICE_PER_METER;
-      return [
-        p.room.name,
-        p.roomCalcs.profitBeams,
-        p.roomCalcs.profitBeamLength.toFixed(2),
-        profitValue.toFixed(2)
-      ]
+    let currentY = 45;
+
+    perRoomCalculations.forEach((p, index) => {
+        const { room, roomCalcs } = p;
+
+        if (currentY > 240) { 
+            doc.addPage();
+            currentY = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(primaryColor);
+        doc.text(room.name, 14, currentY);
+        currentY += 7;
+
+        const body = [
+            ['Actual Beams', `${roomCalcs.actualBeamCount} × ${roomCalcs.shorter.toFixed(2)} m = ${roomCalcs.actualTotalBeamLength.toFixed(2)} m`],
+            ['Invoice Beams', `${roomCalcs.invoiceBeamCount} × ${roomCalcs.shorter.toFixed(2)} m = ${roomCalcs.invoiceTotalBeamLength.toFixed(2)} m`],
+            ['Profit Beams', `${roomCalcs.profitBeams} × ${roomCalcs.shorter.toFixed(2)} m = ${roomCalcs.profitBeamLength.toFixed(2)} m`],
+            ['Beam Profit', `KSh ${roomCalcs.beamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+            ['', ''], 
+            ['Blocks Supplied', `${roomCalcs.totalBlocks} pcs`],
+            ['Block Commission', `KSh ${roomCalcs.blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+            ['', ''], 
+            ['Room Profit', `KSh ${roomCalcs.totalRoomProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+        ];
+
+        (doc as any).autoTable({
+            startY: currentY,
+            body: body,
+            theme: 'plain',
+            styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
+            columnStyles: {
+                0: { fontStyle: 'bold', cellWidth: 45 },
+                1: { cellWidth: 'auto', halign: 'right' }
+            },
+        });
+        
+        currentY = (doc as any).lastAutoTable.finalY;
+        
+        doc.setDrawColor(220); // Light gray line
+        doc.setLineDash([1, 1], 0);
+        doc.line(14, currentY + 4, 196, currentY + 4);
+        doc.setLineDash([], 0);
+        currentY += 10;
     });
 
-    (doc as any).autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 45,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10 },
-      columnStyles: {
-        1: { halign: 'right' },
-        2: { halign: 'right' },
-        3: { halign: 'right' },
-      }
-    });
+    if (currentY > 250) { 
+        doc.addPage();
+        currentY = 20;
+    }
 
-    let finalY = (doc as any).lastAutoTable.finalY;
-
-    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    finalY += 15;
-    doc.text('Total Profit from Beams:', 14, finalY);
-    doc.text(`KSh ${totals.totalProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 196, finalY, { align: 'right' });
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    finalY += 7;
-    doc.text('Total Extra Beam Length:', 14, finalY);
-    doc.text(`${totals.totalProfitBeamLength.toFixed(2)} m`, 196, finalY, { align: 'right' });
+    doc.setFontSize(14);
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT TOTALS', 14, currentY);
+    currentY += 10;
 
-    doc.setFontSize(9);
-    doc.setTextColor(150);
-    doc.text('This report is for internal use only.', 14, finalY + 15);
+    const totalsBody = [
+        ['Total Beam Profit', `KSh ${totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+        ['Total Block Commission', `KSh ${totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+    ];
+
+     (doc as any).autoTable({
+        startY: currentY,
+        body: totalsBody,
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 1 },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 60 },
+            1: { cellWidth: 'auto', halign: 'right' }
+        },
+    });
+    currentY = (doc as any).lastAutoTable.finalY;
+
+    currentY += 5;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(232, 245, 233); // Light green background
+    doc.roundedRect(14, currentY, 182, 12, 3, 3, 'F');
+    doc.text('TOTAL PROJECT PROFIT', 20, currentY + 8);
+    doc.text(`KSh ${totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 196, currentY + 8, { align: 'right' });
 
 
     doc.save(`Profit-Report-${reportNumber}.pdf`);

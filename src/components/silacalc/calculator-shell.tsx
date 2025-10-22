@@ -37,7 +37,9 @@ export type ProjectTotals = {
   totalActualBeamLength: number;
   totalInvoiceBeamLength: number;
   totalProfitBeamLength: number;
-  totalProfitValue: number;
+  totalBeamProfitValue: number;
+  totalBlockCommission: number;
+  totalProjectProfit: number;
   lintelLength: number;
   totalConcreteVolume: number;
   totalCementBags: number;
@@ -107,8 +109,9 @@ export function CalculatorShell() {
   };
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
+    const BEAM_PRICE_PER_METER = 545; // TODO: Make configurable
     return rooms.map((r) => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
       return { room: r, roomCalcs, concreteCalcs, brcCalcs };
@@ -121,15 +124,15 @@ export function CalculatorShell() {
 
 
   const totals: ProjectTotals = useMemo(() => {
-    const BEAM_PRICE_PER_METER = 545; // TODO: Make configurable
-
     const initialTotals = {
       totalArea: 0,
       totalBlocks: 0,
       totalActualBeamLength: 0,
       totalInvoiceBeamLength: 0,
       totalProfitBeamLength: 0,
-      totalProfitValue: 0,
+      totalBeamProfitValue: 0,
+      totalBlockCommission: 0,
+      totalProjectProfit: 0,
       totalConcreteVolume: 0, // This will be total WET concrete
       totalCementBags: 0,
       totalSandTonnes: 0,
@@ -146,11 +149,16 @@ export function CalculatorShell() {
       acc.totalCementBags += p.concreteCalcs.cementBags;
       acc.totalSandTonnes += p.concreteCalcs.sandTonnes;
       acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
+      
+      // Accumulate new profit fields
+      acc.totalBeamProfitValue += p.roomCalcs.beamProfitValue;
+      acc.totalBlockCommission += p.roomCalcs.blockCommission;
+      acc.totalProjectProfit += p.roomCalcs.totalRoomProfit;
+      
       return acc;
     }, initialTotals);
     
     aggregated.totalProfitBeamLength = aggregated.totalInvoiceBeamLength - aggregated.totalActualBeamLength;
-    aggregated.totalProfitValue = aggregated.totalProfitBeamLength * BEAM_PRICE_PER_METER;
 
     const brc = calcBRC(aggregated.totalArea, settings);
 
