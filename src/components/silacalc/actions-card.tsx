@@ -282,7 +282,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
-    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel } = totals;
+    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel, timber } = totals;
     
     const combinedCementBags = totalCementBags + lintel.cementBags;
     const combinedSandTonnes = totalSandTonnes + lintel.sandTonnes;
@@ -302,7 +302,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('Consolidated Materials Schedule (Slab & Lintels)', 14, 30);
+    doc.text('Consolidated Materials Schedule (Slab, Lintels, & Timber)', 14, 30);
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -323,6 +323,9 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
       ['Ballast / Coarse Aggregate', combinedBallastTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
       ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total slab area of ${totals.totalArea.toFixed(2)} m²`],
       ['Total Wet Concrete Volume', combinedWetVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+      ['3x2 Timber', `${timber.total3x2m.toFixed(2)}m (${timber.total3x2ft.toFixed(2)} ft)`, 'length', `${timber.total3x2pieces} total pieces`],
+      ['6x1 Timber', `${timber.total6x1m.toFixed(2)}m (${timber.total6x1ft.toFixed(2)} ft)`, 'length', 'For slab side shuttering'],
+      ['Props', timber.totalProps, 'pcs', 'For supporting 3x2 timbers'],
     ];
 
     (doc as any).autoTable({
@@ -348,7 +351,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     finalY += 6;
     doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
     finalY += 6;
-    doc.text('2. This schedule includes materials for the beam & block slab and the continuous wall lintels.', 14, finalY);
+    doc.text('2. This schedule includes materials for the beam & block slab, wall lintels, and timber formwork.', 14, finalY);
 
     doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
     setScheduleDialogOpen(false);
