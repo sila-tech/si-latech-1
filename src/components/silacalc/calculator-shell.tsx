@@ -33,9 +33,16 @@ export type PerRoomCalculation = {
 
 export function CalculatorShell() {
   const [rooms, setRooms] = useState<Room[]>([
-    { id: '1', name: 'Living room', length: 5, width: 4.5 },
-    { id: '2', name: 'Bedroom 1', length: 4, width: 3.8 },
-    { id: '3', name: 'Kitchen', length: 4.5, width: 5 },
+    { id: '1', name: 'Master Bedroom', length: 3.8, width: 3.8 },
+    { id: '2', name: 'Study Room', length: 2.0, width: 3.3 },
+    { id: '3', name: 'Lounge', length: 5.0, width: 4.5 },
+    { id: '4', name: 'Bedroom 01', length: 3.1, width: 3.1 },
+    { id: '5', name: 'Dining', length: 3.6, width: 3.4 },
+    { id: '6', name: 'Open Kitchen', length: 3.2, width: 3.4 },
+    { id: '7', name: 'Pantry', length: 2.0, width: 2.2 },
+    { id: '8', name: 'Laundry', length: 2.0, width: 2.4 },
+    { id: '9', name: 'Bedroom 02', length: 3.0, width: 4.0 },
+    { id: '10', name: 'Bedroom 03', length: 3.6, width: 3.4 },
   ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
 
