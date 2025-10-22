@@ -25,6 +25,7 @@ import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
 import { SettingsCard } from './settings-card';
 import { TotalsCard } from './totals-card';
+import { QuickQuoteCard } from './quick-quote-card';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -229,6 +230,8 @@ export function CalculatorShell() {
             rooms={rooms}
           />
           
+          <QuickQuoteCard setRooms={setRooms} />
+
           <div className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
             {rooms.map((room, i) => (
