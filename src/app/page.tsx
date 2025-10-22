@@ -1,4 +1,3 @@
-
 import { Header } from '@/components/header';
 import { CalculatorShell } from '@/components/silacalc/calculator-shell';
 
