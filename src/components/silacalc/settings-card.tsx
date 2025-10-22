@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -34,6 +35,11 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
     { key: 'beamSectionH', label: 'Beam Section H (m)' },
     { key: 'wastagePercentage', label: 'Wastage (%)' },
     { key: 'dryVolumeFactor', label: 'Dry Volume Factor'},
+  ];
+
+  const lintelSettings = [
+    { key: 'lintelHeight', label: 'Lintel Height (m)'},
+    { key: 'lintelWidth', label: 'Lintel Width (m)'},
   ];
 
   const densitySettings = [
@@ -85,6 +91,35 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
               />
             </div>
           ))}
+        </div>
+        
+        <Separator />
+
+        <div>
+          <Label className="text-base font-medium">Lintel Dimensions</Label>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
+            {lintelSettings.map(({ key, label }) => (
+              <div className="space-y-2" key={key}>
+                <Label htmlFor={key} className="text-sm">
+                  {label}
+                </Label>
+                <Input
+                  id={key}
+                  type="number"
+                  value={settings[key as keyof CalculationDefaults]}
+                  onChange={(e) =>
+                    handleSettingChange(
+                      key as keyof CalculationDefaults,
+                      e.target.value
+                    )
+                  }
+                  min="0"
+                  step="0.01"
+                  placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
         <Separator />

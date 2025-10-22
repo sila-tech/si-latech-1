@@ -28,6 +28,8 @@ export interface CalculationDefaults {
   cementBagWeight: number;
   profitBeamsPerRoom: number;
   blockCommissionRate: number;
+  lintelHeight: number;
+  lintelWidth: number;
 }
 
 export interface RoomCalculation {
@@ -72,6 +74,24 @@ export interface BrcCalculation {
   metresOfBRC: number;
 }
 
+// New type for Lintel Calculations
+export interface LintelCalculation {
+    totalLintelLength: number;
+    crossSectionalArea: number;
+    wetVolume: number;
+    dryVolume: number;
+    cementVolume: number;
+    sandVolume: number;
+    ballastVolume: number;
+    cementMassWastage: number;
+    sandMassWastage: number;
+    ballastMassWastage: number;
+    cementBags: number;
+    sandTonnes: number;
+    ballastTonnes: number;
+}
+
+
 // New type for aggregated breakdown
 export interface AggregatedRoomGroup {
   sizeKey: string;
@@ -114,6 +134,8 @@ export const DEFAULTS: CalculationDefaults = {
   wheelbarrowsPerTonne: 6,
   profitBeamsPerRoom: 2,
   blockCommissionRate: 10, // KSh per block
+  lintelHeight: 0.4,
+  lintelWidth: 0.2,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -238,6 +260,69 @@ export function calcConcrete(
     ballastWheelbarrows: ballastWheelbarrows
   };
 }
+
+export function calcLintelConcrete(
+    totalLintelLength: number,
+    opts: Partial<CalculationDefaults> = {}
+): LintelCalculation {
+    const C = { ...DEFAULTS, ...opts };
+
+    if (totalLintelLength <= 0) {
+        return {
+            totalLintelLength: 0, crossSectionalArea: 0, wetVolume: 0, dryVolume: 0,
+            cementVolume: 0, sandVolume: 0, ballastVolume: 0,
+            cementMassWastage: 0, sandMassWastage: 0, ballastMassWastage: 0,
+            cementBags: 0, sandTonnes: 0, ballastTonnes: 0
+        };
+    }
+    
+    // 4) Cross-sectional area & wet volume
+    const crossSectionalArea = C.lintelHeight * C.lintelWidth;
+    const wetVolume = totalLintelLength * crossSectionalArea;
+
+    // 5) Convert to dry volume
+    const dryVolume = wetVolume * C.dryVolumeFactor;
+    
+    // 6) Split V_dry by mix ratio
+    const totalParts = C.concreteMixRatioCement + C.concreteMixRatioSand + C.concreteMixRatioBallast;
+    
+    const cementVolume = totalParts > 0 ? (C.concreteMixRatioCement / totalParts) * dryVolume : 0;
+    const sandVolume = totalParts > 0 ? (C.concreteMixRatioSand / totalParts) * dryVolume : 0;
+    const ballastVolume = totalParts > 0 ? (C.concreteMixRatioBallast / totalParts) * dryVolume : 0;
+
+    // 7) Convert volumes -> mass (kg)
+    const cementMass = cementVolume * C.cementBulkDensity;
+    const sandMass = sandVolume * C.sandBulkDensity;
+    const ballastMass = ballastVolume * C.aggregateBulkDensity;
+
+    // 8) Apply wastage
+    const wastageFactor = 1 + (C.wastagePercentage / 100);
+    const cementMassWastage = cementMass * wastageFactor;
+    const sandMassWastage = sandMass * wastageFactor;
+    const ballastMassWastage = ballastMass * wastageFactor;
+
+    // 9) Convert to purchase units
+    const cementBags = C.cementBagWeight > 0 ? ceil(cementMassWastage / C.cementBagWeight) : 0;
+    const sandTonnes = sandMassWastage / 1000;
+    const ballastTonnes = ballastMassWastage / 1000;
+
+    return {
+        totalLintelLength,
+        crossSectionalArea,
+        wetVolume,
+        dryVolume,
+        cementVolume,
+        sandVolume,
+        ballastVolume,
+        cementMassWastage,
+        sandMassWastage,
+        ballastMassWastage,
+        cementBags,
+        sandTonnes,
+        ballastTonnes,
+    };
+}
+
 
 export function calcBRC(
   totalArea: number,

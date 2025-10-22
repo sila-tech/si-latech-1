@@ -9,12 +9,14 @@ import type {
   ConcreteCalculation,
   BrcCalculation,
   AggregatedRoomGroup,
+  LintelCalculation,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
   calcRoomBlocksAndBeams,
   calcConcrete,
   calcBRC,
+  calcLintelConcrete,
   getAggregatedRoomBreakdown,
 } from '@/lib/calculator';
 import { RoomCard } from './room-card';
@@ -50,6 +52,7 @@ export type ProjectTotals = {
     rollsNeeded: number;
     areaPerRoll: number;
   };
+  lintel: LintelCalculation;
 };
 
 export function CalculatorShell() {
@@ -133,7 +136,7 @@ export function CalculatorShell() {
       totalBeamProfitValue: 0,
       totalBlockCommission: 0,
       totalProjectProfit: 0,
-      totalConcreteVolume: 0, // This will be total WET concrete
+      totalConcreteVolume: 0, // This will be total WET concrete for SLAB
       totalCementBags: 0,
       totalSandTonnes: 0,
       totalBallastTonnes: 0,
@@ -161,6 +164,9 @@ export function CalculatorShell() {
     aggregated.totalProfitBeamLength = aggregated.totalInvoiceBeamLength - aggregated.totalActualBeamLength;
 
     const brc = calcBRC(aggregated.totalArea, settings);
+    
+    // Calculate lintel concrete
+    const lintel = calcLintelConcrete(lintelLength, settings);
 
     // Rounding totals for display
     aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
@@ -169,6 +175,7 @@ export function CalculatorShell() {
       ...aggregated,
       brc,
       lintelLength,
+      lintel,
     };
   }, [perRoomCalculations, settings, lintelLength]);
 

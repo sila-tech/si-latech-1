@@ -26,6 +26,7 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
     totalBallastTonnes,
     wastagePercentage,
     brc,
+    lintel,
   } = totals;
   return (
     <Card className="sticky top-24">
@@ -71,15 +72,6 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
             </span>
             <span className="font-semibold text-amber-400">{totalInvoiceBeamLength.toFixed(2)} m</span>
           </li>
-          {lintelLength > 0 && (
-            <li className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-square-dashed-bottom-code"><path d="M21 15V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v7"/><path d="M9 22v-3.5a2.5 2.5 0 0 1 5 0V22"/><path d="M10 10l-2 2 2 2"/><path d="m14 10 2 2-2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 21h1"/><path d="M14 21h1"/><path d="M19 21a2 2 0 0 0 2-2"/></svg>
-                Lintel Beam Length
-              </span>
-              <span className="font-semibold">{lintelLength.toFixed(2)} m</span>
-            </li>
-          )}
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
@@ -94,7 +86,7 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                  <span className="text-muted-foreground flex items-center gap-2">
-                    <Beaker className="w-4 h-4" /> Total Wet Concrete
+                    <Beaker className="w-4 h-4" /> Total Slab Concrete
                 </span>
                 <span className="font-semibold">
                     {totalConcreteVolume.toFixed(3)} m³
@@ -115,6 +107,37 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
                 </li>
             </ul>
         </div>
+        
+        {lintelLength > 0 && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-square-dashed-bottom-code"><path d="M21 15V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v7"/><path d="M9 22v-3.5a2.5 2.5 0 0 1 5 0V22"/><path d="M10 10l-2 2 2 2"/><path d="m14 10 2 2-2 2"/><path d="M5 21a2 2 0 0 1-2-2"/><path d="M9 21h1"/><path d="M14 21h1"/><path d="M19 21a2 2 0 0 0 2-2"/></svg>
+                      Lintel Concrete ({lintel.totalLintelLength.toFixed(2)} m)
+                  </span>
+                  <span className="font-semibold">
+                      {lintel.wetVolume.toFixed(3)} m³
+                  </span>
+              </div>
+              <ul className="space-y-1 pl-6 text-xs">
+                  <li className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Cement (50kg bags)</span>
+                      <span className="font-semibold">{lintel.cementBags} bags</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Sand</span>
+                      <span className="font-semibold">{lintel.sandTonnes.toFixed(2)} tonnes</span>
+                  </li>
+                  <li className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Ballast / Aggregate</span>
+                      <span className="font-semibold">{lintel.ballastTonnes.toFixed(2)} tonnes</span>
+                  </li>
+              </ul>
+            </div>
+          </>
+        )}
         
         <p className="text-xs text-muted-foreground text-center pt-2">
             BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete materials include {wastagePercentage}% wastage.
