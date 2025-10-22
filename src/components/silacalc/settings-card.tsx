@@ -41,6 +41,12 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
     { key: 'lintelHeight', label: 'Lintel Height (m)'},
     { key: 'lintelWidth', label: 'Lintel Width (m)'},
   ];
+  
+  const timberSettings = [
+    { key: 'timber3x2Spacing', label: '3x2 Spacing (m)'},
+    { key: 'timber6x1PerimeterMultiplier', label: '6x1 Multiplier'},
+    { key: 'propSpacing', label: 'Prop Spacing (m)' },
+  ];
 
   const densitySettings = [
     { key: 'cementBulkDensity', label: 'Cement Density (kg/m³)' },
@@ -115,6 +121,28 @@ export function SettingsCard({ settings, setSettings }: SettingsCardProps) {
                   }
                   min="0"
                   step="0.01"
+                  placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <Label className="text-base font-medium">Timber & Props</Label>
+          <div className="grid grid-cols-3 gap-x-2 mt-2">
+            {timberSettings.map(({ key, label }) => (
+              <div className="space-y-2" key={key}>
+                <Label htmlFor={key} className="text-sm font-normal text-muted-foreground">{label}</Label>
+                <Input
+                  id={key}
+                  type="number"
+                  value={settings[key as keyof CalculationDefaults]}
+                  onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
+                  min="0"
+                  step="0.1"
                   placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
                 />
               </div>

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Beaker, BrickWall, MoveHorizontal, DollarSign } from 'lucide-react';
+import { Beaker, BrickWall, MoveHorizontal, DollarSign, Hammer } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import type { ProjectTotals } from './calculator-shell';
 
@@ -27,6 +27,7 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
     wastagePercentage,
     brc,
     lintel,
+    timber,
   } = totals;
   return (
     <Card className="sticky top-24">
@@ -138,6 +139,29 @@ export function TotalsCard({ totals }: { totals: ProjectTotals }) {
             </div>
           </>
         )}
+
+        <Separator />
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                 <span className="text-muted-foreground flex items-center gap-2">
+                    <Hammer className="w-4 h-4 text-amber-500" /> Timber & Props
+                </span>
+            </div>
+            <ul className="space-y-1 pl-6 text-xs">
+                <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Total 3x2 Length</span>
+                    <span className="font-semibold">{timber.total3x2m.toFixed(2)}m ({timber.total3x2ft.toFixed(2)} ft)</span>
+                </li>
+                <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Total 6x1 Length</span>
+                    <span className="font-semibold">{timber.total6x1m.toFixed(2)}m ({timber.total6x1ft.toFixed(2)} ft)</span>
+                </li>
+                <li className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Total Props</span>
+                    <span className="font-semibold">{timber.totalProps} pcs</span>
+                </li>
+            </ul>
+        </div>
         
         <p className="text-xs text-muted-foreground text-center pt-2">
             BRC roll covers {brc.areaPerRoll.toFixed(2)} m² per roll. Concrete materials include {wastagePercentage}% wastage.

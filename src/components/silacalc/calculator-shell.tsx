@@ -10,6 +10,7 @@ import type {
   BrcCalculation,
   AggregatedRoomGroup,
   LintelCalculation,
+  TimberAndPropsCalculation,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
@@ -18,6 +19,7 @@ import {
   calcBRC,
   calcLintelConcrete,
   getAggregatedRoomBreakdown,
+  calcTimberAndProps,
 } from '@/lib/calculator';
 import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
@@ -31,6 +33,7 @@ export type PerRoomCalculation = {
   roomCalcs: RoomCalculation;
   concreteCalcs: ConcreteCalculation;
   brcCalcs: BrcCalculation;
+  timberCalcs: TimberAndPropsCalculation;
 };
 
 export type ProjectTotals = {
@@ -53,6 +56,14 @@ export type ProjectTotals = {
     areaPerRoll: number;
   };
   lintel: LintelCalculation;
+  timber: {
+    total3x2pieces: number;
+    total3x2m: number;
+    total3x2ft: number;
+    total6x1m: number;
+    total6x1ft: number;
+    totalProps: number;
+  };
 };
 
 export function CalculatorShell() {
@@ -117,7 +128,8 @@ export function CalculatorShell() {
       const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
-      return { room: r, roomCalcs, concreteCalcs, brcCalcs };
+      const timberCalcs = calcTimberAndProps(r, settings);
+      return { room: r, roomCalcs, concreteCalcs, brcCalcs, timberCalcs };
     });
   }, [rooms, settings]);
 
@@ -141,6 +153,14 @@ export function CalculatorShell() {
       totalSandTonnes: 0,
       totalBallastTonnes: 0,
       wastagePercentage: settings.wastagePercentage,
+      timber: {
+        total3x2pieces: 0,
+        total3x2m: 0,
+        total3x2ft: 0,
+        total6x1m: 0,
+        total6x1ft: 0,
+        totalProps: 0,
+      }
     };
     
     // Calculate total lintel length from current rooms
@@ -162,11 +182,23 @@ export function CalculatorShell() {
       acc.totalBeamProfitValue += p.roomCalcs.beamProfitValue;
       acc.totalBlockCommission += p.roomCalcs.blockCommission;
       acc.totalProjectProfit += p.roomCalcs.totalRoomProfit;
+
+      // Accumulate timber totals
+      acc.timber.total3x2pieces += p.timberCalcs.pieces3x2;
+      acc.timber.total3x2m += p.timberCalcs.total3x2m;
+      acc.timber.total3x2ft += p.timberCalcs.total3x2ft;
+      acc.timber.total6x1m += p.timberCalcs.total6x1m;
+      acc.timber.total6x1ft += p.timberCalcs.total6x1ft;
       
       return acc;
     }, initialTotals);
     
     aggregated.totalProfitBeamLength = aggregated.totalInvoiceBeamLength - aggregated.totalActualBeamLength;
+    
+    // Calculate total props
+    if (settings.propSpacing > 0) {
+      aggregated.timber.totalProps = Math.ceil(aggregated.timber.total3x2m / settings.propSpacing);
+    }
 
     const brc = calcBRC(aggregated.totalArea, settings);
     

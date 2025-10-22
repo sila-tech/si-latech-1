@@ -19,8 +19,8 @@ export interface CalculationDefaults {
   concreteMixRatioSand: number;
   concreteMixRatioBallast: number;
   wastagePercentage: number;
-  wheelbarrowVolume: number; // Note: This is now for display/reference, not core calculation
-  wheelbarrowsPerTonne: number; // Note: This is now for display/reference, not core calculation
+  wheelbarrowVolume: number;
+  wheelbarrowsPerTonne: number;
   dryVolumeFactor: number;
   cementBulkDensity: number;
   sandBulkDensity: number;
@@ -30,6 +30,10 @@ export interface CalculationDefaults {
   blockCommissionRate: number;
   lintelHeight: number;
   lintelWidth: number;
+  // New Timber and Props settings
+  timber3x2Spacing: number;
+  timber6x1PerimeterMultiplier: number;
+  propSpacing: number;
 }
 
 export interface RoomCalculation {
@@ -91,6 +95,17 @@ export interface LintelCalculation {
     ballastTonnes: number;
 }
 
+// New type for Timber and Props
+export interface TimberAndPropsCalculation {
+  pieces3x2: number;
+  lengthEach3x2: number;
+  total3x2m: number;
+  total3x2ft: number;
+  perimeter: number;
+  total6x1m: number;
+  total6x1ft: number;
+}
+
 
 // New type for aggregated breakdown
 export interface AggregatedRoomGroup {
@@ -136,9 +151,15 @@ export const DEFAULTS: CalculationDefaults = {
   blockCommissionRate: 10, // KSh per block
   lintelHeight: 0.4,
   lintelWidth: 0.2,
+  // Timber & Props
+  timber3x2Spacing: 0.6,
+  timber6x1PerimeterMultiplier: 6,
+  propSpacing: 0.6,
 };
 
 const ceil = (v: number) => Math.ceil(v);
+const METERS_TO_FEET = 3.28084;
+
 
 export function calcRoomBlocksAndBeams(
   lengthMeters: number,
@@ -333,6 +354,37 @@ export function calcBRC(
   const rollsNeeded = areaPerRoll > 0 ? ceil(totalArea / areaPerRoll) : 0;
   const metresOfBRC = rollsNeeded * C.brcRollLength;
   return { areaPerRoll, rollsNeeded, metresOfBRC };
+}
+
+export function calcTimberAndProps(
+  room: Room,
+  opts: Partial<CalculationDefaults> = {}
+): TimberAndPropsCalculation {
+  const C = { ...DEFAULTS, ...opts };
+  const shorter = Math.min(room.length, room.width);
+  const longer = Math.max(room.length, room.width);
+
+  // 3x2 Timber Calculation
+  const rows = C.timber3x2Spacing > 0 ? ceil(shorter / C.timber3x2Spacing) : 0;
+  const pieces3x2 = rows + 1; // pieces = rows + 1
+  const lengthEach3x2 = longer;
+  const total3x2m = pieces3x2 * lengthEach3x2;
+  const total3x2ft = total3x2m * METERS_TO_FEET;
+
+  // 6x1 Timber Calculation
+  const perimeter = 2 * (longer + shorter);
+  const total6x1m = perimeter * C.timber6x1PerimeterMultiplier;
+  const total6x1ft = total6x1m * METERS_TO_FEET;
+
+  return {
+    pieces3x2,
+    lengthEach3x2,
+    total3x2m,
+    total3x2ft,
+    perimeter,
+    total6x1m,
+    total6x1ft,
+  };
 }
 
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults): AggregatedRoomGroup[] {

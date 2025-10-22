@@ -33,11 +33,12 @@ import {
   FileDown,
   Warehouse,
   DollarSign,
+  Hammer,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation, AggregatedRoomGroup } from '@/lib/calculator';
+import type { Room, RoomCalculation, ConcreteCalculation, BrcCalculation, AggregatedRoomGroup, TimberAndPropsCalculation } from '@/lib/calculator';
 import type { ProjectTotals } from './calculator-shell';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -47,6 +48,7 @@ type PerRoomCalculation = {
   roomCalcs: RoomCalculation;
   concreteCalcs: ConcreteCalculation;
   brcCalcs: BrcCalculation;
+  timberCalcs: TimberAndPropsCalculation;
 };
 
 type ActionsCardProps = {
@@ -147,6 +149,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
   const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
   const [isProfitReportDialogOpen, setProfitReportDialogOpen] = useState(false);
+  const [isTimberScheduleOpen, setTimberScheduleOpen] = useState(false);
   
   const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -606,6 +609,91 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.save(`Profit-Report-${reportNumber}.pdf`);
     setProfitReportDialogOpen(false);
   };
+  
+  const handleDownloadTimberSchedule = (clientInfo: ClientInfo) => {
+    const doc = new jsPDF();
+    const reportDate = new Date().toLocaleDateString('en-GB');
+    const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
+    const primaryColor = '#D97706'; // Amber color for timber
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(primaryColor);
+    doc.text('Timber & Props Schedule', 14, 22);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(`Project: ${clientInfo.projectName}`, 14, 32);
+    doc.text(`Date: ${reportDate}`, 14, 37);
+
+    let currentY = 45;
+
+    perRoomCalculations.forEach((p) => {
+        if (currentY > 240) { 
+            doc.addPage();
+            currentY = 20;
+        }
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(primaryColor);
+        doc.text(`${p.room.name} (${p.room.width}m x ${p.room.length}m)`, 14, currentY);
+        currentY += 8;
+
+        const body = [
+            ['3x2 Timbers', `${p.timberCalcs.pieces3x2} pcs × ${p.timberCalcs.lengthEach3x2.toFixed(2)}m = ${p.timberCalcs.total3x2m.toFixed(2)}m (${p.timberCalcs.total3x2ft.toFixed(2)} ft)`],
+            ['6x1 Timbers', `Perimeter ${p.timberCalcs.perimeter.toFixed(2)}m = ${p.timberCalcs.total6x1m.toFixed(2)}m (${p.timberCalcs.total6x1ft.toFixed(2)} ft)`],
+        ];
+
+        (doc as any).autoTable({
+            startY: currentY,
+            body: body,
+            theme: 'plain',
+            styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
+            columnStyles: {
+                0: { fontStyle: 'bold', cellWidth: 40 },
+                1: { cellWidth: 'auto' }
+            },
+        });
+        
+        currentY = (doc as any).lastAutoTable.finalY + 5;
+    });
+
+    if (currentY > 230) { 
+        doc.addPage();
+        currentY = 20;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT TOTALS', 14, currentY);
+    currentY += 10;
+
+    const totalsBody = [
+        ['Total 3x2 Pieces', `${totals.timber.total3x2pieces} pcs`],
+        ['Total 3x2 Length', `${totals.timber.total3x2m.toFixed(2)} m (${totals.timber.total3x2ft.toFixed(2)} ft)`],
+        [],
+        ['Total 6x1 Length', `${totals.timber.total6x1m.toFixed(2)} m (${totals.timber.total6x1ft.toFixed(2)} ft)`],
+        [],
+        ['Total Props Required', `${totals.timber.totalProps} pcs`],
+    ];
+
+     (doc as any).autoTable({
+        startY: currentY,
+        body: totalsBody,
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 1 },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 60 },
+            1: { cellWidth: 'auto', halign: 'right' }
+        },
+    });
+
+    doc.save(`Timber-Props-Schedule-${reportNumber}.pdf`);
+    setTimberScheduleOpen(false);
+  };
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -698,6 +786,10 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
             <List /> Material Schedule
           </Button>
 
+          <Button variant="outline" className="w-full text-amber-600 border-amber-600/50 hover:bg-amber-100 hover:text-amber-700" onClick={() => setTimberScheduleOpen(true)}>
+            <Hammer /> Timber Schedule
+          </Button>
+
           <Button variant="outline" className="w-full" onClick={() => setBreakdownDialogOpen(true)}>
               <FileDown /> Promax Breakdown
           </Button>
@@ -706,13 +798,13 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
               <Warehouse /> Aggregated Report
           </Button>
 
-          <Button variant="destructive" className="w-full col-span-2 lg:col-span-1" onClick={() => setProfitReportDialogOpen(true)}>
+          <Button variant="destructive" className="w-full" onClick={() => setProfitReportDialogOpen(true)}>
               <DollarSign /> Profit Report
           </Button>
 
           <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
             <DialogTrigger asChild>
-              <Button className="w-full">
+              <Button className="w-full col-span-2 lg:col-span-3">
                 <Upload /> Upload Plan (AI)
               </Button>
             </DialogTrigger>
@@ -853,6 +945,13 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
         onGenerateClick={handleDownloadProfitReport}
         title="Download Internal Profit Report"
         description="Please fill in project details for the internal report."
+      />
+      <ClientInfoDialog
+        open={isTimberScheduleOpen}
+        onOpenChange={setTimberScheduleOpen}
+        onGenerateClick={handleDownloadTimberSchedule}
+        title="Download Timber & Props Schedule"
+        description="Please fill in project details for the timber report."
       />
     </>
   );

@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Card,
@@ -9,9 +10,9 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { Room, RoomCalculation, ConcreteCalculation } from '@/lib/calculator';
+import type { Room, RoomCalculation, ConcreteCalculation, TimberAndPropsCalculation } from '@/lib/calculator';
 import { Button } from '../ui/button';
-import { Trash2, Beaker, BrickWall, MoveHorizontal } from 'lucide-react';
+import { Trash2, Beaker, BrickWall, MoveHorizontal, Hammer } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
 type RoomCardProps = {
@@ -19,13 +20,14 @@ type RoomCardProps = {
   calculations: {
     roomCalcs: RoomCalculation;
     concreteCalcs: ConcreteCalculation;
+    timberCalcs: TimberAndPropsCalculation;
   };
   updateRoom: (id: string, key: 'name' | 'length' | 'width', value: string | number) => void;
   deleteRoom: (id: string) => void;
 };
 
 export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCardProps) {
-  const { roomCalcs, concreteCalcs } = calculations;
+  const { roomCalcs, concreteCalcs, timberCalcs } = calculations;
 
   return (
     <Card className="overflow-hidden">
@@ -76,7 +78,7 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
         </div>
       </CardContent>
       <Separator />
-      <CardFooter className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 text-sm">
+      <CardFooter className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 text-sm">
          <div className="flex items-center gap-2">
             <BrickWall className="h-5 w-5 text-primary" />
             <div>
@@ -103,6 +105,20 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
             <div>
                 <div className="font-semibold">{concreteCalcs.area.toFixed(2)}m²</div>
                 <div className="text-muted-foreground">Area</div>
+            </div>
+         </div>
+         <div className="flex items-center gap-2">
+            <Hammer className="h-5 w-5 text-amber-500" />
+            <div>
+                <div className="font-semibold">{timberCalcs.total3x2m.toFixed(2)}m</div>
+                <div className="text-muted-foreground">3x2 Timber</div>
+            </div>
+         </div>
+         <div className="flex items-center gap-2">
+            <Hammer className="h-5 w-5 text-amber-500" />
+            <div>
+                <div className="font-semibold">{timberCalcs.total6x1m.toFixed(2)}m</div>
+                <div className="text-muted-foreground">6x1 Timber</div>
             </div>
          </div>
       </CardFooter>
