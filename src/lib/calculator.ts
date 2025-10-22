@@ -176,8 +176,8 @@ export const DEFAULTS: CalculationDefaults = {
   wheelbarrowsPerTonne: 6,
   profitBeamsPerRoom: 2,
   blockCommissionRate: 10, 
-  lintelHeight: 0.2, // Swapped to match example
-  lintelWidth: 0.4, // Swapped to match example
+  lintelHeight: 0.40,
+  lintelWidth: 0.20,
   timber3x2Spacing: 0.6,
   timber6x1PerimeterMultiplier: 6,
   propSpacing: 0.6,
