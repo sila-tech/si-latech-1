@@ -162,13 +162,10 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     
     const BLOCK_PRICE = 85;
     const BEAM_PRICE_PER_METER = 545;
-    const VAT_RATE = 0.16;
 
     const blocksTotal = totals.totalBlocks * BLOCK_PRICE;
     const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
-    const subtotal = blocksTotal + beamsTotal;
-    const vatAmount = subtotal * VAT_RATE;
-    const grandTotal = subtotal + vatAmount;
+    const grandTotal = blocksTotal + beamsTotal;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
@@ -219,40 +216,31 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.text(`Due on Receipt`, metaX + 30, metaY + 10);
     doc.text(`${invoiceDate}`, metaX + 30, metaY + 15);
 
-    const tableRows = perRoomCalculations.map(p => {
-      const roomBlocksTotal = p.roomCalcs.totalBlocks * BLOCK_PRICE;
-      const roomBeamsTotal = p.roomCalcs.invoiceTotalBeamLength * BEAM_PRICE_PER_METER;
-      const total = roomBlocksTotal + roomBeamsTotal;
-      return [
-        `Room: ${p.room.name}`,
-        `Beams ${p.roomCalcs.shorter.toFixed(2)}m x ${p.roomCalcs.invoiceBeamCount} pcs`,
-        p.roomCalcs.invoiceTotalBeamLength.toFixed(2),
+    const tableRows = [
+      [
+        'Total Invoiced Beams',
+        '-',
+        totals.totalInvoiceBeamLength.toFixed(2),
         BEAM_PRICE_PER_METER.toFixed(2),
-        roomBeamsTotal.toFixed(2)
+        beamsTotal.toFixed(2)
+      ],
+      [
+        'Total Blocks',
+        '-',
+        totals.totalBlocks.toString(),
+        BLOCK_PRICE.toFixed(2),
+        blocksTotal.toFixed(2)
       ]
-    })
-
-    const allBlocksRow = [
-      'Total Blocks',
-      '',
-      totals.totalBlocks.toString(),
-      BLOCK_PRICE.toFixed(2),
-      blocksTotal.toFixed(2)
     ];
 
 
     (doc as any).autoTable({
       head: [['DESCRIPTION', 'DETAILS', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
-      body: [...tableRows, allBlocksRow],
+      body: tableRows,
       startY: metaY + 25,
       theme: 'grid',
       headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 9 },
-      didParseCell: function (data: any) {
-        if (data.row.raw[0] === 'Total Blocks') {
-          data.cell.styles.fontStyle = 'bold';
-        }
-      },
+      styles: { fontSize: 9, fontStyle: 'bold' },
       columnStyles: {
         2: { halign: 'right' },
         3: { halign: 'right' },
@@ -267,13 +255,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.setFont('helvetica', 'normal');
     
     finalY += 10;
-    doc.text('Subtotal: ', totalsX, finalY, { align: 'right' });
-    doc.text(`Ksh ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY, { align: 'right' });
-    finalY += 7;
-    doc.text(`VAT (16%): `, totalsX, finalY, { align: 'right' });
-    doc.text(`Ksh ${vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY, { align: 'right' });
-    finalY += 7;
-
+    
     doc.setFont('helvetica', 'bold');
     doc.setFillColor(240,240,240);
     doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
