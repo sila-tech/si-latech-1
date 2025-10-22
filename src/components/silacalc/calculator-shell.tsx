@@ -34,15 +34,20 @@ export type PerRoomCalculation = {
 export function CalculatorShell() {
   const [rooms, setRooms] = useState<Room[]>([
     { id: '1', name: 'Master Bedroom', length: 3.8, width: 3.8 },
-    { id: '2', name: 'Study Room', length: 2.0, width: 3.3 },
-    { id: '3', name: 'Lounge', length: 5.0, width: 4.5 },
-    { id: '4', name: 'Bedroom 01', length: 3.1, width: 3.1 },
-    { id: '5', name: 'Dining', length: 3.6, width: 3.4 },
+    { id: '2', name: 'Walk-in Closet', length: 1.7, width: 2.2 },
+    { id: '3', name: 'Pantry', length: 2.0, width: 2.2 },
+    { id: '4', name: 'Laundry', length: 2.0, width: 2.4 },
+    { id: '5', name: 'Rear Porch', length: 3.2, width: 1.5 },
     { id: '6', name: 'Open Kitchen', length: 3.2, width: 3.4 },
-    { id: '7', name: 'Pantry', length: 2.0, width: 2.2 },
-    { id: '8', name: 'Laundry', length: 2.0, width: 2.4 },
-    { id: '9', name: 'Bedroom 02', length: 3.0, width: 4.0 },
-    { id: '10', name: 'Bedroom 03', length: 3.6, width: 3.4 },
+    { id: '7', name: 'Dining', length: 3.6, width: 3.4 },
+    { id: '8', name: 'Bedroom 02', length: 3.0, width: 4.0 },
+    { id: '9', name: 'Bedroom 03', length: 3.6, width: 3.4 },
+    { id: '10', name: 'Lobby (by Bedrooms)', length: 2.2, width: 1.0 },
+    { id: '11', name: 'Bedroom 01', length: 3.1, width: 3.6 },
+    { id: '12', name: 'Lounge', length: 5.0, width: 4.5 },
+    { id: '13', name: 'Study Room', length: 2.0, width: 3.3 },
+    { id: '14', name: 'Entry Porch', length: 5.0, width: 2.0 },
+    { id: '15', name: 'Lobby (Main)', length: 3.8, width: 1.0 },
   ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
 
