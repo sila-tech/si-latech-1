@@ -279,7 +279,13 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
-    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc } = totals;
+    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel } = totals;
+    
+    const combinedCementBags = totalCementBags + lintel.cementBags;
+    const combinedSandTonnes = totalSandTonnes + lintel.sandTonnes;
+    const combinedBallastTonnes = totalBallastTonnes + lintel.ballastTonnes;
+    const combinedWetVolume = totalConcreteVolume + lintel.wetVolume;
+
     const doc = new jsPDF();
     const scheduleDate = new Date().toLocaleDateString('en-GB');
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
@@ -293,7 +299,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('Slab Materials Schedule', 14, 30);
+    doc.text('Consolidated Materials Schedule (Slab & Lintels)', 14, 30);
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -309,11 +315,11 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
 
     const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
     const tableRows = [
-      ['Cement (50kg bags)', totalCementBags, 'bags', 'Includes 10% wastage'],
-      ['Sand', totalSandTonnes.toFixed(2), 'tonnes', 'Includes 10% wastage'],
-      ['Ballast / Coarse Aggregate', totalBallastTonnes.toFixed(2), 'tonnes', 'Includes 10% wastage'],
-      ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total area of ${totals.totalArea.toFixed(2)} m²`],
-      ['Total Wet Concrete Volume', totalConcreteVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+      ['Cement (50kg bags)', combinedCementBags, 'bags', 'Includes slab & lintels, plus 10% wastage'],
+      ['Sand', combinedSandTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
+      ['Ballast / Coarse Aggregate', combinedBallastTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
+      ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total slab area of ${totals.totalArea.toFixed(2)} m²`],
+      ['Total Wet Concrete Volume', combinedWetVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
     ];
 
     (doc as any).autoTable({
@@ -339,7 +345,7 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     finalY += 6;
     doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
     finalY += 6;
-    doc.text('2. This schedule is for materials required for the slab only and excludes other structural elements.', 14, finalY);
+    doc.text('2. This schedule includes materials for the beam & block slab and the continuous wall lintels.', 14, finalY);
 
     doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
     setScheduleDialogOpen(false);
