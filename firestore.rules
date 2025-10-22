@@ -1,156 +1,158 @@
 /**
- * @file Firebase Security Rules for SilaCalc Platform
+ * @file Firestore Security Rules for SilaCalc Platform
  *
- * @core_philosophy This ruleset enforces a strict user-ownership model for customer data, projects, and rooms.
- *  Each customer can only access their own data. Material costs are accessible to authenticated users.
+ * @core_philosophy This ruleset enforces a strict user-ownership model for customer data and
+ * project-related data. Material costs are secured such that only authenticated user can read and write data.
  *
  * @data_structure
- *  - /customers/{customerId}: Stores customer profiles. The `customerId` MUST match the authenticated user's UID.
- *  - /customers/{customerId}/projects/{projectId}: Stores projects belonging to a customer.
- *    The `customerId` in the path MUST match the authenticated user's UID.
- *  - /customers/{customerId}/projects/{projectId}/rooms/{roomId}: Stores rooms within a project.
- *    The `customerId` in the path MUST match the authenticated user's UID.
- *  - /material_costs/{materialCostId}: Stores material costs. Accessible to authenticated users.
+ * - /customers/{customerId}: Stores customer profiles, where customerId must match the authenticated user's UID.
+ * - /customers/{customerId}/projects/{projectId}: Stores project data, linked to a specific customer.
+ * - /customers/{customerId}/projects/{projectId}/rooms/{roomId}: Stores room data, linked to a specific project and customer.
+ * - /material_costs/{materialCostId}: Stores material cost data, accessible only to authenticated users.
  *
  * @key_security_decisions
- *  - Customer listing is disallowed for privacy.
- *  - Projects and Rooms are secured via path-based ownership. The `customerId` in the path must match `request.auth.uid`.
+ * - User listing is explicitly disallowed.
+ * - The `customerId` within project and room documents must match the authenticated user's UID to ensure data ownership.
+ * - Material costs accessible only to authenticated users.
  *
  * @denormalization_for_authorization
- *  - The `customerId` is included in the Project and Room documents to allow direct authorization checks without
- *    performing additional reads. This denormalization is used to enforce ownership.
+ * - Project documents include a `customerId` field to enforce ownership and avoid requiring `get()` calls on the parent customer document.
+ * - Room documents include both `customerId` and `projectId` fields to enforce ownership and avoid requiring `get()` calls on parent project or customer documents.
+ *
+ * @structural_segregation
+ * - Customer-specific data (projects, rooms) is stored under the respective customer's document to ensure clear ownership and secure list operations.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secures customer profiles. Only the authenticated user can create their own profile.
-     *              Customer listing is denied.
+     * @description Controls access to customer profile data.
      * @path /customers/{customerId}
-     * @allow (create) User with UID 'user_abc' creates a new customer profile at /customers/user_abc.
-     * @deny (create) User with UID 'user_abc' attempts to create a customer profile at /customers/user_xyz.
-     * @deny (get) Any user attempts to get data.
-     * @deny (list) Any user attempts to list data.
-     * @deny (update) Any user attempts to update data.
-     * @deny (delete) Any user attempts to delete data.
-     * @principle Enforces strict user-ownership for customer data.
+     * @allow (create) User with UID 'user_abc' can create their own customer document at /customers/user_abc.
+     * @deny (create) User with UID 'user_abc' cannot create a customer document at /customers/user_xyz.
+     * @allow (get) User with UID 'user_abc' can read their own customer document at /customers/user_abc.
+     * @deny (get) User with UID 'user_abc' cannot read a different customer document at /customers/user_xyz.
+     * @allow (update) User with UID 'user_abc' can update their own customer document at /customers/user_abc.
+     * @deny (update) User with UID 'user_abc' cannot update a different customer document at /customers/user_xyz.
+     * @allow (delete) User with UID 'user_abc' can delete their own customer document at /customers/user_abc.
+     * @deny (delete) User with UID 'user_abc' cannot delete a different customer document at /customers/user_xyz.
+     * @principle Enforces document ownership for all operations.
      */
     match /customers/{customerId} {
+      // Helper function to check if the user is signed in
       function isSignedIn() {
         return request.auth != null;
       }
 
-      function isOwner(userId) {
-        return request.auth.uid == userId;
+      // Helper function to check if the user is the owner of the document
+      function isOwner(customerId) {
+        return request.auth.uid == customerId;
       }
 
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+      // Helper function to check if the user is the owner of the existing document
+      function isExistingOwner(customerId) {
+        return isOwner(customerId) && resource.data != null;
       }
-
-      allow get: if false;
+      allow get: if isOwner(customerId);
       allow list: if false;
-      allow create: if isSignedIn() && isOwner(customerId);
+      allow create: if isSignedIn() && request.auth.uid == customerId;
       allow update: if isExistingOwner(customerId);
       allow delete: if isExistingOwner(customerId);
     }
 
     /**
-     * @description Secures project data for a specific customer. Only the owner (customer) can create, read, update, or delete their projects.
+     * @description Controls access to project data for a specific customer.
      * @path /customers/{customerId}/projects/{projectId}
-     * @allow (create) User with UID 'user_abc' creates a new project under /customers/user_abc/projects/project_123.
-     * @deny (create) User with UID 'user_xyz' attempts to create a project under /customers/user_abc/projects/project_123.
-     * @allow (get) User with UID 'user_abc' gets project under /customers/user_abc/projects/project_123.
-     * @allow (list) User with UID 'user_abc' lists projects under /customers/user_abc/projects.
-     * @allow (update) User with UID 'user_abc' updates project data under /customers/user_abc/projects/project_123.
-     * @allow (delete) User with UID 'user_abc' deletes project data under /customers/user_abc/projects/project_123.
-     * @deny (get) User with UID 'user_xyz' attempts to get data under /customers/user_abc/projects/project_123.
-     * @deny (list) User with UID 'user_xyz' attempts to list data under /customers/user_abc/projects.
-     * @deny (update) User with UID 'user_xyz' attempts to update data under /customers/user_abc/projects/project_123.
-     * @deny (delete) User with UID 'user_xyz' attempts to delete data under /customers/user_abc/projects/project_123.
-     * @principle Enforces strict user-ownership for project data.
+     * @allow (create) User with UID 'user_abc' can create a project under their customer ID at /customers/user_abc/projects/project_123.
+     * @deny (create) User with UID 'user_abc' cannot create a project under a different customer ID at /customers/user_xyz/projects/project_123.
+     * @allow (get) User with UID 'user_abc' can read a project under their customer ID at /customers/user_abc/projects/project_123.
+     * @deny (get) User with UID 'user_abc' cannot read a project under a different customer ID at /customers/user_xyz/projects/project_123.
+     * @allow (update) User with UID 'user_abc' can update a project under their customer ID at /customers/user_abc/projects/project_123.
+     * @deny (update) User with UID 'user_abc' cannot update a project under a different customer ID at /customers/user_xyz/projects/project_123.
+     * @allow (delete) User with UID 'user_abc' can delete a project under their customer ID at /customers/user_abc/projects/project_123.
+     * @deny (delete) User with UID 'user_abc' cannot delete a project under a different customer ID at /customers/user_xyz/projects/project_123.
+     * @principle Enforces document ownership and relational integrity.
      */
     match /customers/{customerId}/projects/{projectId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-        function isOwner(customerId) {
-            return request.auth.uid == customerId;
-        }
+      // Helper function to check if the user is the owner of the document
+      function isOwner(customerId) {
+        return request.auth.uid == customerId;
+      }
 
-        function isExistingOwner(customerId) {
-            return isOwner(customerId) && resource != null;
-        }
-
-        allow get: if isOwner(customerId);
-        allow list: if isOwner(customerId);
-        allow create: if isSignedIn() && isOwner(customerId);
-        allow update: if isExistingOwner(customerId);
-        allow delete: if isExistingOwner(customerId);
+      // Helper function to check if the user is the owner of the existing document
+      function isExistingOwner(customerId) {
+        return isOwner(customerId) && resource.data != null;
+      }
+      allow get: if isOwner(customerId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == customerId;
+      allow update: if isExistingOwner(customerId);
+      allow delete: if isExistingOwner(customerId);
     }
 
     /**
-     * @description Secures room data for a specific project and customer. Only the owner (customer) can create, read, update, or delete rooms within their projects.
+     * @description Controls access to room data for a specific project and customer.
      * @path /customers/{customerId}/projects/{projectId}/rooms/{roomId}
-     * @allow (create) User with UID 'user_abc' creates a new room under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @deny (create) User with UID 'user_xyz' attempts to create a room under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @allow (get) User with UID 'user_abc' gets room under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @allow (list) User with UID 'user_abc' lists rooms under /customers/user_abc/projects/project_123/rooms.
-     * @allow (update) User with UID 'user_abc' updates room data under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @allow (delete) User with UID 'user_abc' deletes room data under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @deny (get) User with UID 'user_xyz' attempts to get data under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @deny (list) User with UID 'user_xyz' attempts to list data under /customers/user_abc/projects/project_123/rooms.
-     * @deny (update) User with UID 'user_xyz' attempts to update data under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @deny (delete) User with UID 'user_xyz' attempts to delete data under /customers/user_abc/projects/project_123/rooms/room_456.
-     * @principle Enforces strict user-ownership for room data within projects.
+     * @allow (create) User with UID 'user_abc' can create a room under their project and customer ID at /customers/user_abc/projects/project_123/rooms/room_456.
+     * @deny (create) User with UID 'user_abc' cannot create a room under a different customer ID at /customers/user_xyz/projects/project_123/rooms/room_456.
+     * @allow (get) User with UID 'user_abc' can read a room under their project and customer ID at /customers/user_abc/projects/project_123/rooms/room_456.
+     * @deny (get) User with UID 'user_abc' cannot read a room under a different customer ID at /customers/user_xyz/projects/project_123/rooms/room_456.
+     * @allow (update) User with UID 'user_abc' can update a room under their project and customer ID at /customers/user_abc/projects/project_123/rooms/room_456.
+     * @deny (update) User with UID 'user_abc' cannot update a room under a different customer ID at /customers/user_xyz/projects/project_123/rooms/room_456.
+     * @allow (delete) User with UID 'user_abc' can delete a room under their project and customer ID at /customers/user_abc/projects/project_123/rooms/room_456.
+     * @deny (delete) User with UID 'user_abc' cannot delete a room under a different customer ID at /customers/user_xyz/projects/project_123/rooms/room_456.
+     * @principle Enforces document ownership and relational integrity.
      */
     match /customers/{customerId}/projects/{projectId}/rooms/{roomId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-        function isOwner(customerId) {
-            return request.auth.uid == customerId;
-        }
+      // Helper function to check if the user is the owner of the document
+      function isOwner(customerId) {
+        return request.auth.uid == customerId;
+      }
 
-        function isExistingOwner(customerId) {
-            return isOwner(customerId) && resource != null;
-        }
-
-        allow get: if isOwner(customerId);
-        allow list: if isOwner(customerId);
-        allow create: if isSignedIn() && isOwner(customerId);
-        allow update: if isExistingOwner(customerId);
-        allow delete: if isExistingOwner(customerId);
+      // Helper function to check if the user is the owner of the existing document
+      function isExistingOwner(customerId) {
+        return isOwner(customerId) && resource.data != null;
+      }
+      allow get: if isOwner(customerId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == customerId;
+      allow update: if isExistingOwner(customerId);
+      allow delete: if isExistingOwner(customerId);
     }
 
     /**
-     * @description Secures material cost data. Only authenticated users can read, create, update, or delete material costs.
+     * @description Controls access to material cost data.
      * @path /material_costs/{materialCostId}
-     * @allow (get) Authenticated user gets material cost data.
-     * @allow (list) Authenticated user lists material cost data.
-     * @allow (create) Authenticated user creates material cost data.
-     * @allow (update) Authenticated user updates material cost data.
-     * @allow (delete) Authenticated user deletes material cost data.
-     * @deny (get) Unauthenticated user attempts to get material cost data.
-     * @deny (list) Unauthenticated user attempts to list material cost data.
-     * @deny (create) Unauthenticated user attempts to create material cost data.
-     * @deny (update) Unauthenticated user attempts to update material cost data.
-     * @deny (delete) Unauthenticated user attempts to delete material cost data.
-     * @principle Allows authenticated users to manage material cost data.
+     * @allow (get) Authenticated user can read material cost data.
+     * @deny (get) Unauthenticated user cannot read material cost data.
+     * @allow (create) Authenticated user can create material cost data.
+     * @deny (create) Unauthenticated user cannot create material cost data.
+     * @allow (update) Authenticated user can update material cost data.
+     * @deny (update) Unauthenticated user cannot update material cost data.
+     * @allow (delete) Authenticated user can delete material cost data.
+     * @deny (delete) Unauthenticated user cannot delete material cost data.
      */
     match /material_costs/{materialCostId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if isSignedIn();
-        allow create: if isSignedIn();
-        allow update: if isSignedIn();
-        allow delete: if isSignedIn();
+      // Helper function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
   }
 }

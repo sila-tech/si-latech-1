@@ -73,6 +73,7 @@ interface CalculatorContextType {
   perRoomCalculations: PerRoomCalculation[];
   aggregatedBreakdown: AggregatedRoomGroup[];
   totals: ProjectTotals;
+  clearCalculator: () => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -106,6 +107,12 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setRooms(rooms.filter((room) => room.id !== id));
   };
   
+  const clearCalculator = () => {
+    setRooms([]);
+    setSettings(DEFAULTS);
+    setLintelLength(0);
+  }
+
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
     const BEAM_PRICE_PER_METER = 545; // TODO: Make configurable
     return rooms.map((r) => {
@@ -147,7 +154,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     
-    const totalLintelLength = rooms.reduce((sum, room) => {
+    const totalLintelLength = lintelLength > 0 ? lintelLength : rooms.reduce((sum, room) => {
         return sum + 2 * (room.length + room.width);
     }, 0);
 
@@ -192,7 +199,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       lintel,
       lintelSteel,
     };
-  }, [perRoomCalculations, settings, rooms]);
+  }, [perRoomCalculations, settings, rooms, lintelLength]);
   
   return (
     <CalculatorContext.Provider
@@ -209,6 +216,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         perRoomCalculations,
         aggregatedBreakdown,
         totals,
+        clearCalculator,
       }}
     >
       {children}

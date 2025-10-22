@@ -32,9 +32,8 @@ import {
   List,
   FileDown,
   Warehouse,
-  DollarSign,
-  Hammer,
   Sheet,
+  Save,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +43,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
+import { useFirebase } from '@/firebase';
+import { saveProject } from '@/firebase/data-manager';
 
 type ClientInfo = {
   clientName: string;
@@ -132,11 +133,14 @@ export function ActionsCard() {
     rooms, 
     setRooms, 
     setLintelLength, 
+    settings,
     totals, 
     perRoomCalculations, 
     aggregatedBreakdown 
   } = useCalculator();
   const { toast } = useToast();
+  const { firestore, user } = useFirebase();
+
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
@@ -148,6 +152,35 @@ export function ActionsCard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+
+  const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [projectName, setProjectName] = useState('');
+
+  const handleSaveProject = async () => {
+    if (!projectName.trim()) {
+      toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
+      return;
+    }
+    if (!user || !firestore) {
+      toast({ title: 'Error', description: 'You must be logged in to save.', variant: 'destructive' });
+      return;
+    }
+
+    const projectData = {
+      name: projectName,
+      rooms,
+      settings,
+      lintelLength,
+      createdAt: new Date().toISOString(),
+    };
+
+    saveProject(firestore, user.uid, projectData);
+    
+    toast({ title: 'Success', description: `Project "${projectName}" saved.` });
+    setSaveDialogOpen(false);
+    setProjectName('');
+  };
+
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
@@ -676,6 +709,9 @@ export function ActionsCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button variant="default" className="w-full" onClick={() => setSaveDialogOpen(true)} disabled={!user}>
+            <Save /> Save Project
+          </Button>
           
           <Button variant="secondary" className="w-full" onClick={() => setInvoiceDialogOpen(true)}>
             <Download /> Customer Invoice
@@ -685,10 +721,6 @@ export function ActionsCard() {
             <List /> Material Schedule
           </Button>
 
-          <Button variant="outline" className="w-full text-amber-600 border-amber-600/50 hover:bg-amber-100 hover:text-amber-700" onClick={() => setTimberScheduleOpen(true)}>
-            <Hammer /> Timber Schedule
-          </Button>
-
           <Button variant="outline" className="w-full" onClick={() => setBreakdownDialogOpen(true)}>
               <FileDown /> Promax Breakdown
           </Button>
@@ -696,18 +728,16 @@ export function ActionsCard() {
           <Button variant="outline" className="w-full" onClick={() => setAggregatedDialogOpen(true)}>
               <Warehouse /> Aggregated Report
           </Button>
-
+          
           <Button variant="outline" className="w-full text-green-600 border-green-600/50 hover:bg-green-100 hover:text-green-700" asChild>
             <Link href="/profit">
               <Sheet /> Internal Report
             </Link>
           </Button>
 
-          
-
           <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
             <DialogTrigger asChild>
-              <Button className="w-full col-span-2 lg:col-span-1">
+              <Button className="w-full">
                 <Upload /> Upload Plan (AI)
               </Button>
             </DialogTrigger>
@@ -758,7 +788,7 @@ export function ActionsCard() {
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="accent" className="w-full col-span-2 lg:col-span-2">
+              <Button variant="accent" className="w-full col-span-2 lg:col-span-1">
                 <FileText /> Generate Quote (AI)
               </Button>
             </DialogTrigger>
@@ -849,6 +879,25 @@ export function ActionsCard() {
         title="Download Timber & Props Schedule"
         description="Please fill in project details for the timber report."
       />
+
+      <Dialog open={isSaveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Project</DialogTitle>
+            <DialogDescription>Enter a name for your project to save it for later.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="projectName">Project Name</Label>
+            <Input id="projectName" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="e.g., Karen Residential"/>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSaveProject}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
