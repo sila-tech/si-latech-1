@@ -221,15 +221,13 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
 
     const tableRows = [
       [
-        'Total Invoiced Beams',
-        '-',
+        'Total Invoiced Beams (m)',
         totals.totalInvoiceBeamLength.toFixed(2),
         BEAM_PRICE_PER_METER.toFixed(2),
         beamsTotal.toFixed(2)
       ],
       [
-        'Total Blocks',
-        '-',
+        'Total Blocks (pcs)',
         totals.totalBlocks.toString(),
         BLOCK_PRICE.toFixed(2),
         blocksTotal.toFixed(2)
@@ -238,16 +236,16 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
 
 
     (doc as any).autoTable({
-      head: [['DESCRIPTION', 'DETAILS', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
+      head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
       body: tableRows,
       startY: metaY + 25,
       theme: 'grid',
       headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
       styles: { fontSize: 9, fontStyle: 'bold' },
       columnStyles: {
+        1: { halign: 'right' },
         2: { halign: 'right' },
         3: { halign: 'right' },
-        4: { halign: 'right' },
       }
     });
 
@@ -354,6 +352,8 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
     finalY += 6;
     doc.text('2. This schedule includes materials for the beam & block slab, wall lintels, and timber formwork.', 14, finalY);
+    finalY += 6;
+    doc.text('3. Steel bar quantities are for lintels only and include 5% wastage. Order standard 12m lengths.', 14, finalY);
 
     doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
     setScheduleDialogOpen(false);
@@ -961,3 +961,5 @@ export function ActionsCard({ totals, rooms, setRooms, setLintelLength, perRoomC
     </>
   );
 }
+
+    
