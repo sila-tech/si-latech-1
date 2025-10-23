@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import {
@@ -20,6 +20,15 @@ import {
   DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +44,8 @@ import {
   Sheet,
   Save,
   Hammer,
+  ChevronDown,
+  FilePlus,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -44,8 +55,10 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
-import { useFirebase } from '@/firebase';
-import { saveProject } from '@/firebase/data-manager';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { saveProject, type ProjectData } from '@/firebase/data-manager';
+import { format } from 'date-fns';
 
 type ClientInfo = {
   clientName: string;
@@ -134,15 +147,18 @@ export function ActionsCard() {
     rooms, 
     setRooms, 
     settings,
+    setSettings,
     lintelLength,
     setLintelLength,
     totals, 
     perRoomCalculations, 
     aggregatedBreakdown,
     loadedProjectId,
+    setLoadedProjectId,
+    clearCalculator,
   } = useCalculator();
   const { toast } = useToast();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, isUserLoading } = useFirebase();
 
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -159,46 +175,61 @@ export function ActionsCard() {
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [projectName, setProjectName] = useState('');
 
+  // --- Project Loading Logic ---
+  const projectsQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, 'customers', user.uid, 'projects');
+  }, [firestore, user]);
+
+  const { data: projects, isLoading: areProjectsLoading } = useCollection<ProjectData>(projectsQuery);
+
+  const sortedProjects = useMemo(() => {
+    if (!projects) return [];
+    return [...projects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [projects]);
+
+  const handleLoadProject = (project: ProjectData) => {
+    setRooms(project.rooms || []);
+    setSettings(project.settings);
+    setLintelLength(project.lintelLength || 0);
+    setLoadedProjectId(project.id!);
+    toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
+  };
+
   const handleSaveProject = async (newProjectName?: string) => {
     if (!user || !firestore) {
       toast({ title: 'Authentication Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
       return;
     }
 
+    const finalProjectName = newProjectName || (loadedProjectId && rooms.length > 0 ? rooms[0].name.split(' - ')[0] : 'Unnamed Project');
+
+    if (!finalProjectName && !loadedProjectId) {
+      setSaveDialogOpen(true);
+      return;
+    }
+
+    const projectData = {
+      name: finalProjectName,
+      rooms,
+      settings,
+      lintelLength,
+      status: 'pending' as const,
+    };
+    
     if (loadedProjectId) {
-      // Update existing project
-      const projectData = {
-        name: rooms.length > 0 ? rooms[0].name.split(' - ')[0] : 'Unnamed Project', // Attempt to derive name
-        rooms,
-        settings,
-        lintelLength,
-        status: 'pending' as const,
-      };
-      saveProject(firestore, user.uid, { ...projectData, id: loadedProjectId });
+      saveProject(firestore, user.uid, { ...projectData, id: loadedProjectId, createdAt: projects?.find(p => p.id === loadedProjectId)?.createdAt || new Date().toISOString() });
       toast({ title: 'Project Updated', description: `Your changes to the project have been saved.` });
     } else {
-      // It's a new project
-      if (!newProjectName) {
-        // If we don't have a name yet, open the dialog to ask for one.
-        setSaveDialogOpen(true);
-        return;
+      const newId = await saveProject(firestore, user.uid, { ...projectData, createdAt: new Date().toISOString() });
+      if (newId) {
+        setLoadedProjectId(newId);
       }
-      
-      // We have a name, so save the new project.
-      const projectData = {
-        name: newProjectName,
-        rooms,
-        settings,
-        lintelLength,
-        status: 'pending' as const,
-        createdAt: new Date().toISOString(),
-      };
-      saveProject(firestore, user.uid, projectData);
-      
-      toast({ title: 'Project Saved', description: `Project "${newProjectName}" has been saved.` });
-      setSaveDialogOpen(false);
-      setProjectName('');
+      toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been saved.` });
     }
+    
+    setSaveDialogOpen(false);
+    setProjectName('');
   };
 
 
@@ -655,7 +686,7 @@ export function ActionsCard() {
       reader.onload = (loadEvent) => {
         setFilePreview(loadEvent.target?.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readDataURL(file);
     } else {
       setFilePreview(null);
     }
@@ -702,7 +733,7 @@ export function ActionsCard() {
     if (result.data) {
         if (result.data.floors) {
           const allRooms = result.data.floors.flatMap(floor => 
-              floor.rooms.map(room => ({...room, name: `${floor.floorName} - ${room.name}`}))
+              floor.rooms.map(room => ({...room, id: crypto.randomUUID(), name: `${floor.floorName} - ${room.name}`}))
           );
           setRooms(allRooms);
         }
@@ -729,6 +760,34 @@ export function ActionsCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full" disabled={!user || areProjectsLoading}>
+                {areProjectsLoading ? <Loader2 className="mr-2 animate-spin" /> : <ChevronDown />}
+                Load Project
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64">
+              <DropdownMenuLabel>Your Saved Projects</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={clearCalculator}>
+                <FilePlus /> New Project
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {sortedProjects.length > 0 ? (
+                sortedProjects.map(p => (
+                  <DropdownMenuItem key={p.id} onSelect={() => handleLoadProject(p)}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{p.name}</span>
+                      <span className="text-xs text-muted-foreground">Saved: {format(new Date(p.createdAt), 'PP')}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuLabel className="text-center font-normal text-muted-foreground">No projects saved</DropdownMenuLabel>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button variant="default" className="w-full" onClick={() => handleSaveProject()} disabled={!user}>
             <Save /> Save Project
           </Button>
@@ -911,8 +970,8 @@ export function ActionsCard() {
             <DialogDescription>Enter a name for your new project to save it for later.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="projectName">Project Name</Label>
-            <Input id="projectName" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="e.g., Karen Residential"/>
+            <Label htmlFor="projectNameDialog">Project Name</Label>
+            <Input id="projectNameDialog" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="e.g., Karen Residential"/>
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -931,5 +990,3 @@ export function ActionsCard() {
     </>
   );
 }
-
-    

@@ -24,8 +24,8 @@ export interface ProjectData {
 export function saveProject(
   db: Firestore,
   userId: string,
-  projectData: Omit<ProjectData, 'id' | 'updatedAt' | 'purchasedAt'> & { id?: string }
-) {
+  projectData: Omit<ProjectData, 'id' | 'updatedAt' | 'purchasedAt' | 'status'> & { id?: string; createdAt: string, status?: 'pending' | 'purchased' }
+): Promise<string | undefined> {
   const { id, ...dataToSave } = projectData;
   const timestamp = new Date().toISOString();
   
@@ -33,10 +33,12 @@ export function saveProject(
     // Update existing project
     const projectRef = doc(db, 'customers', userId, 'projects', id);
     updateDocumentNonBlocking(projectRef, { ...dataToSave, updatedAt: timestamp });
+    return Promise.resolve(id);
   } else {
     // Create new project
     const projectsColRef = collection(db, 'customers', userId, 'projects');
-    addDocumentNonBlocking(projectsColRef, { ...dataToSave, status: 'pending', createdAt: timestamp });
+    const docPromise = addDocumentNonBlocking(projectsColRef, { ...dataToSave, status: 'pending', createdAt: timestamp });
+    return docPromise.then(docRef => docRef?.id);
   }
 }
 
