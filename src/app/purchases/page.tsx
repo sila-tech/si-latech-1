@@ -4,7 +4,7 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2, FileText, ShoppingBag, BadgeCheck, BadgeHelp } from 'lucide-react';
@@ -57,8 +57,8 @@ function PurchasesPage() {
     
     const handleMarkAsPurchased = (project: ProjectData) => {
         if (!firestore || !user || !project.id) return;
-        const projectRef = collection(firestore, 'customers', user.uid, 'projects');
-        updateProjectStatus(projectRef.doc(project.id), 'purchased');
+        const projectRef = doc(firestore, 'customers', user.uid, 'projects', project.id);
+        updateProjectStatus(projectRef, 'purchased');
         toast({ title: 'Project Updated', description: `Marked "${project.name}" as purchased.`});
     };
 
