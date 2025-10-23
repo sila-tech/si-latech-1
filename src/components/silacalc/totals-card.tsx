@@ -17,7 +17,6 @@ export function TotalsCard() {
   const {
     totalArea,
     totalBlocks,
-    totalActualBeamLength,
     totalInvoiceBeamLength,
     totalLintelLength,
     totalConcreteVolume,
@@ -56,9 +55,9 @@ export function TotalsCard() {
           </li>
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
-              <MoveHorizontal className="w-4 h-4" /> Actual Beam Length
+              <MoveHorizontal className="w-4 h-4" /> Flat Beam Lengths
             </span>
-            <span className="font-semibold">{totalActualBeamLength.toFixed(2)} m</span>
+            <span className="font-semibold">{totalInvoiceBeamLength.toFixed(2)} m</span>
           </li>
           <li className="flex items-center justify-between">
             <span className="text-muted-foreground flex items-center gap-2">
