@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -14,7 +15,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 function ProfitReportPage() {
-    const { perRoomCalculations, totals } = useCalculator();
+    const { perRoomCalculations, totals, projectName } = useCalculator();
 
     const handleDownload = () => {
         const doc = new jsPDF();
@@ -103,12 +104,16 @@ function ProfitReportPage() {
         doc.setFontSize(10);
         doc.text(`Date: ${invoiceDate}`, 145, 20);
         doc.text(`Invoice No: ${invoiceNumber}`, 145, 25);
+        
         doc.text(`From: SI-LATECH`, 14, 40);
+        if (projectName) {
+            doc.text(`Project: ${projectName}`, 14, 45);
+        }
 
         const tableColumn = ['Description', 'Amount (KSh)'];
         const tableRows = [
             [`Payment for Beam Metres (${totals.totalProfitBeamLength.toFixed(2)}m)`, beamProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })],
-            ['Payment for Block Bonuses (Block Commission)', blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })],
+            [`Payment for Blocks (${totals.totalBlocks} pcs)`, blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })],
         ];
 
         (doc as any).autoTable({

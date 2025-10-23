@@ -155,6 +155,8 @@ export function ActionsCard() {
     aggregatedBreakdown,
     loadedProjectId,
     setLoadedProjectId,
+    projectName,
+    setProjectName,
     clearCalculator,
   } = useCalculator();
   const { toast } = useToast();
@@ -173,7 +175,7 @@ export function ActionsCard() {
   const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
 
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [projectName, setProjectName] = useState('');
+  const [newProjectName, setNewProjectName] = useState('');
 
   // --- Project Loading Logic ---
   const projectsQuery = useMemoFirebase(() => {
@@ -193,16 +195,17 @@ export function ActionsCard() {
     setSettings(project.settings);
     setLintelLength(project.lintelLength || 0);
     setLoadedProjectId(project.id!);
+    setProjectName(project.name);
     toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
   };
 
-  const handleSaveProject = async (newProjectName?: string) => {
+  const handleSaveProject = async (nameForProject?: string) => {
     if (!user || !firestore) {
       toast({ title: 'Authentication Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
       return;
     }
   
-    const finalProjectName = newProjectName || (projects?.find(p => p.id === loadedProjectId)?.name);
+    const finalProjectName = nameForProject || projectName;
   
     if (!finalProjectName) {
       setSaveDialogOpen(true);
@@ -220,17 +223,18 @@ export function ActionsCard() {
     if (loadedProjectId) {
       const existingProject = projects?.find(p => p.id === loadedProjectId);
       saveProject(firestore, user.uid, { ...projectData, name: finalProjectName, id: loadedProjectId, createdAt: existingProject?.createdAt || new Date().toISOString() });
-      toast({ title: 'Project Updated', description: `Your changes to the project have been saved.` });
+      toast({ title: 'Project Updated', description: `Your changes to project "${finalProjectName}" have been saved.` });
     } else {
       const newId = await saveProject(firestore, user.uid, { ...projectData, name: finalProjectName, createdAt: new Date().toISOString() });
       if (newId) {
         setLoadedProjectId(newId);
+        setProjectName(finalProjectName);
       }
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been saved.` });
     }
   
     setSaveDialogOpen(false);
-    setProjectName('');
+    setNewProjectName('');
   };
 
 
@@ -1007,15 +1011,15 @@ export function ActionsCard() {
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="projectNameDialog">Project Name</Label>
-            <Input id="projectNameDialog" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="e.g., Karen Residential"/>
+            <Input id="projectNameDialog" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="e.g., Karen Residential"/>
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="secondary">Cancel</Button>
             </DialogClose>
             <Button onClick={() => {
-                if (projectName.trim()) {
-                    handleSaveProject(projectName.trim());
+                if (newProjectName.trim()) {
+                    handleSaveProject(newProjectName.trim());
                 } else {
                     toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
                 }

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
@@ -76,6 +77,8 @@ interface CalculatorContextType {
   clearCalculator: () => void;
   loadedProjectId: string | null;
   setLoadedProjectId: (id: string | null) => void;
+  projectName: string;
+  setProjectName: (name: string) => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -85,6 +88,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string>('');
 
   const addRoom = () => {
     setRooms([
@@ -115,6 +119,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setSettings(DEFAULTS);
     setLintelLength(0);
     setLoadedProjectId(null);
+    setProjectName('');
   }
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
@@ -223,6 +228,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         clearCalculator,
         loadedProjectId,
         setLoadedProjectId,
+        projectName,
+        setProjectName,
       }}
     >
       {children}

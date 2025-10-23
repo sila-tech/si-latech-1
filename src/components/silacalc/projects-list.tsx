@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function ProjectsList() {
   const { firestore, user, isUserLoading } = useFirebase();
-  const { setRooms, setSettings, setLintelLength, clearCalculator, setLoadedProjectId } = useCalculator();
+  const { setRooms, setSettings, setLintelLength, clearCalculator, setLoadedProjectId, setProjectName } = useCalculator();
   const { toast } = useToast();
 
   const projectsQuery = useMemoFirebase(() => {
@@ -35,6 +35,7 @@ export function ProjectsList() {
     setSettings(project.settings);
     setLintelLength(project.lintelLength || 0);
     setLoadedProjectId(project.id!);
+    setProjectName(project.name);
     toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
   };
 
