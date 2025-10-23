@@ -19,7 +19,7 @@ import { updateProjectStatus } from '@/firebase/data-manager';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { SiLatechIcon } from '@/components/icons';
+import { logoImageData } from '@/lib/logo-image';
 
 
 function PurchasesPage() {
@@ -80,14 +80,7 @@ function PurchasesPage() {
         doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
 
         // Header
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(28);
-        doc.setTextColor(primaryColor);
-        doc.text('SI-LATECH', pageWidth / 2, 30, { align: 'center' });
-
-        doc.setFontSize(14);
-        doc.setTextColor(100);
-        doc.text('CONSTRUCTION LTD', pageWidth / 2, 40, { align: 'center' });
+        doc.addImage(logoImageData, 'JPEG', 15, 15, 60, 20);
 
         // Certificate Title
         doc.setFontSize(36);
