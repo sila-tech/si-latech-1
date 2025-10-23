@@ -70,7 +70,7 @@ function PurchasesPage() {
         const doc = new jsPDF({ orientation: 'landscape' });
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const primaryColor = '#10B981'; // Green
+        const primaryColor = '#000000'; // Black color
 
         // Draw border
         doc.setDrawColor(primaryColor);
@@ -78,28 +78,38 @@ function PurchasesPage() {
         doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
         doc.setLineWidth(0.5);
         doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
-
+        
         // Header
         doc.addImage(logoImageData, 'JPEG', 15, 15, 60, 20);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(primaryColor);
+        doc.text('SI-LATECH', pageWidth - 20, 20, { align: 'right' });
+
 
         // Certificate Title
         doc.setFontSize(36);
         doc.setFont('times', 'bolditalic');
+        doc.setTextColor(primaryColor);
         doc.text('Certificate of Project Completion', pageWidth / 2, 70, { align: 'center' });
 
         // "PROUDLY PRESENTED TO"
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(16);
+        doc.setTextColor(primaryColor);
         doc.text('Proudly Presented To', pageWidth / 2, 90, { align: 'center' });
 
         // Client Name
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(26);
+        doc.setTextColor(primaryColor);
         doc.text(project.name, pageWidth / 2, 105, { align: 'center' }); // Using project name as client name for now
 
         // Thank you message
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
+        doc.setTextColor(primaryColor);
         const thankYouText = `For successfully completing the "${project.name}" project. We sincerely thank you for your business and trust in our Beam & Block slab technology. We wish you the very best in your new space.`;
         const splitText = doc.splitTextToSize(thankYouText, pageWidth - 80);
         doc.text(splitText, pageWidth / 2, 125, { align: 'center' });
@@ -108,6 +118,7 @@ function PurchasesPage() {
         const signatureY = pageHeight - 50;
         doc.line(40, signatureY, 120, signatureY);
         doc.setFontSize(10);
+        doc.setTextColor(primaryColor);
         doc.text('Managing Director', 80, signatureY + 5, { align: 'center' });
 
         doc.line(pageWidth - 120, signatureY, pageWidth - 40, signatureY);
@@ -221,3 +232,5 @@ function PurchasesPage() {
 }
 
 export default withProtection(PurchasesPage, 'Sila4927');
+
+    
