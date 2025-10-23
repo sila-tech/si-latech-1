@@ -7,7 +7,7 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, FileText, ShoppingBag, BadgeCheck, BadgeHelp } from 'lucide-react';
+import { ArrowLeft, Loader2, FileText, ShoppingBag, BadgeCheck, BadgeHelp, Award } from 'lucide-react';
 import { Header } from '@/components/header';
 import { withProtection } from '@/components/auth/with-protection';
 import type { ProjectData } from '@/firebase/data-manager';
@@ -17,6 +17,10 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { updateProjectStatus } from '@/firebase/data-manager';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { SiLatechIcon } from '@/components/icons';
+
 
 function PurchasesPage() {
     const { firestore, user, isUserLoading } = useFirebase();
@@ -60,6 +64,64 @@ function PurchasesPage() {
         const projectRef = doc(firestore, 'customers', user.uid, 'projects', project.id);
         updateProjectStatus(projectRef, 'purchased');
         toast({ title: 'Project Updated', description: `Marked "${project.name}" as purchased.`});
+    };
+
+    const handleGenerateCertificate = (project: ProjectData) => {
+        const doc = new jsPDF({ orientation: 'landscape' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const primaryColor = '#10B981'; // Green
+
+        // Draw border
+        doc.setDrawColor(primaryColor);
+        doc.setLineWidth(1.5);
+        doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
+        doc.setLineWidth(0.5);
+        doc.rect(8, 8, pageWidth - 16, pageHeight - 16);
+
+        // Header
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(28);
+        doc.setTextColor(primaryColor);
+        doc.text('SI-LATECH', pageWidth / 2, 30, { align: 'center' });
+
+        doc.setFontSize(14);
+        doc.setTextColor(100);
+        doc.text('CONSTRUCTION LTD', pageWidth / 2, 40, { align: 'center' });
+
+        // Certificate Title
+        doc.setFontSize(36);
+        doc.setFont('times', 'bolditalic');
+        doc.text('Certificate of Project Completion', pageWidth / 2, 70, { align: 'center' });
+
+        // "PROUDLY PRESENTED TO"
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(16);
+        doc.text('Proudly Presented To', pageWidth / 2, 90, { align: 'center' });
+
+        // Client Name
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(26);
+        doc.text(project.name, pageWidth / 2, 105, { align: 'center' }); // Using project name as client name for now
+
+        // Thank you message
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        const thankYouText = `For successfully completing the "${project.name}" project. We sincerely thank you for your business and trust in our Beam & Block slab technology. We wish you the very best in your new space.`;
+        const splitText = doc.splitTextToSize(thankYouText, pageWidth - 80);
+        doc.text(splitText, pageWidth / 2, 125, { align: 'center' });
+
+        // Date and Signature
+        const signatureY = pageHeight - 50;
+        doc.line(40, signatureY, 120, signatureY);
+        doc.setFontSize(10);
+        doc.text('Managing Director', 80, signatureY + 5, { align: 'center' });
+
+        doc.line(pageWidth - 120, signatureY, pageWidth - 40, signatureY);
+        const purchaseDate = project.purchasedAt ? format(new Date(project.purchasedAt), 'PPP') : 'N/A';
+        doc.text(`Date: ${purchaseDate}`, pageWidth - 80, signatureY + 5, { align: 'center' });
+
+        doc.save(`Certificate-of-Completion-${project.name}.pdf`);
     };
 
     return (
@@ -119,7 +181,7 @@ function PurchasesPage() {
                                         )}
                                     </CardContent>
                                     <CardFooter className="flex flex-col sm:flex-row gap-2">
-                                         {project.status === 'pending' && (
+                                         {project.status === 'pending' ? (
                                             <Button 
                                                 variant="default"
                                                 size="sm"
@@ -128,12 +190,21 @@ function PurchasesPage() {
                                             >
                                                 <BadgeCheck /> Mark as Purchased
                                             </Button>
+                                         ) : (
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className="w-full"
+                                                onClick={() => handleGenerateCertificate(project)}
+                                            >
+                                                <Award /> Certificate
+                                            </Button>
                                          )}
                                         <Button 
                                             onClick={() => handleViewReport(project)} 
                                             size="sm"
                                             className="w-full"
-                                            variant={project.status === 'purchased' ? 'secondary' : 'outline'}
+                                            variant={project.status === 'purchased' ? 'outline' : 'outline'}
                                         >
                                             <FileText />
                                             View Report
