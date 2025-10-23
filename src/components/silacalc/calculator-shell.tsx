@@ -9,6 +9,7 @@ import { TotalsCard } from './totals-card';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
+import { QuickQuoteCard } from './quick-quote-card';
 
 export function CalculatorShell() {
   const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom } = useCalculator();
@@ -47,5 +48,3 @@ export function CalculatorShell() {
     </div>
   );
 }
-
-    
