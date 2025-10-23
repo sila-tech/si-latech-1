@@ -7,8 +7,9 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, FileText, ShoppingBag, BadgeCheck, BadgeHelp, Award } from 'lucide-react';
+import { ArrowLeft, Download, Loader2, FileText, ShoppingBag, BadgeCheck, BadgeHelp, Award } from 'lucide-react';
 import { Header } from '@/components/header';
+import { Separator } from '@/components/ui/separator';
 import { withProtection } from '@/components/auth/with-protection';
 import type { ProjectData } from '@/firebase/data-manager';
 import { format } from 'date-fns';
@@ -70,7 +71,7 @@ function PurchasesPage() {
         const doc = new jsPDF({ orientation: 'landscape' });
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const primaryColor = '#000000'; // Black color
+        const primaryColor = '#4285F4'; // A nice blue color
 
         // Draw border
         doc.setDrawColor(primaryColor);
@@ -109,16 +110,17 @@ function PurchasesPage() {
         // Thank you message
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
-        doc.setTextColor(primaryColor);
+        doc.setTextColor(50, 50, 50);
         const thankYouText = `For successfully completing the "${project.name}" project. We sincerely thank you for your business and trust in our Beam & Block slab technology. We wish you the very best in your new space.`;
         const splitText = doc.splitTextToSize(thankYouText, pageWidth - 80);
         doc.text(splitText, pageWidth / 2, 125, { align: 'center' });
 
         // Date and Signature
         const signatureY = pageHeight - 50;
+        doc.setDrawColor(primaryColor);
         doc.line(40, signatureY, 120, signatureY);
         doc.setFontSize(10);
-        doc.setTextColor(primaryColor);
+        doc.setTextColor(50, 50, 50);
         doc.text('Managing Director', 80, signatureY + 5, { align: 'center' });
 
         doc.line(pageWidth - 120, signatureY, pageWidth - 40, signatureY);
@@ -232,5 +234,7 @@ function PurchasesPage() {
 }
 
 export default withProtection(PurchasesPage, 'Sila4927');
+
+    
 
     
