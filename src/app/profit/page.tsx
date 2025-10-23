@@ -107,7 +107,7 @@ function ProfitReportPage() {
 
         const tableColumn = ['Description', 'Amount (KSh)'];
         const tableRows = [
-            ['Payment for Extra Beam Metres (Beam Profit)', beamProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })],
+            [`Payment for Extra Beam Metres (${totals.totalProfitBeamLength.toFixed(2)}m)`, beamProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })],
             ['Payment for Block Bonuses (Block Commission)', blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })],
         ];
 
