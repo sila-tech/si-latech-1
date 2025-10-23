@@ -34,6 +34,7 @@ import {
   Warehouse,
   Sheet,
   Save,
+  Hammer,
 } from 'lucide-react';
 import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -132,12 +133,13 @@ export function ActionsCard() {
   const { 
     rooms, 
     setRooms, 
-    setLintelLength,
-    lintelLength, 
     settings,
+    lintelLength,
+    setLintelLength,
     totals, 
     perRoomCalculations, 
-    aggregatedBreakdown 
+    aggregatedBreakdown,
+    loadedProjectId,
   } = useCalculator();
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
@@ -157,30 +159,46 @@ export function ActionsCard() {
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [projectName, setProjectName] = useState('');
 
-  const handleSaveProject = async () => {
-    if (!projectName.trim()) {
-      toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
-      return;
-    }
+  const handleSaveProject = async (newProjectName?: string) => {
     if (!user || !firestore) {
-      toast({ title: 'Error', description: 'You must be logged in to save.', variant: 'destructive' });
+      toast({ title: 'Authentication Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
       return;
     }
 
-    const projectData = {
-      name: projectName,
-      rooms,
-      settings,
-      lintelLength,
-      status: 'pending' as const,
-      createdAt: new Date().toISOString(),
-    };
-
-    saveProject(firestore, user.uid, projectData);
-    
-    toast({ title: 'Success', description: `Project "${projectName}" saved.` });
-    setSaveDialogOpen(false);
-    setProjectName('');
+    if (loadedProjectId) {
+      // Update existing project
+      const projectData = {
+        name: rooms.length > 0 ? rooms[0].name.split(' - ')[0] : 'Unnamed Project', // Attempt to derive name
+        rooms,
+        settings,
+        lintelLength,
+        status: 'pending' as const,
+      };
+      saveProject(firestore, user.uid, { ...projectData, id: loadedProjectId });
+      toast({ title: 'Project Updated', description: `Your changes to the project have been saved.` });
+    } else {
+      // It's a new project
+      if (!newProjectName) {
+        // If we don't have a name yet, open the dialog to ask for one.
+        setSaveDialogOpen(true);
+        return;
+      }
+      
+      // We have a name, so save the new project.
+      const projectData = {
+        name: newProjectName,
+        rooms,
+        settings,
+        lintelLength,
+        status: 'pending' as const,
+        createdAt: new Date().toISOString(),
+      };
+      saveProject(firestore, user.uid, projectData);
+      
+      toast({ title: 'Project Saved', description: `Project "${newProjectName}" has been saved.` });
+      setSaveDialogOpen(false);
+      setProjectName('');
+    }
   };
 
 
@@ -711,7 +729,7 @@ export function ActionsCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Button variant="default" className="w-full" onClick={() => setSaveDialogOpen(true)} disabled={!user}>
+          <Button variant="default" className="w-full" onClick={() => handleSaveProject()} disabled={!user}>
             <Save /> Save Project
           </Button>
           
@@ -729,6 +747,10 @@ export function ActionsCard() {
           
           <Button variant="outline" className="w-full" onClick={() => setAggregatedDialogOpen(true)}>
               <Warehouse /> Aggregated Report
+          </Button>
+
+          <Button variant="outline" className="w-full" onClick={() => setTimberScheduleOpen(true)}>
+              <Hammer /> Timber Schedule
           </Button>
           
           <Button variant="outline" className="w-full text-green-600 border-green-600/50 hover:bg-green-100 hover:text-green-700" asChild>
@@ -885,8 +907,8 @@ export function ActionsCard() {
       <Dialog open={isSaveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Project</DialogTitle>
-            <DialogDescription>Enter a name for your project to save it for later.</DialogDescription>
+            <DialogTitle>Save New Project</DialogTitle>
+            <DialogDescription>Enter a name for your new project to save it for later.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="projectName">Project Name</Label>
@@ -896,10 +918,18 @@ export function ActionsCard() {
             <DialogClose asChild>
               <Button type="button" variant="secondary">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleSaveProject}>Save</Button>
+            <Button onClick={() => {
+                if (projectName.trim()) {
+                    handleSaveProject(projectName.trim());
+                } else {
+                    toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
+                }
+            }}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   );
 }
+
+    

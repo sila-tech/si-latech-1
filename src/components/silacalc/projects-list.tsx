@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo } from 'react';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
@@ -14,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function ProjectsList() {
   const { firestore, user, isUserLoading } = useFirebase();
-  const { setRooms, setSettings, setLintelLength, clearCalculator } = useCalculator();
+  const { setRooms, setSettings, setLintelLength, clearCalculator, setLoadedProjectId } = useCalculator();
   const { toast } = useToast();
 
   const projectsQuery = useMemoFirebase(() => {
@@ -33,6 +34,7 @@ export function ProjectsList() {
     setRooms(project.rooms || []);
     setSettings(project.settings);
     setLintelLength(project.lintelLength || 0);
+    setLoadedProjectId(project.id!);
     toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
   };
 

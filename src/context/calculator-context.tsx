@@ -74,6 +74,8 @@ interface CalculatorContextType {
   aggregatedBreakdown: AggregatedRoomGroup[];
   totals: ProjectTotals;
   clearCalculator: () => void;
+  loadedProjectId: string | null;
+  setLoadedProjectId: (id: string | null) => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -82,6 +84,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
   const [lintelLength, setLintelLength] = useState<number>(0);
+  const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
 
   const addRoom = () => {
     setRooms([
@@ -111,6 +114,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setRooms([]);
     setSettings(DEFAULTS);
     setLintelLength(0);
+    setLoadedProjectId(null);
   }
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
@@ -217,6 +221,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         aggregatedBreakdown,
         totals,
         clearCalculator,
+        loadedProjectId,
+        setLoadedProjectId,
       }}
     >
       {children}
