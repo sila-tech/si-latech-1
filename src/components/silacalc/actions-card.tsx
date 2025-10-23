@@ -201,14 +201,14 @@ export function ActionsCard() {
       toast({ title: 'Authentication Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
       return;
     }
-
+  
     const finalProjectName = newProjectName || (projects?.find(p => p.id === loadedProjectId)?.name);
-
-    if (!finalProjectName && !loadedProjectId) {
+  
+    if (!finalProjectName) {
       setSaveDialogOpen(true);
       return;
     }
-
+  
     const projectData = {
       name: finalProjectName,
       rooms,
@@ -216,19 +216,19 @@ export function ActionsCard() {
       lintelLength,
       status: 'pending' as const,
     };
-    
+  
     if (loadedProjectId) {
       const existingProject = projects?.find(p => p.id === loadedProjectId);
-      saveProject(firestore, user.uid, { ...projectData, name: finalProjectName!, id: loadedProjectId, createdAt: existingProject?.createdAt || new Date().toISOString() });
+      saveProject(firestore, user.uid, { ...projectData, name: finalProjectName, id: loadedProjectId, createdAt: existingProject?.createdAt || new Date().toISOString() });
       toast({ title: 'Project Updated', description: `Your changes to the project have been saved.` });
     } else {
-      const newId = await saveProject(firestore, user.uid, { ...projectData, name: finalProjectName!, createdAt: new Date().toISOString() });
+      const newId = await saveProject(firestore, user.uid, { ...projectData, name: finalProjectName, createdAt: new Date().toISOString() });
       if (newId) {
         setLoadedProjectId(newId);
       }
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been saved.` });
     }
-    
+  
     setSaveDialogOpen(false);
     setProjectName('');
   };
@@ -330,15 +330,12 @@ export function ActionsCard() {
     const totalsX = 145;
     const totalsValueX = 200;
     
-    // --- Transportation Note ---
     finalY += 10;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor('#D32F2F'); // A red color for attention
     doc.text('NB: Transportation of all materials is to be paid for by the customer.', 14, finalY);
 
-
-    // --- Balance Due ---
     finalY += 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
@@ -348,7 +345,6 @@ export function ActionsCard() {
     doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
 
-    // --- Notes Section ---
     let notesY = finalY + 15;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -458,7 +454,6 @@ export function ActionsCard() {
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
 
-    // Aggregate beams by length
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
         const length = p.roomCalcs.shorter;
@@ -468,7 +463,7 @@ export function ActionsCard() {
 
     const tableColumn = ['BEAM LENGTH (m)', 'TOTAL PIECES'];
     const tableRows = Array.from(beamAggregates.entries())
-        .sort((a, b) => a[0] - b[0]) // Sort by beam length
+        .sort((a, b) => a[0] - b[0])
         .map(([length, count]) => ([
             length.toFixed(2),
             count.toString()
@@ -703,7 +698,7 @@ export function ActionsCard() {
       reader.onload = (loadEvent) => {
         setFilePreview(loadEvent.target?.result as string);
       };
-      reader.readDataURL(file);
+      reader.readAsDataURL(file);
     } else {
       setFilePreview(null);
     }
@@ -711,7 +706,6 @@ export function ActionsCard() {
   
   const handleUploadDialogChange = (open: boolean) => {
     if (!open) {
-      // Reset form when dialog closes
       setFilePreview(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -766,6 +760,33 @@ export function ActionsCard() {
     setIsSubmittingPlan(false);
   }
 
+  const handleDocumentDownload = (
+    docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber'
+  ) => {
+    const loadedProject = projects?.find(p => p.id === loadedProjectId);
+
+    if (loadedProject) {
+      const info = {
+        projectName: loadedProject.name,
+        clientName: '', // These fields aren't saved yet
+        projectLocation: '',
+        clientContact: '',
+        contactPerson: '',
+      };
+      if (docType === 'invoice') handleDownloadInvoice(info);
+      else if (docType === 'material') handleDownloadMaterialSchedule(info);
+      else if (docType === 'promax') handleDownloadPromaxBreakdown(info);
+      else if (docType === 'aggregated') handleDownloadAggregatedBreakdown(info);
+      else if (docType === 'timber') handleDownloadTimberSchedule(info);
+    } else {
+      if (docType === 'invoice') setInvoiceDialogOpen(true);
+      else if (docType === 'material') setScheduleDialogOpen(true);
+      else if (docType === 'promax') setBreakdownDialogOpen(true);
+      else if (docType === 'aggregated') setAggregatedDialogOpen(true);
+      else if (docType === 'timber') setTimberScheduleOpen(true);
+    }
+  };
+
 
   return (
     <>
@@ -806,26 +827,26 @@ export function ActionsCard() {
           </DropdownMenu>
 
           <Button variant="default" className="w-full" onClick={() => handleSaveProject()} disabled={!user}>
-            <Save /> Save Project
+            <Save /> {loadedProjectId ? 'Save Changes' : 'Save Project'}
           </Button>
           
-          <Button variant="secondary" className="w-full" onClick={() => setInvoiceDialogOpen(true)}>
+          <Button variant="secondary" className="w-full" onClick={() => handleDocumentDownload('invoice')}>
             <Download /> Customer Invoice
           </Button>
           
-          <Button variant="outline" className="w-full" onClick={() => setScheduleDialogOpen(true)}>
+          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('material')}>
             <List /> Material Schedule
           </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => setBreakdownDialogOpen(true)}>
+          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('promax')}>
               <FileDown /> Promax Breakdown
           </Button>
           
-          <Button variant="outline" className="w-full" onClick={() => setAggregatedDialogOpen(true)}>
+          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('aggregated')}>
               <Warehouse /> Aggregated Report
           </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => setTimberScheduleOpen(true)}>
+          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('timber')}>
               <Hammer /> Timber Schedule
           </Button>
           
@@ -906,7 +927,6 @@ export function ActionsCard() {
                     <Input id="region" name="region" placeholder="e.g., Nairobi, Kenya" required/>
                     {quoteState?.error && <p className="text-sm text-destructive mt-1">{quoteState.error}</p>}
                   </div>
-                  {/* Hidden inputs to pass totals */}
                   <input type="hidden" name="blocks" value={totals.totalBlocks} />
                   <input type="hidden" name="beamLength" value={totals.totalInvoiceBeamLength} />
                   <input type="hidden" name="concreteVolume" value={totals.totalConcreteVolume} />
@@ -919,7 +939,6 @@ export function ActionsCard() {
             </DialogContent>
           </Dialog>
 
-          {/* Dialog to show quote result */}
           <Dialog open={isQuoteResultOpen} onOpenChange={setQuoteResultOpen}>
             <DialogContent>
               <DialogHeader>
