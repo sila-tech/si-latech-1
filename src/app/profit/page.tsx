@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useCalculator } from '@/context/calculator-context';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Separator } from '@/components/ui/separator';
 import { withProtection } from '@/components/auth/with-protection';
@@ -84,6 +84,57 @@ function ProfitReportPage() {
         doc.save(`Internal-Profit-Report-${reportNumber}.pdf`);
     };
 
+    const handleDownloadPromaxInvoice = () => {
+        const doc = new jsPDF();
+        const invoiceDate = new Date().toLocaleDateString('en-GB');
+        const invoiceNumber = `PROMAX-INV-${String(Date.now()).slice(-6)}`;
+        const primaryColor = '#2563EB';
+
+        const beamProfit = totals.totalBeamProfitValue;
+        const blockCommission = totals.totalBlockCommission;
+        const totalDue = beamProfit + blockCommission;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(primaryColor);
+        doc.text('INVOICE TO PROMAX LIMITED', 14, 22);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Date: ${invoiceDate}`, 145, 20);
+        doc.text(`Invoice No: ${invoiceNumber}`, 145, 25);
+        doc.text(`From: SI-LATECH`, 14, 40);
+
+        const tableColumn = ['Description', 'Amount (KSh)'];
+        const tableRows = [
+            ['Payment for Extra Beam Metres (Beam Profit)', beamProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })],
+            ['Payment for Block Bonuses (Block Commission)', blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })],
+        ];
+
+        (doc as any).autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 55,
+            theme: 'grid',
+            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 11 },
+            columnStyles: { 1: { halign: 'right' } },
+        });
+        
+        let finalY = (doc as any).lastAutoTable.finalY;
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('TOTAL DUE', 14, finalY + 15);
+        doc.text(`KSh ${totalDue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 200, finalY + 15, { align: 'right' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Please make payments to SI-LATECH account details as provided separately.', 14, finalY + 30);
+        
+        doc.save(`Promax-Invoice-${invoiceNumber}.pdf`);
+    }
+
     return (
         <div className="flex min-h-screen w-full flex-col">
             <Header />
@@ -96,7 +147,10 @@ function ProfitReportPage() {
                         </div>
                         <div className="flex items-center gap-2">
                            <Button onClick={handleDownload}>
-                                <Download /> Download PDF
+                                <Download /> Download Report
+                           </Button>
+                           <Button onClick={handleDownloadPromaxInvoice} variant="secondary">
+                                <FileText /> Promax Invoice
                            </Button>
                            <Button asChild variant="outline">
                                 <Link href="/">
