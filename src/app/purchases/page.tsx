@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { logoImageData } from '@/lib/logo-image';
+import { withProtection } from '@/components/auth/with-protection';
 
 // @ts-ignore
 import { jsPDF_AutoTable } from 'jspdf-autotable';
@@ -71,10 +72,11 @@ function PurchasesPage() {
     const handleGenerateCertificate = (project: ProjectData) => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 20;
+        const pageHeight = doc.internal.pageSize.getHeight();
         let currentY = 30;
         const primaryColor = '#1e7a3a';
         const textColor = '#333333';
+        const margin = 20;
 
         // --- A. Header / Branding ---
         doc.addImage(logoImageData, 'PNG', pageWidth / 2 - 30, currentY, 60, 13);
@@ -140,7 +142,7 @@ function PurchasesPage() {
         doc.setFont('helvetica', 'normal');
 
         const message = [
-            'On behalf of Silatech, we extend our sincere appreciation for trusting us with your project.',
+            'On behalf of Silatech Construction Ltd, we extend our sincere appreciation for trusting us with your project.',
             'Your confidence in our Beams & Blocks Technology has allowed us to demonstrate that construction can indeed be better, simpler, and more cost-effective.',
             'This certificate confirms that your slab has been constructed, inspected, and certified to meet Silatech’s high standards of quality, strength, and durability.',
             'We are proud to have been part of your vision and remain committed to supporting you in future developments.'
