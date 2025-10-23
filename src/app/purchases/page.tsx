@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -11,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Download, Loader2, FileText, ShoppingBag, BadgeCheck, BadgeHelp, Award } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Separator } from '@/components/ui/separator';
-import { withProtection } from '@/components/auth/with-protection';
 import type { ProjectData } from '@/firebase/data-manager';
 import { format } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
@@ -73,53 +71,51 @@ function PurchasesPage() {
     const handleGenerateCertificate = (project: ProjectData) => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 15;
-        const primaryColor = '#1e7a3a'; // Silatech Green
+        const margin = 20;
+        let currentY = 30;
+        const primaryColor = '#1e7a3a';
         const textColor = '#333333';
-        const lightTextColor = '#666666';
-        let currentY = 20;
 
         // --- A. Header / Branding ---
-        doc.addImage(logoImageData, 'PNG', margin, 15, 40, 13);
+        doc.addImage(logoImageData, 'PNG', pageWidth / 2 - 30, currentY, 60, 13);
+        currentY += 25;
         
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(primaryColor);
-        doc.text('Certificate of Quality & Compliance', pageWidth / 2, currentY, { align: 'center' });
-        
+        doc.text('Certificate of Quality & Appreciation', pageWidth / 2, currentY, { align: 'center' });
         currentY += 8;
+
         doc.setFontSize(10);
         doc.setFont('helvetica', 'italic');
-        doc.setTextColor(lightTextColor);
+        doc.setTextColor(textColor);
         doc.text('“A better, simpler, and cost-effective way to build.”', pageWidth / 2, currentY, { align: 'center' });
-
         currentY += 15;
+
+        // --- Certificate Info ---
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Certificate No: SILATECH/QC/${new Date().getFullYear()}/${String(project.id || 'N/A').slice(-5)}`, pageWidth - margin, 40, { align: 'right' });
-        doc.text(`Date of Issuance: ${format(new Date(), 'dd/MM/yyyy')}`, pageWidth - margin, 45, { align: 'right' });
+        const year = project.purchasedAt ? new Date(project.purchasedAt).getFullYear() : new Date().getFullYear();
+        doc.text(`Certificate No: SILATECH/QC/${year}/${String(project.id || 'N/A').slice(-5)}`, margin, currentY);
+        doc.text(`Date Issued: ${format(new Date(), 'do MMMM yyyy')}`, pageWidth - margin, currentY, { align: 'right' });
+        currentY += 15;
 
         // --- B. Project Details ---
-        currentY += 10;
-        doc.setFontSize(12);
+        doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(primaryColor);
-        doc.text('Project Details', margin, currentY);
-        currentY += 6;
-        
-        const projectDetails = [
-            ['Client Name:', project.name || 'N/A'],
+        doc.text('🏗️ Presented To:', margin, currentY);
+        currentY += 10;
+
+        const details = [
+            ['Client’s Full Name:', project.name || 'N/A'],
             ['Project Name / Location:', 'As per site instructions'],
-            ['Project Type:', 'Beams & Blocks Slab'],
-            ['Completion Date:', project.purchasedAt ? format(new Date(project.purchasedAt), 'do MMMM yyyy') : 'N/A'],
-            ['Project Supervisor:', 'Eng. Simon Larry'],
-            ['Quality Inspector:', 'Eng. [Inspector Name]'],
+            ['Project Type:', 'Beams & Blocks Slab Construction'],
+            ['Completion Date:', project.purchasedAt ? format(new Date(project.purchasedAt), 'dd/MM/yyyy') : 'N/A'],
         ];
 
         (doc as any).autoTable({
             startY: currentY,
-            body: projectDetails,
+            body: details,
             theme: 'plain',
             styles: {
                 font: 'helvetica',
@@ -128,100 +124,39 @@ function PurchasesPage() {
                 textColor: textColor,
             },
             columnStyles: {
-                0: { fontStyle: 'bold' },
+                0: { fontStyle: 'bold', cellWidth: 50 },
             },
             didDrawPage: (data: any) => { currentY = data.cursor.y; }
         });
 
-        // --- C. Materials & Specification Summary ---
+        // --- C. Message of Appreciation ---
         currentY += 10;
-        doc.setFontSize(12);
+        doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(primaryColor);
-        doc.text('Materials & Specification Summary', margin, currentY);
+        doc.text('💬 Message of Appreciation', margin, currentY);
+        currentY += 8;
 
-        const materialsData = [
-            ['Flat Beams', `${project.settings.beamSectionW * 1000}mm x ${project.settings.beamSectionH * 1000}mm concrete beams`, 'Silatech'],
-            ['Hollow Blocks', `${project.settings.blockLength * 1000}mm x ${project.settings.blockWidth * 1000}mm`, 'Silatech'],
-            ['Reinforcement Steel', `D${project.settings.dia_longitudinal} & D${project.settings.dia_stirrup} high-tensile bars`, 'Promax Steel'],
-            ['Concrete Mix Ratio', `${project.settings.concreteMixRatioCement}:${project.settings.concreteMixRatioSand}:${project.settings.concreteMixRatioBallast} (Cement:Sand:Ballast)`, 'Site Mixed'],
-            ['Cement Brand', 'Bamburi / Savannah / Rhino', 'Local Source'],
-        ];
-
-        (doc as any).autoTable({
-            startY: currentY + 5,
-            head: [['Material', 'Specification', 'Supplier / Source']],
-            body: materialsData,
-            theme: 'grid',
-            headStyles: { fillColor: [30, 122, 58], textColor: [255, 255, 255], fontStyle: 'bold' },
-            styles: { fontSize: 9 },
-            didDrawPage: (data: any) => { currentY = data.cursor.y; }
-        });
-
-        // --- D. Quality Inspection Checklist ---
-        currentY += 10;
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(primaryColor);
-        doc.text('Quality Inspection Checklist', margin, currentY);
-        
-        const checklistData = [
-            ['Beam Alignment', 'Checked using laser level', '✔ Pass'],
-            ['Block Placement', 'Even and properly seated', '✔ Pass'],
-            ['Reinforcement', 'As per design and spacing', '✔ Pass'],
-            ['Concrete Cover', `Minimum ${project.settings.cover * 1000}mm maintained`, '✔ Pass'],
-            ['Curing Duration', 'Minimum 7 days ensured', '✔ Pass'],
-            ['Workmanship Finish', 'Smooth and uniform surface', '✔ Pass'],
-        ];
-
-        (doc as any).autoTable({
-            startY: currentY + 5,
-            head: [['Item', 'Inspection Criteria', 'Status']],
-            body: checklistData,
-            theme: 'grid',
-            headStyles: { fillColor: [30, 122, 58], textColor: [255, 255, 255], fontStyle: 'bold' },
-            styles: { fontSize: 9 },
-            columnStyles: { 2: { halign: 'center' } },
-            didDrawPage: (data: any) => { currentY = data.cursor.y; }
-        });
-
-        // --- E. Declaration & Approval ---
-        currentY += 15;
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(primaryColor);
-        doc.text('Declaration & Approval', margin, currentY);
-        currentY += 6;
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(textColor);
-        const declarationText = `We, Silatech, hereby certify that the Beams & Blocks slab constructed at the above project site has been inspected, tested, and found to comply with the required structural and quality standards for safety, durability, and workmanship.`;
-        const splitDeclaration = doc.splitTextToSize(declarationText, pageWidth - (margin * 2));
-        doc.text(splitDeclaration, margin, currentY);
-        currentY += (splitDeclaration.length * 5) + 10;
-
-        // --- F. Signatures & Authentication ---
-        currentY += 20;
-        const signatureX1 = margin + 10;
-        const signatureX2 = pageWidth / 2;
-        const signatureX3 = pageWidth - margin - 50;
-
-        doc.setFontSize(10);
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(textColor);
 
-        doc.line(signatureX1, currentY, signatureX1 + 60, currentY);
-        doc.text('Project Supervisor', signatureX1, currentY + 5);
-        doc.text('Eng. Simon Larry', signatureX1, currentY + 10);
-
-        doc.line(signatureX2 - 30, currentY, signatureX2 + 30, currentY);
-        doc.text('Quality Inspector', signatureX2, currentY + 5, { align: 'center' });
-        doc.text('Eng. _______________', signatureX2, currentY + 10, { align: 'center' });
-
-        doc.line(pageWidth - margin - 60, currentY, pageWidth - margin, currentY);
-        doc.text('Silatech Representative', pageWidth - margin, currentY + 5, { align: 'right' });
-        doc.text('Mr./Ms. _______________', pageWidth-margin, currentY + 10, {align: 'right'});
+        const message = [
+            'On behalf of Silatech, we extend our sincere appreciation for trusting us with your project.',
+            'Your confidence in our Beams & Blocks Technology has allowed us to demonstrate that construction can indeed be better, simpler, and more cost-effective.',
+            'This certificate confirms that your slab has been constructed, inspected, and certified to meet Silatech’s high standards of quality, strength, and durability.',
+            'We are proud to have been part of your vision and remain committed to supporting you in future developments.'
+        ];
+        
+        message.forEach(line => {
+            const splitLine = doc.splitTextToSize(line, pageWidth - (margin * 2));
+            doc.text(splitLine, margin, currentY);
+            currentY += (splitLine.length * 5) + 3;
+        });
+        
+        // --- D. Signature ---
+        currentY = pageHeight - 50;
+        doc.line(margin, currentY, margin + 80, currentY);
+        doc.text('Managing Director', margin, currentY + 7);
+        doc.text('SI-LATECH', margin, currentY + 12);
         
         // --- Footer ---
         const footerY = pageHeight - 20;
@@ -230,12 +165,11 @@ function PurchasesPage() {
         doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
         
         doc.setFontSize(9);
-        doc.setTextColor(lightTextColor);
-        const footerText = `Silatech | P.O. Box [XXXX] – Nairobi, Kenya | 📞 +254 741 557 960 | "A better, simpler, and cost-effective way to build."`;
+        doc.setTextColor(textColor);
+        const footerText = `P.O. Box [XXXX] – Nairobi, Kenya | 📞 +254 741 557 960`;
         doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
 
-
-        doc.save(`Silatech-Certificate-${project.name}.pdf`);
+        doc.save(`Silatech-Certificate-of-Appreciation-${project.name}.pdf`);
     };
 
     return (
