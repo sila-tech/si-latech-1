@@ -172,6 +172,7 @@ export function ActionsCard() {
       rooms,
       settings,
       lintelLength,
+      status: 'pending' as const,
       createdAt: new Date().toISOString(),
     };
 
@@ -731,8 +732,8 @@ export function ActionsCard() {
           </Button>
           
           <Button variant="outline" className="w-full text-green-600 border-green-600/50 hover:bg-green-100 hover:text-green-700" asChild>
-            <Link href="/profit">
-              <Sheet /> Internal Report
+            <Link href="/purchases">
+              <Sheet /> Purchases
             </Link>
           </Button>
 
