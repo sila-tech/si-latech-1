@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -10,7 +9,6 @@ import { QuickQuoteCard } from './quick-quote-card';
 import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
-
 
 export function CalculatorShell() {
   const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom } = useCalculator();
@@ -36,7 +34,7 @@ export function CalculatorShell() {
             ))}
           </div>
           
-          <Button onClick={addRoom} variant="outline" className="w-full">
+          <Button onClick={addRoom} variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
             <PlusCircle className="mr-2" /> Add Room
           </Button>
         </div>
