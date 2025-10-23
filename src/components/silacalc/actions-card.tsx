@@ -202,7 +202,7 @@ export function ActionsCard() {
       return;
     }
 
-    const finalProjectName = newProjectName || (loadedProjectId && rooms.length > 0 ? rooms[0].name.split(' - ')[0] : 'Unnamed Project');
+    const finalProjectName = newProjectName || (projects?.find(p => p.id === loadedProjectId)?.name);
 
     if (!finalProjectName && !loadedProjectId) {
       setSaveDialogOpen(true);
@@ -218,10 +218,11 @@ export function ActionsCard() {
     };
     
     if (loadedProjectId) {
-      saveProject(firestore, user.uid, { ...projectData, id: loadedProjectId, createdAt: projects?.find(p => p.id === loadedProjectId)?.createdAt || new Date().toISOString() });
+      const existingProject = projects?.find(p => p.id === loadedProjectId);
+      saveProject(firestore, user.uid, { ...projectData, name: finalProjectName!, id: loadedProjectId, createdAt: existingProject?.createdAt || new Date().toISOString() });
       toast({ title: 'Project Updated', description: `Your changes to the project have been saved.` });
     } else {
-      const newId = await saveProject(firestore, user.uid, { ...projectData, createdAt: new Date().toISOString() });
+      const newId = await saveProject(firestore, user.uid, { ...projectData, name: finalProjectName!, createdAt: new Date().toISOString() });
       if (newId) {
         setLoadedProjectId(newId);
       }
@@ -328,19 +329,27 @@ export function ActionsCard() {
     let finalY = (doc as any).lastAutoTable.finalY;
     const totalsX = 145;
     const totalsValueX = 200;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
     
+    // --- Transportation Note ---
     finalY += 10;
-    
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#D32F2F'); // A red color for attention
+    doc.text('NB: Transportation of all materials is to be paid for by the customer.', 14, finalY);
+
+
+    // --- Balance Due ---
+    finalY += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50);
     doc.setFillColor(240,240,240);
     doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
     doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
 
-    let notesY = (doc as any).lastAutoTable.finalY + 10;
-    notesY = Math.max(notesY, finalY + 20);
+    // --- Notes Section ---
+    let notesY = finalY + 15;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
     doc.text('NOTES', 14, notesY);
@@ -350,6 +359,14 @@ export function ActionsCard() {
     doc.text(`1. BRC Mesh: Based on your calculations, you may require ${totals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
     notesY += 5;
     doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
+    notesY += 5;
+    doc.text('3. We provide a technician paid by the customer to help in the installation process.', 14, notesY);
+    notesY += 5;
+    doc.text('4. We do regular site visits paid by the customer to check on the progress of the project.', 14, notesY);
+    notesY += 5;
+    doc.setFont('helvetica', 'italic');
+    doc.text('5. Optional: We can provide a plumber or electrician to be paid by the client if the client is interested.', 14, notesY);
+
 
     doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
     setInvoiceDialogOpen(false);
