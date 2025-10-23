@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -160,7 +161,7 @@ function PurchasesPage() {
         // --- D. Quality Inspection Checklist ---
         currentY += 10;
         doc.setFontSize(12);
-        docsetFont('helvetica', 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.setTextColor(primaryColor);
         doc.text('Quality Inspection Checklist', margin, currentY);
         
