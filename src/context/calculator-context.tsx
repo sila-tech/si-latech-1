@@ -24,7 +24,6 @@ import {
   calcTimberAndProps,
   calcLintelSteel,
 } from '@/lib/calculator';
-import { logoImageData as defaultLogo } from '@/lib/branding';
 
 type PerRoomCalculation = {
   room: Room;
@@ -80,8 +79,8 @@ interface CalculatorContextType {
   setLoadedProjectId: (id: string | null) => void;
   projectName: string;
   setProjectName: (name: string) => void;
-  logoUrl: string;
-  setLogoUrl: (url: string) => void;
+  logoUrl: string | null;
+  setLogoUrl: (url: string | null) => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -94,7 +93,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
-  const [logoUrl, setLogoUrlState] = useState<string>(defaultLogo);
+  const [logoUrl, setLogoUrlState] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -107,9 +106,13 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const setLogoUrl = (url: string) => {
+  const setLogoUrl = (url: string | null) => {
     try {
-      localStorage.setItem(LOGO_STORAGE_KEY, url);
+      if (url) {
+        localStorage.setItem(LOGO_STORAGE_KEY, url);
+      } else {
+        localStorage.removeItem(LOGO_STORAGE_KEY);
+      }
     } catch (error) {
       console.warn("Could not save logo to localStorage", error);
     }
@@ -273,5 +276,3 @@ export const useCalculator = (): CalculatorContextType => {
   }
   return context;
 };
-
-    

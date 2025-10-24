@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { KeyRound, ShieldAlert } from 'lucide-react';
-import { logoImageData } from '@/lib/branding';
 import { useCalculator } from '@/context/calculator-context';
 
 const SESSION_STORAGE_KEY = 'sila-auth-token';
@@ -23,10 +22,7 @@ function SiLatechIcon(props: SVGProps<SVGSVGElement>) {
       height="1em"
       {...props}
     >
-      <path
-        fill="currentColor"
-        d="M17.435 2.065a2 2 0 0 1 1.732 1l3.464 6a2 2 0 0 1 0 2l-3.464 6a2 2 0 0 1-1.732 1H6.565a2 2 0 0 1-1.732-1l-3.464-6a2 2 0 0 1 0-2l3.464-6a2 2 0 0 1 1.732-1h10.87ZM8.353 7.647a.5.5 0 0 0-.706.706L10.294 11H8.5a2.5 2.5 0 0 0 0 5h3.147l-2.647 2.647a.5.5 0 1 0 .706.706L13.707 15H15.5a2.5 2.5 0 0 0 0-5H12.353l2.647-2.647a.5.5 0 0 0-.706-.706L10.293 9H8.353Z"
-      />
+        <path fill="currentColor" d="M8.353 7.647a.5.5 0 0 0-.706.706L10.294 11H8.5a2.5 2.5 0 0 0 0 5h3.147l-2.647 2.647a.5.5 0 1 0 .706.706L13.707 15H15.5a2.5 2.5 0 0 0 0-5H12.353l2.647-2.647a.5.5 0 0 0-.706-.706L10.293 9H8.353Z"/>
     </svg>
   );
 }
@@ -69,12 +65,13 @@ export function withProtection<P extends object>(
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="w-full max-w-sm mx-4">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              {logoUrl && logoUrl !== logoImageData ? (
+            <div className="flex flex-col items-center justify-center mb-4">
+              {logoUrl ? (
                  <Image src={logoUrl} alt="SI-LATECH Logo" width={56} height={56} className="text-primary" />
               ) : (
                  <SiLatechIcon className="h-14 w-14 text-primary" />
               )}
+               <span className="text-lg font-bold font-headline mt-2">SI-LATECH</span>
             </div>
             <CardTitle className="flex items-center justify-center gap-2">
                 <ShieldAlert />
