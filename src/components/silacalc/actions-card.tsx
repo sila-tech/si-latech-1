@@ -142,16 +142,21 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
 };
 
 const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
-    const img = new (window as any).Image();
-    img.src = logoUrl;
-    const imageWidth = 35; // Reduced size
-    const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
-    const imageHeight = imageWidth * imageAspectRatio;
+    try {
+        const img = new (window as any).Image();
+        img.src = logoUrl;
+        const imageWidth = 35;
+        const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
+        const imageHeight = imageWidth * imageAspectRatio;
 
-    const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-    if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
-        doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
-    } else {
+        const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
+        if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
+            doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
+        } else {
+            throw new Error('Unsupported image format or invalid image.');
+        }
+    } catch (e) {
+        // Fallback for SVGs or other issues.
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
         doc.text('SI-LATECH', 14, 22);
@@ -260,6 +265,7 @@ export function ActionsCard() {
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
+    let currentY = 15;
     
     const BLOCK_PRICE = 85;
     const BEAM_PRICE_PER_METER = 545;
@@ -270,6 +276,7 @@ export function ActionsCard() {
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
+      currentY = 50; // Adjust starting Y after logo
     }
     
     // --- Header ---
@@ -287,35 +294,37 @@ export function ActionsCard() {
 
     const invoiceToX = 14;
     const shipToX = 110;
-    const startY = 55;
+    
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
-    doc.text('INVOICE TO', invoiceToX, startY);
-    doc.text('SHIP / SITE TO', shipToX, startY);
+    doc.text('INVOICE TO', invoiceToX, currentY);
+    doc.text('SHIP / SITE TO', shipToX, currentY);
+    currentY += 6;
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
-    doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, startY + 6);
-    doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, startY + 11);
-    doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, startY + 16);
-    doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, startY + 21);
-
-    doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, startY + 6);
-    doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, startY + 11);
-    doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, startY + 16);
+    doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, currentY);
+    doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, currentY);
+    currentY += 5;
+    doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, currentY);
+    doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, currentY);
+    currentY += 5;
+    doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, currentY);
+    doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, currentY);
+    currentY += 5;
+    doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, currentY);
     
-    const metaX = 14;
-    const metaY = startY + 30;
-    doc.text(`Invoice No.:`, metaX, metaY);
-    doc.text(`Date:`, metaX, metaY + 5);
-    doc.text(`Terms:`, metaX, metaY + 10);
-    doc.text(`Due Date:`, metaX, metaY + 15);
+    const metaY = currentY + 10;
+    doc.text(`Invoice No.:`, 14, metaY);
+    doc.text(`Date:`, 14, metaY + 5);
+    doc.text(`Terms:`, 14, metaY + 10);
+    doc.text(`Due Date:`, 14, metaY + 15);
     
     doc.setFont('helvetica', 'bold');
-    doc.text(`${invoiceNumber}`, metaX + 30, metaY);
-    doc.text(`${invoiceDate}`, metaX + 30, metaY + 5);
-    doc.text(`Due on Receipt`, metaX + 30, metaY + 10);
-    doc.text(`${invoiceDate}`, metaX + 30, metaY + 15);
+    doc.text(`${invoiceNumber}`, 44, metaY);
+    doc.text(`${invoiceDate}`, 44, metaY + 5);
+    doc.text(`Due on Receipt`, 44, metaY + 10);
+    doc.text(`${invoiceDate}`, 44, metaY + 15);
 
     const tableRows = [
       [
@@ -413,15 +422,15 @@ export function ActionsCard() {
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
-    doc.text('PROJECT DETAILS', 14, 45);
+    doc.text('PROJECT DETAILS', 14, 55);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
-    doc.text(`Client: ${clientInfo.clientName}`, 14, 51);
-    doc.text(`Project: ${clientInfo.projectName}`, 14, 56);
-    doc.text(`Location: ${clientInfo.projectLocation}`, 14, 61);
+    doc.text(`Client: ${clientInfo.clientName}`, 14, 61);
+    doc.text(`Project: ${clientInfo.projectName}`, 14, 66);
+    doc.text(`Location: ${clientInfo.projectLocation}`, 14, 71);
 
-    doc.text(`Schedule No.: ${scheduleNumber}`, 145, 51);
-    doc.text(`Date: ${scheduleDate}`, 145, 56);
+    doc.text(`Schedule No.: ${scheduleNumber}`, 145, 61);
+    doc.text(`Date: ${scheduleDate}`, 145, 66);
 
     const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
     const tableRows = [
@@ -440,7 +449,7 @@ export function ActionsCard() {
     (doc as any).autoTable({
       head: [tableColumn],
       body: tableRows,
-      startY: 70,
+      startY: 80,
       theme: 'grid',
       headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
       styles: { fontSize: 10 },
@@ -491,20 +500,24 @@ export function ActionsCard() {
 
     const totalPieces = tableRows.reduce((sum, row) => sum + parseInt(row[1]), 0);
 
+    if (logoUrl) {
+        addLogoToPdf(doc, logoUrl);
+    }
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('Promax Manufacturing Order', 14, 22);
+    doc.text('Promax Manufacturing Order', 60, 22);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 32);
-    doc.text(`Date: ${reportDate}`, 14, 37);
+    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 55);
+    doc.text(`Date: ${reportDate}`, 14, 60);
 
     (doc as any).autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 45,
+        startY: 70,
         theme: 'grid',
         headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
         styles: { fontSize: 10 },
@@ -546,11 +559,11 @@ export function ActionsCard() {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 40);
-    doc.text(`Client: ${clientInfo.clientName}`, 14, 45);
-    doc.text(`Date: ${reportDate}`, 14, 50);
+    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 55);
+    doc.text(`Client: ${clientInfo.clientName}`, 14, 60);
+    doc.text(`Date: ${reportDate}`, 14, 65);
 
-    let currentY = 60;
+    let currentY = 75;
 
     aggregatedBreakdown.forEach(group => {
         if (currentY > 240) {
@@ -631,18 +644,22 @@ export function ActionsCard() {
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#D97706'; // Amber color for timber
 
+    if (logoUrl) {
+      addLogoToPdf(doc, logoUrl);
+    }
+    
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('Timber & Props Schedule', 14, 22);
+    doc.text('Timber & Props Schedule', 60, 22);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
-    doc.text(`Project: ${clientInfo.projectName}`, 14, 32);
-    doc.text(`Date: ${reportDate}`, 14, 37);
+    doc.text(`Project: ${clientInfo.projectName}`, 14, 55);
+    doc.text(`Date: ${reportDate}`, 14, 60);
 
-    let currentY = 45;
+    let currentY = 70;
 
     perRoomCalculations.forEach((p) => {
         if (currentY > 240) { 

@@ -57,17 +57,17 @@ function ProfitReportPage() {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text(`Date: ${reportDate}`, 14, 38);
-        doc.text(`Report ID: ${reportNumber}`, 14, 43);
+        doc.text(`Date: ${reportDate}`, 14, 50);
+        doc.text(`Report ID: ${reportNumber}`, 14, 55);
         
         // --- Summary Section ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(primaryColor);
-        doc.text('Project Profit Summary', 14, 55);
+        doc.text('Project Profit Summary', 14, 65);
 
         (doc as any).autoTable({
-            startY: 60,
+            startY: 70,
             theme: 'plain',
             body: [
                 ['Total Beam Profit', `KSh ${totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
