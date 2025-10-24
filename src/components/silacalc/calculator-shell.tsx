@@ -10,6 +10,7 @@ import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { QuickQuoteCard } from './quick-quote-card';
+import { ProjectsList } from './projects-list';
 
 export function CalculatorShell() {
   const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom } = useCalculator();
@@ -18,6 +19,7 @@ export function CalculatorShell() {
     <div id="calculator" className="container mx-auto max-w-7xl mt-8">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
+          <ProjectsList />
           <ActionsCard />
           
           <QuickQuoteCard />
