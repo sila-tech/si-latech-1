@@ -25,18 +25,24 @@ import { withProtection } from '@/components/auth/with-protection';
 import { jsPDF_AutoTable } from 'jspdf-autotable';
 
 const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
-    const img = new (window as any).Image();
-    img.src = logoUrl;
-    const imageWidth = 60;
-    const imageApectRatio = img.height / img.width;
-    const imageHeight = imageWidth * imageApectRatio;
+    try {
+        const img = new (window as any).Image();
+        img.src = logoUrl;
+        const imageWidth = 35;
+        const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
+        const imageHeight = imageWidth * imageAspectRatio;
 
-    const x = doc.internal.pageSize.getWidth() / 2 - imageWidth / 2;
-
-    // Check if the image format is supported and add it to the doc
-    const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-    if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
-        doc.addImage(logoUrl, format, x, 15, imageWidth, imageHeight);
+        const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
+        if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
+            doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
+        } else {
+            throw new Error('Unsupported image format or invalid image.');
+        }
+    } catch (e) {
+        // Fallback for SVGs or other issues.
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('SI-LATECH', 14, 22);
     }
 };
 
@@ -89,14 +95,14 @@ function PurchasesPage() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         let currentY = 20;
-        const primaryColor = '#1e7a3a';
+        const primaryColor = '#0284c7'; // Brand Blue
         const textColor = '#333333';
         const margin = 20;
 
         // --- A. Header / Branding ---
         if (logoUrl) {
             addLogoToPdf(doc, logoUrl);
-            currentY += 40;
+            currentY = 60; // Adjust start Y after logo
         }
         
         doc.setFontSize(22);
@@ -295,6 +301,3 @@ function PurchasesPage() {
 }
 
 export default withProtection(PurchasesPage, 'Sila4927');
-
-
-    

@@ -264,7 +264,7 @@ export function ActionsCard() {
     const doc = new jsPDF();
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#2563EB';
+    const primaryColor = '#0284c7'; // Brand Blue
     let currentY = 15;
     
     const BLOCK_PRICE = 85;
@@ -409,7 +409,7 @@ export function ActionsCard() {
     const doc = new jsPDF();
     const scheduleDate = new Date().toLocaleDateString('en-GB');
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#2563EB';
+    const primaryColor = '#0284c7'; // Brand Blue
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
@@ -481,7 +481,7 @@ export function ActionsCard() {
     const doc = new jsPDF();
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#2563EB';
+    const primaryColor = '#0284c7'; // Brand Blue
 
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
@@ -546,7 +546,7 @@ export function ActionsCard() {
     const doc = new jsPDF();
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#2563EB';
+    const primaryColor = '#0284c7'; // Brand Blue
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
@@ -642,7 +642,7 @@ export function ActionsCard() {
     const doc = new jsPDF();
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#D97706'; // Amber color for timber
+    const primaryColor = '#0284c7'; // Brand Blue
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
@@ -1063,7 +1063,3 @@ export function ActionsCard() {
     </>
   );
 }
-
-    
-
-    

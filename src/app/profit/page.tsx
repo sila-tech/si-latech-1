@@ -42,7 +42,7 @@ function ProfitReportPage() {
         const doc = new jsPDF();
         const reportDate = new Date().toLocaleDateString('en-GB');
         const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
-        const primaryColor = '#10B981'; // Green
+        const primaryColor = '#0284c7'; // Brand Blue
 
         if (logoUrl) {
             addLogoToPdf(doc, logoUrl);
@@ -116,7 +116,7 @@ function ProfitReportPage() {
         const doc = new jsPDF();
         const invoiceDate = new Date().toLocaleDateString('en-GB');
         const invoiceNumber = `PROMAX-INV-${String(Date.now()).slice(-6)}`;
-        const primaryColor = '#2563EB';
+        const primaryColor = '#0284c7'; // Brand Blue
 
         const beamProfit = totals.totalBeamProfitValue;
         const blockCommission = totals.totalBlockCommission;
@@ -197,7 +197,7 @@ function ProfitReportPage() {
                         <div className="space-y-8">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-green-500">Project Profit Summary</CardTitle>
+                                    <CardTitle className="text-sky-600">Project Profit Summary</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                                     <div className="p-4 bg-muted rounded-lg">
@@ -208,9 +208,9 @@ function ProfitReportPage() {
                                         <p className="text-sm font-medium text-muted-foreground">Total Block Commission</p>
                                         <p className="text-2xl font-bold">KSh {totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
-                                    <div className="p-4 bg-green-900/50 rounded-lg">
-                                        <p className="text-sm font-medium text-green-300">Total Project Profit</p>
-                                        <p className="text-2xl font-bold text-green-300">KSh {totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                    <div className="p-4 bg-sky-900/50 rounded-lg">
+                                        <p className="text-sm font-medium text-sky-300">Total Project Profit</p>
+                                        <p className="text-2xl font-bold text-sky-300">KSh {totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -230,8 +230,8 @@ function ProfitReportPage() {
                                                 <ul className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                                                     <li><span className="font-medium">Actual Beams:</span> {roomCalcs.actualBeamCount} pcs</li>
                                                     <li><span className="font-medium">Invoice Beams:</span> {roomCalcs.invoiceBeamCount} pcs</li>
-                                                    <li><span className="font-medium text-green-400">Profit Beams:</span> {roomCalcs.profitBeams} pcs</li>
-                                                    <li><span className="font-medium text-green-400">Profit Length:</span> {roomCalcs.profitBeamLength.toFixed(2)}m</li>
+                                                    <li><span className="font-medium text-sky-400">Profit Beams:</span> {roomCalcs.profitBeams} pcs</li>
+                                                    <li><span className="font-medium text-sky-400">Profit Length:</span> {roomCalcs.profitBeamLength.toFixed(2)}m</li>
                                                 </ul>
                                                 <Separator />
                                                 <h4 className="font-semibold">Financials</h4>
@@ -246,7 +246,7 @@ function ProfitReportPage() {
                                                     </div>
                                                     <div className="p-3 bg-muted rounded-md">
                                                         <p className="text-xs text-muted-foreground">Total Room Profit</p>
-                                                        <p className="font-semibold text-green-400">KSh {roomCalcs.totalRoomProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                                        <p className="font-semibold text-sky-400">KSh {roomCalcs.totalRoomProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -273,7 +273,3 @@ function ProfitReportPage() {
 }
 
 export default withProtection(ProfitReportPage, 'Sila4927');
-
-    
-
-    
