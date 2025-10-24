@@ -1,0 +1,42 @@
+/**
+ * @fileoverview This file centralizes the branding assets for the application.
+ * By modifying this file, you can change the logo across the entire app,
+ * including the web interface and generated PDFs, without editing component code.
+ */
+
+import type { SVGProps } from 'react';
+
+/**
+ * The URL for the logo to be displayed in the web application.
+ * Replace this with your own logo's URL. For best results, use an SVG or a high-quality PNG.
+ * Example: '/my-logo.svg' or 'https://example.com/logo.png'
+ */
+export const logoUrl = '/silatech-logo.svg';
+
+/**
+ * The Base64 encoded string for the logo to be embedded in generated PDFs.
+ * This should be a data URI. You can use an online converter to get the Base64 string for your logo.
+ * Example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...'
+ */
+export const logoImageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAAAAAAAAAAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABlAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAEcASQBNAFAAIABiAHUAaQBsAHQALQBpAG4AIABzAFIARwBCbWx1YwAAAAAAAAABAAAADGVuVVMAAAAaAAAAHABQAHUAYgBsAGkAYwAgAEQAbwBtAGEAaQBuAABYWVogAAAAAAAA9tYAAQAAAADTLXNmMzIAAAAAAAEMQgAABd7///MlAAAHkwAA/ZD///uh///9ogAAA9wAAMBuWFlaIAAAAAAAAPbWAAEAAAAA0y1YWVogAAAAAAAAg98AAD2/////u1hZWiAAAAAAAAAakhAIIgAAAAAAADEAABUBAACaDGFyY2gAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAAAAAABY3BydAAABmAAAADHc2l6ZQAAAZwAAABeZGVzYwAAAmQAAABoQlhVWgAAAnQAAABqR3hZWiAAAAUAAAAAFGNIQVMAAAUYAAAAFGdYWVoAAAFAAAAAFGtYWVoAAAFAAAAAFGdUYWcAAAAAAAADAEAAAAMAhgAKAAsAEgAUABEAAAAAAAAAR2xvYmUgUmFjaW5nIENTRgAAAAEAyQABAAAAAQCYAQAABAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAABAAAAAQAACgAAAAAAAAABAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAQAAAAAAAIAAAQAAAAAAAAABAIAAAQAAAAAAAAABAAAAAAAIAAEAAAAAAAD/wAARCAEJAJADASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAD/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAGqP//EABgQEAEBAQEAAAAAAAAAAAAAAAECAwAE/9oACAECAQE/ATt2t8//xAAVEQEBAAAAAAAAAAAAAAAAAAAAEf/aAAgBAwEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyB//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwB//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwB//9k=';
+
+/**
+ * Raw SVG content for the logo. You can paste your SVG code here.
+ * This provides another way to use the logo, especially if you need to manipulate its properties with CSS.
+ */
+export function SiLatechIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="1em"
+      height="1em"
+      {...props}
+    >
+      <path
+        fill="currentColor"
+        d="M17.435 2.065a2 2 0 0 1 1.732 1l3.464 6a2 2 0 0 1 0 2l-3.464 6a2 2 0 0 1-1.732 1H6.565a2 2 0 0 1-1.732-1l-3.464-6a2 2 0 0 1 0-2l3.464-6a2 2 0 0 1 1.732-1h10.87ZM8.353 7.647a.5.5 0 0 0-.706.706L10.294 11H8.5a2.5 2.5 0 0 0 0 5h3.147l-2.647 2.647a.5.5 0 1 0 .706.706L13.707 15H15.5a2.5 2.5 0 0 0 0-5H12.353l2.647-2.647a.5.5 0 0 0-.706-.706L10.293 9H8.353Z"
+      />
+    </svg>
+  );
+}

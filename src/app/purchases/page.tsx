@@ -19,7 +19,7 @@ import { updateProjectStatus } from '@/firebase/data-manager';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { logoImageData } from '@/lib/logo-image';
+import { logoImageData } from '@/lib/branding';
 import { withProtection } from '@/components/auth/with-protection';
 
 // @ts-ignore

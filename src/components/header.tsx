@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { SiLatechIcon } from '@/components/icons';
+import Image from 'next/image';
+import { SiLatechIcon, logoUrl } from '@/lib/branding';
 
 export function Header() {
   return (
@@ -7,7 +8,11 @@ export function Header() {
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            <SiLatechIcon className="h-8 w-8 text-primary" />
+            {logoUrl.endsWith('.svg') ? (
+              <SiLatechIcon className="h-8 w-8 text-primary" />
+            ) : (
+              <Image src={logoUrl} alt="SI-LATECH Logo" width={32} height={32} className="text-primary" />
+            )}
             <span className="font-bold sm:inline-block font-headline text-lg">
               SI-LATECH
             </span>
