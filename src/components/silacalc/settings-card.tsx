@@ -15,7 +15,7 @@ import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, Image } from 'lucide-react';
+import { UploadCloud } from 'lucide-react';
 import React from 'react';
 
 export function SettingsCard() {
@@ -112,30 +112,10 @@ export function SettingsCard() {
       <CardHeader>
         <CardTitle className="font-headline">Configuration</CardTitle>
         <CardDescription>
-          Adjust the default values for calculations and branding.
+          Adjust the default values for all calculations.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div>
-            <Label className="text-base font-medium">Branding</Label>
-            <p className="text-xs text-muted-foreground mb-2">Upload your company logo. This will be used across the app and on generated PDFs.</p>
-            <div className='flex items-center gap-4'>
-                {logoUrl && <img src={logoUrl} alt="logo preview" className="w-10 h-10 object-contain rounded-sm border p-1 bg-muted" />}
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className='w-full'>
-                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
-                </Button>
-            </div>
-            <Input 
-                type="file" 
-                className="hidden" 
-                ref={fileInputRef} 
-                onChange={handleLogoUpload} 
-                accept="image/png, image/jpeg, image/svg+xml"
-            />
-        </div>
-
-        <Separator />
-        
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           {basicSettings.map(({ key, label }) => (
             <div className="space-y-2" key={key}>
@@ -311,5 +291,3 @@ export function SettingsCard() {
     </Card>
   );
 }
-
-    

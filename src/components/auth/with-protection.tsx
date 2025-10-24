@@ -114,5 +114,3 @@ export function withProtection<P extends object>(
 
   return ProtectedComponent;
 }
-
-    
