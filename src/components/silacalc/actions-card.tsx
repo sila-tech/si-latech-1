@@ -141,6 +141,24 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
   );
 };
 
+const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
+    const img = new (window as any).Image();
+    img.src = logoUrl;
+    const imageWidth = 45;
+    const imageApectRatio = img.height / img.width;
+    const imageHeight = imageWidth * imageApectRatio;
+
+    // Check if the image format is supported and add it to the doc
+    const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
+    if (['JPEG', 'PNG', 'JPG'].includes(format)) {
+        doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
+    } else {
+        // Fallback for non-standrd formats or SVGs which jsPDF has trouble with.
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('SI-LATECH', 14, 22);
+    }
+};
 
 export function ActionsCard() {
   const { 
@@ -253,7 +271,7 @@ export function ActionsCard() {
     const grandTotal = blocksTotal + beamsTotal;
 
     if (logoUrl) {
-      doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+      addLogoToPdf(doc, logoUrl);
     } else {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
@@ -391,7 +409,7 @@ export function ActionsCard() {
     const primaryColor = '#2563EB';
 
     if (logoUrl) {
-      doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+      addLogoToPdf(doc, logoUrl);
     } else {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
@@ -529,7 +547,7 @@ export function ActionsCard() {
     const primaryColor = '#2563EB';
 
     if (logoUrl) {
-      doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+      addLogoToPdf(doc, logoUrl);
     } else {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);

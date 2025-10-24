@@ -24,6 +24,22 @@ import { withProtection } from '@/components/auth/with-protection';
 // @ts-ignore
 import { jsPDF_AutoTable } from 'jspdf-autotable';
 
+const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
+    const img = new (window as any).Image();
+    img.src = logoUrl;
+    const imageWidth = 60;
+    const imageApectRatio = img.height / img.width;
+    const imageHeight = imageWidth * imageApectRatio;
+
+    const x = doc.internal.pageSize.getWidth() / 2 - imageWidth / 2;
+
+    // Check if the image format is supported and add it to the doc
+    const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
+    if (['JPEG', 'PNG', 'JPG'].includes(format)) {
+        doc.addImage(logoUrl, format, x, 30, imageWidth, imageHeight);
+    }
+};
+
 function PurchasesPage() {
     const { firestore, user, isUserLoading } = useFirebase();
     const { setRooms, setSettings, setLintelLength, totals, logoUrl } = useCalculator();
@@ -79,7 +95,7 @@ function PurchasesPage() {
 
         // --- A. Header / Branding ---
         if (logoUrl) {
-            doc.addImage(logoUrl, 'PNG', pageWidth / 2 - 30, currentY, 60, 13);
+            addLogoToPdf(doc, logoUrl);
             currentY += 25;
         }
         

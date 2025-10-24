@@ -13,6 +13,25 @@ import { withProtection } from '@/components/auth/with-protection';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
+    const img = new (window as any).Image();
+    img.src = logoUrl;
+    const imageWidth = 45;
+    const imageApectRatio = img.height / img.width;
+    const imageHeight = imageWidth * imageApectRatio;
+
+    // Check if the image format is supported and add it to the doc
+    const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
+    if (['JPEG', 'PNG', 'JPG'].includes(format)) {
+        doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
+    } else {
+        // Fallback for non-standrd formats or SVGs which jsPDF has trouble with.
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('SI-LATECH', 14, 22);
+    }
+};
+
 function ProfitReportPage() {
     const { perRoomCalculations, totals, projectName, logoUrl } = useCalculator();
 
@@ -23,7 +42,7 @@ function ProfitReportPage() {
         const primaryColor = '#10B981'; // Green
 
         if (logoUrl) {
-            doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+            addLogoToPdf(doc, logoUrl);
         } else {
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(20);
