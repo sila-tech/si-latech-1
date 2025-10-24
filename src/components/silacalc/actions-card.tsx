@@ -275,7 +275,7 @@ export function ActionsCard() {
     addPdfBackground(doc);
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7'; // Brand Blue
+    const primaryColor = '#0284c7';
     let currentY = 15;
     
     const BLOCK_PRICE = 85;
@@ -287,22 +287,22 @@ export function ActionsCard() {
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
-      currentY = 50; // Adjust starting Y after logo
     }
     
     // --- Header ---
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('Beam & Block Slab Quotation', 60, 20);
+    doc.text('Beam & Block Slab Quotation', 60, 22);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text('Head Office: Juja, Kenya', 145, 30);
-    doc.text('Tel: +254 741 557960', 145, 35);
-    doc.text('Email: info@silatech.co.ke', 145, 40);
+    doc.text('Head Office: Juja, Kenya', 145, 22);
+    doc.text('Tel: +254 741 557960', 145, 27);
+    doc.text('Email: info@silatech.co.ke', 145, 32);
 
+    currentY = 60;
     const invoiceToX = 14;
     const shipToX = 110;
     
@@ -421,7 +421,7 @@ export function ActionsCard() {
     addPdfBackground(doc);
     const scheduleDate = new Date().toLocaleDateString('en-GB');
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7'; // Brand Blue
+    const primaryColor = '#0284c7';
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
@@ -430,7 +430,7 @@ export function ActionsCard() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(primaryColor);
-    doc.text('Consolidated Materials Schedule (Slab, Lintels, & Timber)', 60, 20);
+    doc.text('Consolidated Materials Schedule', 60, 22);
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -494,7 +494,7 @@ export function ActionsCard() {
     addPdfBackground(doc);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7'; // Brand Blue
+    const primaryColor = '#0284c7';
 
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
@@ -560,7 +560,7 @@ export function ActionsCard() {
     addPdfBackground(doc);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7'; // Brand Blue
+    const primaryColor = '#0284c7';
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
@@ -569,7 +569,7 @@ export function ActionsCard() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(primaryColor);
-    doc.text('Aggregated Beams & Blocks Breakdown', 60, 20);
+    doc.text('Aggregated Beams & Blocks Breakdown', 60, 22);
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -657,7 +657,7 @@ export function ActionsCard() {
     addPdfBackground(doc);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7'; // Brand Blue
+    const primaryColor = '#0284c7';
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
@@ -1078,3 +1078,5 @@ export function ActionsCard() {
     </>
   );
 }
+
+    

@@ -106,16 +106,16 @@ function PurchasesPage() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         let currentY = 20;
-        const primaryColor = '#0284c7'; // Brand Blue
+        const primaryColor = '#0284c7';
         const textColor = '#333333';
         const margin = 20;
 
         // --- A. Header / Branding ---
         if (logoUrl) {
             addLogoToPdf(doc, logoUrl);
-            currentY = 60; // Adjust start Y after logo
         }
         
+        currentY = 60; // Adjust start Y after logo
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(primaryColor);
@@ -312,3 +312,5 @@ function PurchasesPage() {
 }
 
 export default withProtection(PurchasesPage, 'Sila4927');
+
+    

@@ -54,7 +54,7 @@ function ProfitReportPage() {
         addPdfBackground(doc);
         const reportDate = new Date().toLocaleDateString('en-GB');
         const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
-        const primaryColor = '#0284c7'; // Brand Blue
+        const primaryColor = '#0284c7';
 
         if (logoUrl) {
             addLogoToPdf(doc, logoUrl);
@@ -63,7 +63,7 @@ function ProfitReportPage() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(primaryColor);
-        doc.text('Internal Profit Report', 60, 20);
+        doc.text('Internal Profit Report', 60, 22);
 
 
         doc.setFont('helvetica', 'normal');
@@ -129,7 +129,7 @@ function ProfitReportPage() {
         addPdfBackground(doc);
         const invoiceDate = new Date().toLocaleDateString('en-GB');
         const invoiceNumber = `PROMAX-INV-${String(Date.now()).slice(-6)}`;
-        const primaryColor = '#0284c7'; // Brand Blue
+        const primaryColor = '#0284c7';
 
         const beamProfit = totals.totalBeamProfitValue;
         const blockCommission = totals.totalBlockCommission;
@@ -286,3 +286,5 @@ function ProfitReportPage() {
 }
 
 export default withProtection(ProfitReportPage, 'Sila4927');
+
+    
