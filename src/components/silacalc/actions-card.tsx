@@ -158,6 +158,7 @@ export function ActionsCard() {
     projectName,
     setProjectName,
     clearCalculator,
+    logoUrl,
   } = useCalculator();
   const { toast } = useToast();
   const { firestore, user, isUserLoading } = useFirebase();
@@ -251,10 +252,14 @@ export function ActionsCard() {
     const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
     const grandTotal = blocksTotal + beamsTotal;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(primaryColor);
-    doc.text('SI-LATECH', 14, 22);
+    if (logoUrl) {
+      doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(primaryColor);
+      doc.text('SI-LATECH', 14, 22);
+    }
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -385,11 +390,15 @@ export function ActionsCard() {
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(primaryColor);
-    doc.text('SI-LATECH', 14, 22);
-
+    if (logoUrl) {
+      doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(primaryColor);
+      doc.text('SI-LATECH', 14, 22);
+    }
+    
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -519,11 +528,15 @@ export function ActionsCard() {
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#2563EB';
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(primaryColor);
-    doc.text('SI-LATECH CONSTRUCTION LTD', 14, 22);
-
+    if (logoUrl) {
+      doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(primaryColor);
+      doc.text('SI-LATECH CONSTRUCTION LTD', 14, 22);
+    }
+    
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
     doc.setTextColor(100);
@@ -1030,3 +1043,5 @@ export function ActionsCard() {
     </>
   );
 }
+
+    

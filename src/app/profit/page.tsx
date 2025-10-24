@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -15,7 +14,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 function ProfitReportPage() {
-    const { perRoomCalculations, totals, projectName } = useCalculator();
+    const { perRoomCalculations, totals, projectName, logoUrl } = useCalculator();
 
     const handleDownload = () => {
         const doc = new jsPDF();
@@ -23,24 +22,34 @@ function ProfitReportPage() {
         const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
         const primaryColor = '#10B981'; // Green
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.setTextColor(primaryColor);
-        doc.text('SI-LATECH - Internal Profit Report', 14, 22);
+        if (logoUrl) {
+            doc.addImage(logoUrl, 'PNG', 14, 15, 45, 10);
+        } else {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(20);
+            doc.setTextColor(primaryColor);
+            doc.text('SI-LATECH', 14, 22);
+        }
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text('Internal Profit Report', 14, 30);
+
 
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text(`Date: ${reportDate}`, 14, 30);
-        doc.text(`Report ID: ${reportNumber}`, 14, 35);
+        doc.text(`Date: ${reportDate}`, 14, 38);
+        doc.text(`Report ID: ${reportNumber}`, 14, 43);
         
         // --- Summary Section ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(primaryColor);
-        doc.text('Project Profit Summary', 14, 50);
+        doc.text('Project Profit Summary', 14, 55);
 
         (doc as any).autoTable({
-            startY: 55,
+            startY: 60,
             theme: 'plain',
             body: [
                 ['Total Beam Profit', `KSh ${totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
@@ -246,3 +255,5 @@ function ProfitReportPage() {
 }
 
 export default withProtection(ProfitReportPage, 'Sila4927');
+
+    
