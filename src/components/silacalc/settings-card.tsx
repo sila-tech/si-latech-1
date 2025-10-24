@@ -13,9 +13,15 @@ import type { CalculationDefaults } from '@/lib/calculator';
 import { DEFAULTS } from '@/lib/calculator';
 import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
+import { Button } from '../ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { UploadCloud, Image } from 'lucide-react';
+import React from 'react';
 
 export function SettingsCard() {
-  const { settings, setSettings } = useCalculator();
+  const { settings, setSettings, logoUrl, setLogoUrl } = useCalculator();
+  const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleSettingChange = (
     key: keyof CalculationDefaults,
@@ -23,6 +29,32 @@ export function SettingsCard() {
   ) => {
     setSettings((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
   };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        toast({
+            title: "Invalid File Type",
+            description: "Please upload an image file (e.g., PNG, JPG, SVG).",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setLogoUrl(base64String);
+        toast({
+            title: "Logo Updated",
+            description: "Your new logo has been saved and applied.",
+        });
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   const basicSettings = [
     { key: 'blockLength', label: 'Block Length (m)' },
@@ -80,10 +112,30 @@ export function SettingsCard() {
       <CardHeader>
         <CardTitle className="font-headline">Configuration</CardTitle>
         <CardDescription>
-          Adjust the default values for calculations.
+          Adjust the default values for calculations and branding.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div>
+            <Label className="text-base font-medium">Branding</Label>
+            <p className="text-xs text-muted-foreground mb-2">Upload your company logo. This will be used across the app and on generated PDFs.</p>
+            <div className='flex items-center gap-4'>
+                {logoUrl && <img src={logoUrl} alt="logo preview" className="w-10 h-10 object-contain rounded-sm border p-1 bg-muted" />}
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className='w-full'>
+                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                </Button>
+            </div>
+            <Input 
+                type="file" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleLogoUpload} 
+                accept="image/png, image/jpeg, image/svg+xml"
+            />
+        </div>
+
+        <Separator />
+        
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           {basicSettings.map(({ key, label }) => (
             <div className="space-y-2" key={key}>
@@ -259,3 +311,5 @@ export function SettingsCard() {
     </Card>
   );
 }
+
+    

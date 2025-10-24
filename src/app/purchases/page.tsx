@@ -19,7 +19,6 @@ import { updateProjectStatus } from '@/firebase/data-manager';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { logoImageData } from '@/lib/branding';
 import { withProtection } from '@/components/auth/with-protection';
 
 // @ts-ignore
@@ -27,7 +26,7 @@ import { jsPDF_AutoTable } from 'jspdf-autotable';
 
 function PurchasesPage() {
     const { firestore, user, isUserLoading } = useFirebase();
-    const { setRooms, setSettings, setLintelLength, totals } = useCalculator();
+    const { setRooms, setSettings, setLintelLength, totals, logoUrl } = useCalculator();
     const router = useRouter();
     const { toast } = useToast();
 
@@ -79,8 +78,10 @@ function PurchasesPage() {
         const margin = 20;
 
         // --- A. Header / Branding ---
-        doc.addImage(logoImageData, 'PNG', pageWidth / 2 - 30, currentY, 60, 13);
-        currentY += 25;
+        if (logoUrl) {
+            doc.addImage(logoUrl, 'PNG', pageWidth / 2 - 30, currentY, 60, 13);
+            currentY += 25;
+        }
         
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');

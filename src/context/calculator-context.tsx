@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useState, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from 'react';
 import type {
   Room,
   CalculationDefaults,
@@ -24,6 +24,7 @@ import {
   calcTimberAndProps,
   calcLintelSteel,
 } from '@/lib/calculator';
+import { logoImageData as defaultLogo } from '@/lib/branding';
 
 type PerRoomCalculation = {
   room: Room;
@@ -79,9 +80,13 @@ interface CalculatorContextType {
   setLoadedProjectId: (id: string | null) => void;
   projectName: string;
   setProjectName: (name: string) => void;
+  logoUrl: string;
+  setLogoUrl: (url: string) => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
+
+const LOGO_STORAGE_KEY = 'silacalc-logo';
 
 export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -89,6 +94,28 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
+  const [logoUrl, setLogoUrlState] = useState<string>(defaultLogo);
+
+  useEffect(() => {
+    try {
+      const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+      if (storedLogo) {
+        setLogoUrlState(storedLogo);
+      }
+    } catch (error) {
+      console.warn("Could not read logo from localStorage", error);
+    }
+  }, []);
+
+  const setLogoUrl = (url: string) => {
+    try {
+      localStorage.setItem(LOGO_STORAGE_KEY, url);
+    } catch (error) {
+      console.warn("Could not save logo to localStorage", error);
+    }
+    setLogoUrlState(url);
+  };
+
 
   const addRoom = () => {
     setRooms([
@@ -230,6 +257,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setLoadedProjectId,
         projectName,
         setProjectName,
+        logoUrl,
+        setLogoUrl,
       }}
     >
       {children}
@@ -244,3 +273,5 @@ export const useCalculator = (): CalculatorContextType => {
   }
   return context;
 };
+
+    

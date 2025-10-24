@@ -1,7 +1,10 @@
+
+'use client';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { SVGProps } from 'react';
-import { logoUrl } from '@/lib/branding';
+import { useCalculator } from '@/context/calculator-context';
+import { logoImageData } from '@/lib/branding';
 
 function SiLatechIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -20,16 +23,19 @@ function SiLatechIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+
 export function Header() {
+  const { logoUrl } = useCalculator();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
-            {logoUrl.endsWith('.svg') ? (
-              <SiLatechIcon className="h-8 w-8 text-primary" />
+            {logoUrl && logoUrl !== logoImageData ? (
+               <Image src={logoUrl} alt="SI-LATECH Logo" width={32} height={32} className="text-primary" />
             ) : (
-              <Image src={logoUrl} alt="SI-LATECH Logo" width={32} height={32} className="text-primary" />
+               <SiLatechIcon className="h-8 w-8 text-primary" />
             )}
             <span className="font-bold sm:inline-block font-headline text-lg">
               SI-LATECH

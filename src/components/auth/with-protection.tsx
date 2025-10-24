@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { KeyRound, ShieldAlert } from 'lucide-react';
-import { logoUrl } from '@/lib/branding';
+import { logoImageData } from '@/lib/branding';
+import { useCalculator } from '@/context/calculator-context';
 
 const SESSION_STORAGE_KEY = 'sila-auth-token';
 
@@ -39,6 +40,7 @@ export function withProtection<P extends object>(
     const [inputCode, setInputCode] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
+    const { logoUrl } = useCalculator();
 
     useEffect(() => {
       // Check session storage on component mount
@@ -68,10 +70,10 @@ export function withProtection<P extends object>(
         <Card className="w-full max-w-sm mx-4">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              {logoUrl.endsWith('.svg') ? (
-                <SiLatechIcon className="h-12 w-12 text-primary" />
+              {logoUrl && logoUrl !== logoImageData ? (
+                 <Image src={logoUrl} alt="SI-LATECH Logo" width={48} height={48} className="text-primary" />
               ) : (
-                <Image src={logoUrl} alt="SI-LATECH Logo" width={48} height={48} className="text-primary" />
+                 <SiLatechIcon className="h-12 w-12 text-primary" />
               )}
             </div>
             <CardTitle className="flex items-center justify-center gap-2">
@@ -112,3 +114,5 @@ export function withProtection<P extends object>(
 
   return ProtectedComponent;
 }
+
+    
