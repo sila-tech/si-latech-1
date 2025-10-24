@@ -34,7 +34,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Download,
-  Upload,
   FileText,
   Loader2,
   Wand2,
@@ -47,7 +46,7 @@ import {
   ChevronDown,
   FilePlus,
 } from 'lucide-react';
-import { handlePlanUpload, handleGenerateQuote, QuoteState } from '@/lib/actions';
+import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import type { Room, AggregatedRoomGroup } from '@/lib/calculator';
@@ -185,12 +184,6 @@ export function ActionsCard() {
   const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
   const [isTimberScheduleOpen, setTimberScheduleOpen] = useState(false);
   
-  const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [filePreview, setFilePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
-
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
 
@@ -716,30 +709,6 @@ export function ActionsCard() {
   };
 
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (loadEvent) => {
-        setFilePreview(loadEvent.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setFilePreview(null);
-    }
-  };
-  
-  const handleUploadDialogChange = (open: boolean) => {
-    if (!open) {
-      setFilePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      formRef.current?.reset();
-    }
-    setUploadDialogOpen(open);
-  }
-
   const [quoteState, setQuoteState] = useState<QuoteState>({});
   const [isQuoteResultOpen, setQuoteResultOpen] = useState(false);
 
@@ -752,37 +721,6 @@ export function ActionsCard() {
     } else if (result.error) {
         toast({ title: 'Quote Error', description: result.error, variant: 'destructive' });
     }
-  }
-
-  async function handlePlanFormSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSubmittingPlan(true);
-    
-    if (!formRef.current) {
-      setIsSubmittingPlan(false);
-      return;
-    };
-    
-    const formData = new FormData(formRef.current);
-    const result = await handlePlanUpload(formData);
-    
-    if (result.data) {
-        if (result.data.floors) {
-          const allRooms = result.data.floors.flatMap(floor => 
-              floor.rooms.map(room => ({...room, id: crypto.randomUUID(), name: `${floor.floorName} - ${room.name}`}))
-          );
-          setRooms(allRooms);
-        }
-        if (result.data.lintelLength) {
-          setLintelLength(result.data.lintelLength);
-        }
-        toast({ title: 'Success', description: result.message });
-        handleUploadDialogChange(false);
-    } else if (result.error) {
-        toast({ title: 'Upload Error', description: result.error, variant: 'destructive' });
-    }
-    
-    setIsSubmittingPlan(false);
   }
 
   const handleDocumentDownload = (
@@ -880,57 +818,6 @@ export function ActionsCard() {
               <Sheet /> Purchases
             </Link>
           </Button>
-
-          <Dialog open={isUploadDialogOpen} onOpenChange={handleUploadDialogChange}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                <Upload /> Upload Plan (AI)
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Analyze Building Plan</DialogTitle>
-                <DialogDescription>
-                  Upload a PDF or image of your building plan. Our AI will analyze
-                  it and automatically populate the room dimensions.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handlePlanFormSubmit} ref={formRef} className="space-y-4">
-                {filePreview && (
-                  <div className="my-4 rounded-md border bg-muted p-2 max-h-[400px] overflow-auto">
-                    {filePreview.startsWith('data:image') ? (
-                       <Image src={filePreview} alt="Plan preview" width={550} height={300} className="w-full h-auto object-contain" />
-                    ) : (
-                      <iframe src={filePreview} width="100%" height="400px" title="PDF Preview">
-                        <p>PDF preview is not available in your browser. You can still upload the file.</p>
-                      </iframe>
-                    )}
-                  </div>
-                )}
-                <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="planFile">Plan File</Label>
-                  <Input 
-                    id="planFile" 
-                    name="planFile" 
-                    type="file" 
-                    required 
-                    accept=".pdf,image/*"
-                    onChange={handleFileChange}
-                    ref={fileInputRef}
-                  />
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">Cancel</Button>
-                  </DialogClose>
-                  <Button type="submit" disabled={isSubmittingPlan}>
-                    {isSubmittingPlan && <Loader2 className="mr-2 animate-spin" />}
-                    <Wand2 /> Analyze
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
           
           <Dialog>
             <DialogTrigger asChild>
@@ -1052,4 +939,3 @@ export function ActionsCard() {
   );
 }
 
-    
