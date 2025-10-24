@@ -33,9 +33,9 @@ export function Header() {
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             {logoUrl && logoUrl !== logoImageData ? (
-               <Image src={logoUrl} alt="SI-LATECH Logo" width={32} height={32} className="text-primary" />
+               <Image src={logoUrl} alt="SI-LATECH Logo" width={40} height={40} className="text-primary" />
             ) : (
-               <SiLatechIcon className="h-8 w-8 text-primary" />
+               <SiLatechIcon className="h-10 w-10 text-primary" />
             )}
             <span className="font-bold sm:inline-block font-headline text-lg">
               SI-LATECH

@@ -71,9 +71,9 @@ export function withProtection<P extends object>(
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               {logoUrl && logoUrl !== logoImageData ? (
-                 <Image src={logoUrl} alt="SI-LATECH Logo" width={48} height={48} className="text-primary" />
+                 <Image src={logoUrl} alt="SI-LATECH Logo" width={56} height={56} className="text-primary" />
               ) : (
-                 <SiLatechIcon className="h-12 w-12 text-primary" />
+                 <SiLatechIcon className="h-14 w-14 text-primary" />
               )}
             </div>
             <CardTitle className="flex items-center justify-center gap-2">
