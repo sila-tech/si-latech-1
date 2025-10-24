@@ -69,7 +69,7 @@ export function withProtection<P extends object>(
               {logoUrl ? (
                  <Image src={logoUrl} alt="SI-LATECH Logo" width={56} height={56} className="text-primary" />
               ) : (
-                 <SiLatechIcon className="h-14 w-14 text-primary" />
+                 <SiLatechIcon className="h-12 w-12 text-primary" />
               )}
                <span className="text-lg font-bold font-headline mt-2">SI-LATECH</span>
             </div>
