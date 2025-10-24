@@ -99,9 +99,11 @@ function ProfitReportPage() {
         doc.setTextColor(primaryColor);
         doc.text('Per-Room Breakdown', 14, finalY + 15);
 
-        const tableColumn = ['Room', 'Beam Profit (KSh)', 'Block Commission (KSh)', 'Total Room Profit (KSh)'];
+        const tableColumn = ['Room', 'Profit Beams (pcs)', 'Profit Length (m)', 'Beam Profit (KSh)', 'Block Commission (KSh)', 'Total Room Profit (KSh)'];
         const tableRows = perRoomCalculations.map(p => ([
             `${p.room.name} (${p.room.width}m x ${p.room.length}m)`,
+            p.roomCalcs.profitBeams.toString(),
+            p.roomCalcs.profitBeamLength.toFixed(2),
             p.roomCalcs.beamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 }),
             p.roomCalcs.blockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 }),
             p.roomCalcs.totalRoomProfit.toLocaleString('en-US', { minimumFractionDigits: 2 }),
@@ -117,7 +119,9 @@ function ProfitReportPage() {
             columnStyles: {
                 1: { halign: 'right' },
                 2: { halign: 'right' },
-                3: { halign: 'right', fontStyle: 'bold' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right', fontStyle: 'bold' },
             }
         });
         
@@ -138,7 +142,7 @@ function ProfitReportPage() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
         doc.setTextColor(primaryColor);
-        doc.text('INVOICE TO PROMAX LIMITED', 14, 22);
+        doc.text('INVOICE TO PROMAX LIMITED', 60, 22);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
@@ -286,5 +290,3 @@ function ProfitReportPage() {
 }
 
 export default withProtection(ProfitReportPage, 'Sila4927');
-
-    
