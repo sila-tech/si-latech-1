@@ -13,20 +13,6 @@ import { useCalculator } from '@/context/calculator-context';
 
 const SESSION_STORAGE_KEY = 'sila-auth-token';
 
-function SiLatechIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="1em"
-      height="1em"
-      {...props}
-    >
-        <path fill="currentColor" d="M8.353 7.647a.5.5 0 0 0-.706.706L10.294 11H8.5a2.5 2.5 0 0 0 0 5h3.147l-2.647 2.647a.5.5 0 1 0 .706.706L13.707 15H15.5a2.5 2.5 0 0 0 0-5H12.353l2.647-2.647a.5.5 0 0 0-.706-.706L10.293 9H8.353Z"/>
-    </svg>
-  );
-}
-
 export function withProtection<P extends object>(
   WrappedComponent: ComponentType<P>,
   secretCode: string
@@ -36,7 +22,6 @@ export function withProtection<P extends object>(
     const [inputCode, setInputCode] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
-    const { logoUrl } = useCalculator();
 
     useEffect(() => {
       // Check session storage on component mount
@@ -66,12 +51,7 @@ export function withProtection<P extends object>(
         <Card className="w-full max-w-sm mx-4">
           <CardHeader className="text-center">
             <div className="flex flex-col items-center justify-center mb-4">
-              {logoUrl ? (
-                 <Image src={logoUrl} alt="SI-LATECH Logo" width={56} height={56} className="text-primary" />
-              ) : (
-                 <SiLatechIcon className="h-12 w-12 text-primary" />
-              )}
-               <span className="text-lg font-bold font-headline mt-2">SI-LATECH</span>
+               <span className="text-2xl font-bold font-headline mt-2">SI-LATECH</span>
             </div>
             <CardTitle className="flex items-center justify-center gap-2">
                 <ShieldAlert />
