@@ -14,18 +14,21 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
-    const img = new (window as any).Image();
-    img.src = logoUrl;
-    const imageWidth = 45;
-    const imageApectRatio = img.height / img.width;
-    const imageHeight = imageWidth * imageApectRatio;
+    try {
+        const img = new (window as any).Image();
+        img.src = logoUrl;
+        const imageWidth = 35;
+        const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
+        const imageHeight = imageWidth * imageAspectRatio;
 
-    // Check if the image format is supported and add it to the doc
-    const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-    if (['JPEG', 'PNG', 'JPG'].includes(format)) {
-        doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
-    } else {
-        // Fallback for non-standrd formats or SVGs which jsPDF has trouble with.
+        const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
+        if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
+            doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
+        } else {
+            throw new Error('Unsupported image format or invalid image.');
+        }
+    } catch (e) {
+        // Fallback for SVGs or other issues.
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
         doc.text('SI-LATECH', 14, 22);
@@ -43,19 +46,15 @@ function ProfitReportPage() {
 
         if (logoUrl) {
             addLogoToPdf(doc, logoUrl);
-        } else {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(20);
-            doc.setTextColor(primaryColor);
-            doc.text('SI-LATECH', 14, 22);
         }
         
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor);
+        doc.text('Internal Profit Report', 60, 20);
+
+
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        doc.setTextColor(100);
-        doc.text('Internal Profit Report', 14, 30);
-
-
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.text(`Date: ${reportDate}`, 14, 38);
@@ -274,5 +273,7 @@ function ProfitReportPage() {
 }
 
 export default withProtection(ProfitReportPage, 'Sila4927');
+
+    
 
     

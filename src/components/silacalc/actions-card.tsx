@@ -144,16 +144,14 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
 const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
     const img = new (window as any).Image();
     img.src = logoUrl;
-    const imageWidth = 45;
-    const imageApectRatio = img.height / img.width;
-    const imageHeight = imageWidth * imageApectRatio;
+    const imageWidth = 35; // Reduced size
+    const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
+    const imageHeight = imageWidth * imageAspectRatio;
 
-    // Check if the image format is supported and add it to the doc
     const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-    if (['JPEG', 'PNG', 'JPG'].includes(format)) {
+    if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
         doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
     } else {
-        // Fallback for non-standrd formats or SVGs which jsPDF has trouble with.
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
         doc.text('SI-LATECH', 14, 22);
@@ -272,28 +270,24 @@ export function ActionsCard() {
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
-    } else {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.setTextColor(primaryColor);
-      doc.text('SI-LATECH', 14, 22);
     }
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Beam & Block Slab Quotation', 14, 30);
+    
+    // --- Header ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(primaryColor);
+    doc.text('Beam & Block Slab Quotation', 60, 20);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text('Head Office: Juja, Kenya', 145, 20);
-    doc.text('Tel: +254 741 557960', 145, 25);
-    doc.text('Email: info@silatech.co.ke', 145, 30);
+    doc.text('Head Office: Juja, Kenya', 145, 30);
+    doc.text('Tel: +254 741 557960', 145, 35);
+    doc.text('Email: info@silatech.co.ke', 145, 40);
 
     const invoiceToX = 14;
     const shipToX = 110;
-    const startY = 45;
+    const startY = 55;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
     doc.text('INVOICE TO', invoiceToX, startY);
@@ -410,17 +404,12 @@ export function ActionsCard() {
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
-    } else {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.setTextColor(primaryColor);
-      doc.text('SI-LATECH', 14, 22);
     }
     
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Consolidated Materials Schedule (Slab, Lintels, & Timber)', 14, 30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(primaryColor);
+    doc.text('Consolidated Materials Schedule (Slab, Lintels, & Timber)', 60, 20);
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -548,19 +537,15 @@ export function ActionsCard() {
 
     if (logoUrl) {
       addLogoToPdf(doc, logoUrl);
-    } else {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.setTextColor(primaryColor);
-      doc.text('SI-LATECH CONSTRUCTION LTD', 14, 22);
     }
     
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
-    doc.setTextColor(100);
-    doc.text('Aggregated Beams & Blocks Breakdown', 14, 30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(primaryColor);
+    doc.text('Aggregated Beams & Blocks Breakdown', 60, 20);
     
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.text(`Project Name: ${clientInfo.projectName}`, 14, 40);
     doc.text(`Client: ${clientInfo.clientName}`, 14, 45);
     doc.text(`Date: ${reportDate}`, 14, 50);
@@ -1061,5 +1046,7 @@ export function ActionsCard() {
     </>
   );
 }
+
+    
 
     

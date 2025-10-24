@@ -35,8 +35,8 @@ const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
 
     // Check if the image format is supported and add it to the doc
     const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-    if (['JPEG', 'PNG', 'JPG'].includes(format)) {
-        doc.addImage(logoUrl, format, x, 30, imageWidth, imageHeight);
+    if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
+        doc.addImage(logoUrl, format, x, 15, imageWidth, imageHeight);
     }
 };
 
@@ -88,7 +88,7 @@ function PurchasesPage() {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        let currentY = 30;
+        let currentY = 20;
         const primaryColor = '#1e7a3a';
         const textColor = '#333333';
         const margin = 20;
@@ -96,7 +96,7 @@ function PurchasesPage() {
         // --- A. Header / Branding ---
         if (logoUrl) {
             addLogoToPdf(doc, logoUrl);
-            currentY += 25;
+            currentY += 40;
         }
         
         doc.setFontSize(22);
@@ -295,3 +295,6 @@ function PurchasesPage() {
 }
 
 export default withProtection(PurchasesPage, 'Sila4927');
+
+
+    
