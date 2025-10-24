@@ -163,6 +163,16 @@ const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
     }
 };
 
+const addPdfBackground = (doc: jsPDF) => {
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    const backgroundColor = '#f2f5f9'; // HSL(210, 40%, 96.1%)
+    doc.setFillColor(backgroundColor);
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
+    }
+};
+
 export function ActionsCard() {
   const { 
     rooms, 
@@ -262,6 +272,7 @@ export function ActionsCard() {
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    addPdfBackground(doc);
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7'; // Brand Blue
@@ -407,6 +418,7 @@ export function ActionsCard() {
     const combinedWetVolume = totalConcreteVolume + lintel.wetVolume;
 
     const doc = new jsPDF();
+    addPdfBackground(doc);
     const scheduleDate = new Date().toLocaleDateString('en-GB');
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7'; // Brand Blue
@@ -479,6 +491,7 @@ export function ActionsCard() {
 
   const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    addPdfBackground(doc);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7'; // Brand Blue
@@ -544,6 +557,7 @@ export function ActionsCard() {
   
   const handleDownloadAggregatedBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    addPdfBackground(doc);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7'; // Brand Blue
@@ -640,6 +654,7 @@ export function ActionsCard() {
     
   const handleDownloadTimberSchedule = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    addPdfBackground(doc);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7'; // Brand Blue

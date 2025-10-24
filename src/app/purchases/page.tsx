@@ -46,6 +46,16 @@ const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
     }
 };
 
+const addPdfBackground = (doc: jsPDF) => {
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    const backgroundColor = '#f2f5f9'; // HSL(210, 40%, 96.1%)
+    doc.setFillColor(backgroundColor);
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
+    }
+};
+
 function PurchasesPage() {
     const { firestore, user, isUserLoading } = useFirebase();
     const { setRooms, setSettings, setLintelLength, totals, logoUrl } = useCalculator();
@@ -92,6 +102,7 @@ function PurchasesPage() {
 
     const handleGenerateCertificate = (project: ProjectData) => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        addPdfBackground(doc);
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         let currentY = 20;
