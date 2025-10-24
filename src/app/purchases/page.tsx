@@ -24,27 +24,12 @@ import { withProtection } from '@/components/auth/with-protection';
 // @ts-ignore
 import { jsPDF_AutoTable } from 'jspdf-autotable';
 
-const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
-    try {
-        const img = new (window as any).Image();
-        img.src = logoUrl;
-        const imageWidth = 35;
-        const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
-        const imageHeight = imageWidth * imageAspectRatio;
-
-        const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-        if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
-            doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
-        } else {
-            throw new Error('Unsupported image format or invalid image.');
-        }
-    } catch (e) {
-        // Fallback for SVGs or other issues.
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.text('SI-LATECH', 14, 22);
-    }
+const addLogoToPdf = (doc: jsPDF) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('SI-LATECH', 14, 22);
 };
+
 
 const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
@@ -58,7 +43,7 @@ const addPdfBackground = (doc: jsPDF) => {
 
 function PurchasesPage() {
     const { firestore, user, isUserLoading } = useFirebase();
-    const { setRooms, setSettings, setLintelLength, totals, logoUrl } = useCalculator();
+    const { setRooms, setSettings, setLintelLength } = useCalculator();
     const router = useRouter();
     const { toast } = useToast();
 
@@ -111,9 +96,7 @@ function PurchasesPage() {
         const margin = 20;
 
         // --- A. Header / Branding ---
-        if (logoUrl) {
-            addLogoToPdf(doc, logoUrl);
-        }
+        addLogoToPdf(doc);
         
         currentY = 60; // Adjust start Y after logo
         doc.setFontSize(22);

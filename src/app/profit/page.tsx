@@ -13,27 +13,12 @@ import { withProtection } from '@/components/auth/with-protection';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
-    try {
-        const img = new (window as any).Image();
-        img.src = logoUrl;
-        const imageWidth = 35;
-        const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
-        const imageHeight = imageWidth * imageAspectRatio;
-
-        const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-        if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
-            doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
-        } else {
-            throw new Error('Unsupported image format or invalid image.');
-        }
-    } catch (e) {
-        // Fallback for SVGs or other issues.
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.text('SI-LATECH', 14, 22);
-    }
+const addLogoToPdf = (doc: jsPDF) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('SI-LATECH', 14, 22);
 };
+
 
 const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
@@ -47,7 +32,7 @@ const addPdfBackground = (doc: jsPDF) => {
 
 
 function ProfitReportPage() {
-    const { perRoomCalculations, totals, projectName, logoUrl } = useCalculator();
+    const { perRoomCalculations, totals, projectName } = useCalculator();
 
     const handleDownload = () => {
         const doc = new jsPDF();
@@ -56,9 +41,7 @@ function ProfitReportPage() {
         const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
         const primaryColor = '#0284c7';
 
-        if (logoUrl) {
-            addLogoToPdf(doc, logoUrl);
-        }
+        addLogoToPdf(doc);
         
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
@@ -138,6 +121,8 @@ function ProfitReportPage() {
         const beamProfit = totals.totalBeamProfitValue;
         const blockCommission = totals.totalBlockCommission;
         const totalDue = beamProfit + blockCommission;
+        
+        addLogoToPdf(doc);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
@@ -290,3 +275,5 @@ function ProfitReportPage() {
 }
 
 export default withProtection(ProfitReportPage, 'Sila4927');
+
+    

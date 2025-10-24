@@ -141,27 +141,12 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
   );
 };
 
-const addLogoToPdf = (doc: jsPDF, logoUrl: string) => {
-    try {
-        const img = new (window as any).Image();
-        img.src = logoUrl;
-        const imageWidth = 35;
-        const imageAspectRatio = img.width > 0 ? img.height / img.width : 1;
-        const imageHeight = imageWidth * imageAspectRatio;
-
-        const format = logoUrl.substring(logoUrl.indexOf('/') + 1, logoUrl.indexOf(';')).toUpperCase();
-        if (['JPEG', 'PNG', 'JPG'].includes(format) && img.width > 0) {
-            doc.addImage(logoUrl, format, 14, 15, imageWidth, imageHeight);
-        } else {
-            throw new Error('Unsupported image format or invalid image.');
-        }
-    } catch (e) {
-        // Fallback for SVGs or other issues.
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.text('SI-LATECH', 14, 22);
-    }
+const addLogoToPdf = (doc: jsPDF) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('SI-LATECH', 14, 22);
 };
+
 
 const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
@@ -189,7 +174,6 @@ export function ActionsCard() {
     projectName,
     setProjectName,
     clearCalculator,
-    logoUrl,
   } = useCalculator();
   const { toast } = useToast();
   const { firestore, user, isUserLoading } = useFirebase();
@@ -285,9 +269,7 @@ export function ActionsCard() {
     const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
     const grandTotal = blocksTotal + beamsTotal;
 
-    if (logoUrl) {
-      addLogoToPdf(doc, logoUrl);
-    }
+    addLogoToPdf(doc);
     
     // --- Header ---
     doc.setFont('helvetica', 'bold');
@@ -423,9 +405,7 @@ export function ActionsCard() {
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7';
 
-    if (logoUrl) {
-      addLogoToPdf(doc, logoUrl);
-    }
+    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -513,9 +493,7 @@ export function ActionsCard() {
 
     const totalPieces = tableRows.reduce((sum, row) => sum + parseInt(row[1]), 0);
 
-    if (logoUrl) {
-        addLogoToPdf(doc, logoUrl);
-    }
+    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
@@ -562,9 +540,7 @@ export function ActionsCard() {
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7';
 
-    if (logoUrl) {
-      addLogoToPdf(doc, logoUrl);
-    }
+    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -659,9 +635,7 @@ export function ActionsCard() {
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     const primaryColor = '#0284c7';
 
-    if (logoUrl) {
-      addLogoToPdf(doc, logoUrl);
-    }
+    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
