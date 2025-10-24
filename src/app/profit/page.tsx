@@ -13,9 +13,10 @@ import { withProtection } from '@/components/auth/with-protection';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-const addLogoToPdf = (doc: jsPDF) => {
+const addLogoToPdf = (doc: jsPDF, color: string) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
+    doc.setTextColor(color);
     doc.text('SI-LATECH', 14, 22);
 };
 
@@ -36,12 +37,11 @@ function ProfitReportPage() {
 
     const handleDownload = () => {
         const doc = new jsPDF();
+        const primaryColor = '#095388';
         addPdfBackground(doc);
+        addLogoToPdf(doc, primaryColor);
         const reportDate = new Date().toLocaleDateString('en-GB');
         const reportNumber = `PROFIT-${String(Date.now()).slice(-6)}`;
-        const primaryColor = '#0284c7';
-
-        addLogoToPdf(doc);
         
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
@@ -113,17 +113,16 @@ function ProfitReportPage() {
 
     const handleDownloadPromaxInvoice = () => {
         const doc = new jsPDF();
+        const primaryColor = '#095388';
         addPdfBackground(doc);
+        addLogoToPdf(doc, primaryColor);
         const invoiceDate = new Date().toLocaleDateString('en-GB');
         const invoiceNumber = `PROMAX-INV-${String(Date.now()).slice(-6)}`;
-        const primaryColor = '#0284c7';
-
+        
         const beamProfit = totals.totalBeamProfitValue;
         const blockCommission = totals.totalBlockCommission;
         const totalDue = beamProfit + blockCommission;
         
-        addLogoToPdf(doc);
-
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
         doc.setTextColor(primaryColor);

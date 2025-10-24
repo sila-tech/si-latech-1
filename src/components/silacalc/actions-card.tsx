@@ -141,9 +141,10 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
   );
 };
 
-const addLogoToPdf = (doc: jsPDF) => {
+const addLogoToPdf = (doc: jsPDF, color: string) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
+    doc.setTextColor(color);
     doc.text('SI-LATECH', 14, 22);
 };
 
@@ -256,10 +257,11 @@ export function ActionsCard() {
 
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    const primaryColor = '#095388';
     addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7';
     let currentY = 15;
     
     const BLOCK_PRICE = 85;
@@ -269,7 +271,6 @@ export function ActionsCard() {
     const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
     const grandTotal = blocksTotal + beamsTotal;
 
-    addLogoToPdf(doc);
     
     // --- Header ---
     doc.setFont('helvetica', 'bold');
@@ -400,12 +401,11 @@ export function ActionsCard() {
     const combinedWetVolume = totalConcreteVolume + lintel.wetVolume;
 
     const doc = new jsPDF();
+    const primaryColor = '#095388';
     addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
     const scheduleDate = new Date().toLocaleDateString('en-GB');
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7';
-
-    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -471,11 +471,12 @@ export function ActionsCard() {
 
   const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    const primaryColor = '#095388';
     addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7';
-
+    
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
         const length = p.roomCalcs.shorter;
@@ -493,7 +494,6 @@ export function ActionsCard() {
 
     const totalPieces = tableRows.reduce((sum, row) => sum + parseInt(row[1]), 0);
 
-    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
@@ -535,12 +535,12 @@ export function ActionsCard() {
   
   const handleDownloadAggregatedBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    const primaryColor = '#095388';
     addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7';
 
-    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -630,12 +630,11 @@ export function ActionsCard() {
     
   const handleDownloadTimberSchedule = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
+    const primaryColor = '#095388';
     addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
-    const primaryColor = '#0284c7';
-
-    addLogoToPdf(doc);
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);

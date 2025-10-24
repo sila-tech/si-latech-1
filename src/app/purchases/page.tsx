@@ -24,9 +24,10 @@ import { withProtection } from '@/components/auth/with-protection';
 // @ts-ignore
 import { jsPDF_AutoTable } from 'jspdf-autotable';
 
-const addLogoToPdf = (doc: jsPDF) => {
+const addLogoToPdf = (doc: jsPDF, color: string) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
+    doc.setTextColor(color);
     doc.text('SI-LATECH', 14, 22);
 };
 
@@ -87,16 +88,16 @@ function PurchasesPage() {
 
     const handleGenerateCertificate = (project: ProjectData) => {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+        const primaryColor = '#095388';
         addPdfBackground(doc);
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         let currentY = 20;
-        const primaryColor = '#0284c7';
         const textColor = '#333333';
         const margin = 20;
 
         // --- A. Header / Branding ---
-        addLogoToPdf(doc);
+        addLogoToPdf(doc, primaryColor);
         
         currentY = 60; // Adjust start Y after logo
         doc.setFontSize(22);
