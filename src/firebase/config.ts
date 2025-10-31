@@ -1,9 +1,9 @@
 export const firebaseConfig = {
   "projectId": "si-latech",
-  "appId": "1:895963925352:web:152f20c99f35a4d7d11361",
-  "apiKey": "AIzaSyAzC796m2sT23oA-a_b21G4w2-xIl42x_M",
-  "authDomain": "si-latech.firebaseapp.com",
-  "measurementId": "G-L5V81G2N7N",
+  "appId": "1:895963925352:web:a074c3e80a083696d11361",
   "storageBucket": "si-latech.appspot.com",
-  "messagingSenderId": "895963925352"
+  "apiKey": "AIzaSyBeo-2gQASzxMOi50bOIVN3aBHGzHYo098",
+  "authDomain": "si-latech.firebaseapp.com",
+  "messagingSenderId": "895963925352",
+  "measurementId": "G-L5V81G2N7N"
 };
