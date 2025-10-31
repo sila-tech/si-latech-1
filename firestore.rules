@@ -25,22 +25,20 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-ownership for projects. Only the owner can create, read, update, or delete their projects.
+     * @description Enforces user-ownership for the projects collection. Only the owner can list their projects or create new ones.
+     * @path /customers/{userId}/projects
+     */
+    match /customers/{userId}/projects {
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+    }
+    
+    /**
+     * @description Enforces user-ownership for individual project documents. Only the owner can read, update, or delete their projects.
      * @path /customers/{userId}/projects/{projectId}
-     * @allow (create) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can create a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
-     * @deny (create) User 'anotherUserId' cannot create a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
-     * @allow (get) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can get a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
-     * @deny (get) User 'anotherUserId' cannot get a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
-     * @allow (update) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can update a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
-     * @deny (update) User 'anotherUserId' cannot update a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
-     * @allow (delete) User 'W8isjDSmYfVWgBFlaZPVUIDK7DV2' can delete a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId
-     * @deny (delete) User 'anotherUserId' cannot delete a project under /customers/W8isjDSmYfVWgBFlaZPVUIDK7DV2/projects/projectId.
-     * @principle Enforces document ownership and validates relational integrity.
      */
     match /customers/{userId}/projects/{projectId} {
       allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isSignedIn() && isExistingOwner(userId);
       allow delete: if isSignedIn() && isExistingOwner(userId);
     }
