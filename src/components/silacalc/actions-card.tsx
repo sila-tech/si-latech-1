@@ -774,7 +774,7 @@ export function ActionsCard() {
                 <FilePlus /> New Project
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {sortedProjects.length > 0 ? (
+              {sortedProjects && sortedProjects.length > 0 ? (
                 sortedProjects.map(p => (
                   <DropdownMenuItem key={p.id} onSelect={() => handleLoadProject(p)}>
                     <div className="flex flex-col">
@@ -814,8 +814,8 @@ export function ActionsCard() {
           </Button>
           
           <Button variant="outline" className="w-full text-green-600 border-green-600/50 hover:bg-green-100 hover:text-green-700" asChild>
-            <Link href="/purchases">
-              <Sheet /> Purchases
+            <Link href="/profit">
+              <Sheet /> Internal Report
             </Link>
           </Button>
           
@@ -938,4 +938,3 @@ export function ActionsCard() {
     </>
   );
 }
-
