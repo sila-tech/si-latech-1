@@ -1,8 +1,9 @@
 export const firebaseConfig = {
-  "projectId": "inner-bot-461108-c7",
-  "appId": "1:809706983356:web:7d37ac78c83b26e47ca5b9",
-  "apiKey": "AIzaSyBvWiA3xryMDw2k0kc-6qH1DVNdrj8Ps2I",
-  "authDomain": "inner-bot-461108-c7.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "809706983356"
+  "projectId": "si-latech",
+  "appId": "1:895963925352:web:152f20c99f35a4d7d11361",
+  "apiKey": "AIzaSyAzC796m2sT23oA-a_b21G4w2-xIl42x_M",
+  "authDomain": "si-latech.firebaseapp.com",
+  "measurementId": "G-L5V81G2N7N",
+  "storageBucket": "si-latech.appspot.com",
+  "messagingSenderId": "895963925352"
 };
