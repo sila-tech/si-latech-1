@@ -1,30 +1,23 @@
 'use client';
 
-import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
-      firebaseApp = initializeApp(firebaseConfig);
-    }
+  const firebaseConfig = {
+    "projectId": "si-latech",
+    "appId": "1:895963925352:web:a074c3e80a083696d11361",
+    "storageBucket": "si-latech.appspot.com",
+    "apiKey": "AIzaSyBeo-2gQASzxMOi50bOIVN3aBHGzHYo098",
+    "authDomain": "si-latech.firebaseapp.com",
+    "messagingSenderId": "895963925352",
+    "measurementId": "G-L5V81G2N7N"
+  };
 
+  if (!getApps().length) {
+    const firebaseApp = initializeApp(firebaseConfig);
     return getSdks(firebaseApp);
   }
 
