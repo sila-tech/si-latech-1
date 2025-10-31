@@ -24,37 +24,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    /**
-     * @description Enforces user-ownership for the projects collection. 
-     * Only the owner can list their projects or create new ones.
-     * @path /customers/{userId}/projects
-     */
-    match /customers/{userId}/projects {
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId);
-    }
-    
-    /**
-     * @description Enforces user-ownership for individual project documents. 
-     * Only the owner can read, update, or delete their projects.
-     * @path /customers/{userId}/projects/{projectId}
-     */
-    match /customers/{userId}/projects/{projectId} {
-      allow get: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isExistingOwner(userId);
-      allow delete: if isSignedIn() && isExistingOwner(userId);
-    }
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function isExistingOwner(userId) {
-      return isSignedIn() && isOwner(userId) && resource != null;
+    // Grant read/write access to a user's own projects subcollection.
+    // - `read` covers `get` and `list` operations.
+    // - `write` covers `create`, `update`, and `delete` operations.
+    // This single rule secures the entire user-specific data branch.
+    match /customers/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
