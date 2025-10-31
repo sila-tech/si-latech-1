@@ -23,9 +23,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     /**
-     * @description Enforces user-ownership for the projects collection. Only the owner can list their projects or create new ones.
+     * @description Enforces user-ownership for the projects collection. 
+     * Only the owner can list their projects or create new ones.
      * @path /customers/{userId}/projects
      */
     match /customers/{userId}/projects {
@@ -34,7 +35,8 @@ service cloud.firestore {
     }
     
     /**
-     * @description Enforces user-ownership for individual project documents. Only the owner can read, update, or delete their projects.
+     * @description Enforces user-ownership for individual project documents. 
+     * Only the owner can read, update, or delete their projects.
      * @path /customers/{userId}/projects/{projectId}
      */
     match /customers/{userId}/projects/{projectId} {
