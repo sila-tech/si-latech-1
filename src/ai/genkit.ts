@@ -2,6 +2,7 @@ import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import {config} from 'dotenv';
 
+config({ path: '.env.local' });
 config();
 
 export const ai = genkit({
