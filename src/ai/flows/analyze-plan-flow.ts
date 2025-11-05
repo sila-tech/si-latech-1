@@ -10,6 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
 
 const AnalyzePlanInputSchema = z.object({
@@ -34,11 +35,17 @@ export async function analyzePlan(input: AnalyzePlanInput): Promise<AnalyzePlanO
   return analyzePlanFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'analyzePlanPrompt',
-  input: { schema: AnalyzePlanInputSchema },
-  output: { schema: AnalyzePlanOutputSchema },
-  prompt: `You are an expert architectural plan reader. Your task is to analyze the provided floor plan image and extract all rooms with their dimensions.
+const analyzePlanFlow = ai.defineFlow(
+  {
+    name: 'analyzePlanFlow',
+    inputSchema: AnalyzePlanInputSchema,
+    outputSchema: AnalyzePlanOutputSchema,
+  },
+  async (input) => {
+    const { output } = await ai.generate({
+      model: googleAI.model('gemini-1.5-flash-latest'),
+      output: { schema: AnalyzePlanOutputSchema },
+      prompt: `You are an expert architectural plan reader. Your task is to analyze the provided floor plan image and extract all rooms with their dimensions.
 
 - Identify every enclosed space and its label (e.g., "Bedroom," "Living Room," "Kitchen").
 - If a room is unlabeled, assign a generic name like "Room 1".
@@ -48,16 +55,11 @@ const prompt = ai.definePrompt({
 
 Floor Plan Image:
 {{media url=photoDataUri}}`,
-});
-
-const analyzePlanFlow = ai.defineFlow(
-  {
-    name: 'analyzePlanFlow',
-    inputSchema: AnalyzePlanInputSchema,
-    outputSchema: AnalyzePlanOutputSchema,
-  },
-  async (input) => {
-    const { output } = await prompt(input);
+      context: [
+        { role: 'user', content: [{ media: { url: input.photoDataUri } }] },
+      ],
+    });
+    
     if (!output) {
       throw new Error('The AI model did not return a valid output.');
     }
