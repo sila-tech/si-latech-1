@@ -1,33 +1,24 @@
+
 'use client';
 
-import React, { useMemo, type ReactNode, useEffect } from 'react';
-import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
-import { initiateAnonymousSignIn } from './non-blocking-login';
-import { getAuth } from 'firebase/auth';
+import { FirebaseProvider } from '@/firebase/provider';
+import type { ReactNode } from 'react';
 
-interface FirebaseClientProviderProps {
-  children: ReactNode;
-}
-
-export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
-  const firebaseServices = useMemo(() => {
-    return initializeFirebase();
-  }, []);
-
-  useEffect(() => {
-    const auth = getAuth(firebaseServices.firebaseApp);
-    // Automatically sign in the user anonymously if they are not already signed in.
-    if (!auth.currentUser) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [firebaseServices.firebaseApp]);
+/**
+ * This component is responsible for initializing Firebase on the client side.
+ * It ensures that Firebase is initialized only once and provides the necessary
+ * instances to the FirebaseProvider.
+ */
+export function FirebaseClientProvider({ children }: { children: ReactNode }) {
+  // initializeFirebase is a client-side function, so it's safe to call it here.
+  const { firebaseApp, auth, firestore } = initializeFirebase();
 
   return (
     <FirebaseProvider
-      firebaseApp={firebaseServices.firebaseApp}
-      auth={firebaseServices.auth}
-      firestore={firebaseServices.firestore}
+      firebaseApp={firebaseApp}
+      auth={auth}
+      firestore={firestore}
     >
       {children}
     </FirebaseProvider>

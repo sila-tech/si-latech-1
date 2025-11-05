@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase';
 import { CalculatorProvider } from '@/context/calculator-context';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'SI-LATECH',
@@ -15,6 +15,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -40,5 +41,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

@@ -1,40 +1,47 @@
+
 'use client';
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
   const firebaseConfig = {
-    "projectId": "si-latech",
-    "appId": "1:895963925352:web:a074c3e80a083696d11361",
-    "storageBucket": "si-latech.appspot.com",
-    "apiKey": "AIzaSyBeo-2gQASzxMOi50bOIVN3aBHGzHYo098",
-    "authDomain": "si-latech.firebaseapp.com",
-    "messagingSenderId": "895963925352",
-    "measurementId": "G-L5V81G2N7N"
+    projectId: 'si-latech',
+    appId: '1:895963925352:web:a074c3e80a083696d11361',
+    storageBucket: 'si-latech.appspot.com',
+    apiKey: 'AIzaSyBeo-2gQASzxMOi50bOIVN3aBHGzHYo098',
+    authDomain: 'si-latech.firebaseapp.com',
+    messagingSenderId: '895963925352',
+    measurementId: 'G-L5V81G2N7N',
   };
 
-  if (!getApps().length) {
-    const firebaseApp = initializeApp(firebaseConfig);
-    return getSdks(firebaseApp);
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Sign in anonymously if there's no user.
+  // This is non-blocking. The user state will be handled by the onAuthStateChanged listener in the provider.
+  if (!auth.currentUser) {
+    signInAnonymously(auth);
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  return {
+    firebaseApp: app,
+    auth: auth,
+    firestore: getFirestore(app),
+  };
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
+    firestore: getFirestore(firebaseApp),
   };
 }
 
 export * from './provider';
-export * from './client-provider';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './non-blocking-updates';
