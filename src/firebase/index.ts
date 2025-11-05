@@ -8,13 +8,12 @@ import { getFirestore } from 'firebase/firestore';
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
   const firebaseConfig = {
-    projectId: 'si-latech',
-    appId: '1:895963925352:web:a074c3e80a083696d11361',
-    storageBucket: 'si-latech.appspot.com',
-    apiKey: 'AIzaSyBeo-2gQASzxMOi50bOIVN3aBHGzHYo098',
-    authDomain: 'si-latech.firebaseapp.com',
-    messagingSenderId: '895963925352',
-    measurementId: 'G-L5V81G2N7N',
+    apiKey: "AIzaSyBnsiDjdZlHV9kDRGZrIm0PT2Zz5YmSpoo",
+    authDomain: "si-latech.firebaseapp.com",
+    projectId: "si-latech",
+    storageBucket: "si-latech.firebasestorage.app",
+    messagingSenderId: "930374267549",
+    appId: "1:930374267549:web:6d1bd560e7bdd549069a74"
   };
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
