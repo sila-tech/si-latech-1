@@ -43,7 +43,7 @@ const analyzePlanFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash-latest'),
+      model: googleAI.model('gemini-1.5-flash'),
       output: { schema: AnalyzePlanOutputSchema },
       prompt: `You are an expert architectural plan reader. Your task is to analyze the provided floor plan image and extract all rooms with their dimensions.
 
