@@ -2,7 +2,7 @@
 'use client';
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
@@ -18,12 +18,6 @@ export function initializeFirebase() {
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
-
-  // Sign in anonymously if there's no user.
-  // This is non-blocking. The user state will be handled by the onAuthStateChanged listener in the provider.
-  if (!auth.currentUser) {
-    signInAnonymously(auth);
-  }
 
   return {
     firebaseApp: app,
