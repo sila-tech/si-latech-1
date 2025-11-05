@@ -36,7 +36,6 @@ export async function analyzePlan(input: AnalyzePlanInput): Promise<AnalyzePlanO
 
 const prompt = ai.definePrompt({
   name: 'analyzePlanPrompt',
-  model: 'gemini-1.5-flash-latest',
   input: { schema: AnalyzePlanInputSchema },
   output: { schema: AnalyzePlanOutputSchema },
   prompt: `You are an expert architectural plan reader. Your task is to analyze the provided floor plan image and extract all rooms with their dimensions.
