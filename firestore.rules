@@ -1,35 +1,27 @@
-/**
- * @fileoverview Firestore Security Rules for SilaCalc Prototyping.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for projects.
- * Only the authenticated user who owns a project can read, create, update, or delete it.
- *
- * Data Structure:
- * - Projects are stored under: `/customers/{userId}/projects/{projectId}`.
- * - The `userId` in the path MUST match the `request.auth.uid` of the authenticated user.
- *
- * Key Security Decisions:
- * - An unauthenticated user has NO access.
- * - Users can only access their own projects, not those of other users.
- * - Schema validation is relaxed to allow rapid prototyping. Only the `userId` is strictly enforced for data consistency and authorization.
- *
- * Denormalization for Authorization:
- * - The rules rely on the `userId` in the document path for authorization, avoiding the need for `get()` calls or complex queries.
- *
- * Structural Segregation:
- * - There is no public data in this application. All project data is private and user-specific, stored under the `/customers/{userId}` path.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Grant read/write access to a user's own projects subcollection.
-    // - `read` covers `get` and `list` operations.
-    // - `write` covers `create`, `update`, and `delete` operations.
-    // This single rule secures the entire user-specific data branch.
+    // Public projects collection
+    match /projects/{projectId} {
+      // Anyone can read any project.
+      allow read: if true;
+      
+      // Anyone can create a new project.
+      allow create: if true;
+
+      // Allow updates only if the project already exists.
+      // This prevents someone from creating a document at a known ID.
+      allow update: if exists(/databases/$(database)/documents/projects/$(projectId));
+      
+      // Do not allow deletion of projects to prevent data loss.
+      allow delete: if false;
+    }
+    
+    // Legacy customers path. Deny all access.
     match /customers/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if false;
     }
   }
 }

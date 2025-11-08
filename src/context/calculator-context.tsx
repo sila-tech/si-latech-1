@@ -25,7 +25,7 @@ import {
   calcTimberAndProps,
   calcLintelSteel,
 } from '@/lib/calculator';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import {
   collection,
   doc,
@@ -38,14 +38,13 @@ import { updateProjectData } from '@/firebase/data-manager';
 
 const LOCAL_PROJECTS_KEY = 'silacalc_projects';
 
-export interface LocalProjectData {
+export interface ProjectData {
   id: string;
   name: string;
   rooms: Room[];
   settings: CalculationDefaults;
   lintelLength: number;
   createdAt: any;
-  userId: string;
 }
 
 type PerRoomCalculation = {
@@ -105,10 +104,8 @@ interface CalculatorContextType {
   logoUrl: string | null;
   setLogoUrl: (url: string | null) => void;
   // Project management
-  localProjects: LocalProjectData[];
-  loadProject: (project: LocalProjectData) => void;
-  saveProject: (name?: string) => void;
-  isUserLoading: boolean;
+  saveProject: (name?: string) => Promise<string | undefined>;
+  loadProjectData: (projectData: ProjectData | null) => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -123,23 +120,15 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [projectName, setProjectName] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const { firestore, user, isUserLoading } = useFirebase();
-
-  const projectsCollectionRef = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'customers', user.uid, 'projects') : null),
-    [firestore, user]
-  );
-  
-  const { data: localProjects = [] } = useCollection<LocalProjectData>(projectsCollectionRef);
+  const { firestore } = useFirebase();
 
   // Auto-saving effect for Firestore
   useEffect(() => {
-    if (isUserLoading || !loadedProjectId || !firestore || !user) {
+    if (!loadedProjectId || !firestore) {
       return;
     }
 
-    const projectRef = doc(firestore, 'customers', user.uid, 'projects', loadedProjectId);
+    const projectRef = doc(firestore, 'projects', loadedProjectId);
 
     const projectData = {
       name: projectName,
@@ -148,7 +137,6 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       lintelLength,
     };
     
-    // Use a debounce to prevent excessive writes
     const handler = setTimeout(() => {
       updateProjectData(projectRef, projectData);
     }, 1000); // Save 1 second after the last change
@@ -156,7 +144,21 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore, user, isUserLoading]);
+  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore]);
+
+  const loadProjectData = useCallback((projectData: ProjectData | null) => {
+    if (!projectData) {
+      clearCalculator();
+      toast({ title: "Project not found", description: "The requested project does not exist.", variant: "destructive"});
+      return;
+    }
+    setRooms(projectData.rooms || []);
+    setSettings(projectData.settings || DEFAULTS);
+    setLintelLength(projectData.lintelLength || 0);
+    setLoadedProjectId(projectData.id);
+    setProjectName(projectData.name);
+    toast({ title: 'Project Loaded', description: `Loaded "${projectData.name}".`});
+  }, [toast]);
 
 
   useEffect(() => {
@@ -183,18 +185,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLogoUrlState(url);
   };
 
-  const loadProject = useCallback((project: LocalProjectData) => {
-    setRooms(project.rooms || []);
-    setSettings(project.settings || DEFAULTS);
-    setLintelLength(project.lintelLength || 0);
-    setLoadedProjectId(project.id);
-    setProjectName(project.name);
-    toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
-  }, [toast]);
 
   const saveProject = useCallback(async (nameForProject?: string) => {
-    if (!firestore || !user) {
-      toast({ title: 'Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
+    if (!firestore) {
+      toast({ title: 'Error', description: 'Database connection not available.', variant: 'destructive' });
       return;
     }
 
@@ -203,40 +197,38 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
       return;
     }
-
-    const collectionRef = collection(firestore, 'customers', user.uid, 'projects');
-
+    
+    // If it's an existing project, auto-save will handle it. We just toast.
     if (loadedProjectId) {
-      // Update existing project - auto-save handles this.
-      // This function can just confirm save.
-      const projectRef = doc(collectionRef, loadedProjectId);
+      const projectRef = doc(firestore, 'projects', loadedProjectId);
       updateProjectData(projectRef, { name: finalProjectName });
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been updated.` });
-
-    } else {
-      // Create new project
-      const newProjectData = {
-        userId: user.uid,
-        name: finalProjectName,
-        rooms,
-        settings,
-        lintelLength,
-        status: 'pending' as const,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      
-      try {
-        const docRef = await addDoc(collectionRef, newProjectData);
-        setLoadedProjectId(docRef.id);
-        setProjectName(finalProjectName);
-        toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
-      } catch (error) {
-        console.error("Failed to create project:", error);
-        toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
-      }
+      return loadedProjectId;
     }
-  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, user, toast]);
+
+    // Create a new project
+    const collectionRef = collection(firestore, 'projects');
+    const newProjectData = {
+      name: finalProjectName,
+      rooms,
+      settings,
+      lintelLength,
+      status: 'pending' as const,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    try {
+      const docRef = await addDoc(collectionRef, newProjectData);
+      setLoadedProjectId(docRef.id);
+      setProjectName(finalProjectName);
+      toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
+      return docRef.id;
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
+    }
+  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast]);
 
 
   const addRoom = () => {
@@ -381,10 +373,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setProjectName,
         logoUrl,
         setLogoUrl,
-        localProjects: localProjects ?? [],
-        loadProject,
         saveProject,
-        isUserLoading,
+        loadProjectData,
       }}
     >
       {children}

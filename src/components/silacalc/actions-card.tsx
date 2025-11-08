@@ -1,7 +1,9 @@
 
+
 'use client';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   Card,
@@ -20,15 +22,6 @@ import {
   DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,8 +36,8 @@ import {
   Sheet,
   Save,
   Hammer,
-  ChevronDown,
   FilePlus,
+  Search,
 } from 'lucide-react';
 import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -55,7 +48,6 @@ import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import type { LocalProjectData } from '@/context/calculator-context';
 
 
 type ClientInfo = {
@@ -159,6 +151,7 @@ const addPdfBackground = (doc: jsPDF) => {
 };
 
 export function ActionsCard() {
+  const router = useRouter();
   const {
     totals,
     perRoomCalculations,
@@ -166,10 +159,7 @@ export function ActionsCard() {
     loadedProjectId,
     projectName,
     clearCalculator,
-    localProjects,
-    loadProject,
     saveProject,
-    isUserLoading,
   } = useCalculator();
   const { toast } = useToast();
 
@@ -181,20 +171,29 @@ export function ActionsCard() {
   
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  
-  
-  const sortedProjects = useMemo(() => {
-    return [...localProjects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [localProjects]);
 
-
-  const handleSaveClick = () => {
-    // If project already has a name (and thus an ID), just save.
+  const [isLoadDialogOpen, setLoadDialogOpen] = useState(false);
+  const [loadProjectIdInput, setLoadProjectIdInput] = useState('');
+  
+  const handleSaveClick = async () => {
     if (projectName && loadedProjectId) {
-      saveProject();
+      await saveProject();
     } else {
-      // Otherwise, open the dialog to ask for a name.
       setSaveDialogOpen(true);
+    }
+  };
+
+  const handleCreateNew = () => {
+    router.push('/');
+    clearCalculator();
+  }
+
+  const handleLoadProject = () => {
+    if (loadProjectIdInput.trim()) {
+        router.push(`/project/${loadProjectIdInput.trim()}`);
+        setLoadDialogOpen(false);
+    } else {
+        toast({ title: 'Error', description: 'Please enter a project ID.', variant: 'destructive' });
     }
   };
 
@@ -712,36 +711,16 @@ export function ActionsCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full" disabled={isUserLoading}>
-                {isUserLoading ? <Loader2 className="animate-spin" /> : <ChevronDown />}
-                Load Project
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64">
-              <DropdownMenuLabel>Your Saved Projects</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={clearCalculator}>
-                <FilePlus /> New Project
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {sortedProjects && sortedProjects.length > 0 ? (
-                sortedProjects.map(p => (
-                  <DropdownMenuItem key={p.id} onSelect={() => loadProject(p)}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{p.name}</span>
-                      <span className="text-xs text-muted-foreground">Saved: {format(new Date(p.createdAt), 'PP')}</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <DropdownMenuLabel className="text-center font-normal text-muted-foreground">No projects saved</DropdownMenuLabel>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="outline" className="w-full" onClick={handleCreateNew}>
+            <FilePlus /> New Project
+          </Button>
 
-          <Button variant="default" className="w-full" onClick={handleSaveClick} disabled={isUserLoading}>
-            {isUserLoading ? <Loader2 className="animate-spin" /> : <Save />}
+          <Button variant="outline" className="w-full" onClick={() => setLoadDialogOpen(true)}>
+            <Search /> Load Project
+          </Button>
+
+          <Button variant="default" className="w-full" onClick={handleSaveClick}>
+            <Save />
             {loadedProjectId ? 'Save Changes' : 'Save Project'}
           </Button>
           
@@ -867,7 +846,7 @@ export function ActionsCard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Save New Project</DialogTitle>
-            <DialogDescription>Enter a name for your new project to save it for later.</DialogDescription>
+            <DialogDescription>Enter a name for your new project. A unique ID will be generated to share and access it later.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="projectNameDialog">Project Name</Label>
@@ -877,9 +856,12 @@ export function ActionsCard() {
             <DialogClose asChild>
               <Button type="button" variant="secondary">Cancel</Button>
             </DialogClose>
-            <Button onClick={() => {
+            <Button onClick={async () => {
                 if (newProjectName.trim()) {
-                    saveProject(newProjectName.trim());
+                    const newId = await saveProject(newProjectName.trim());
+                    if (newId) {
+                      router.push(`/project/${newId}`);
+                    }
                     setSaveDialogOpen(false);
                     setNewProjectName('');
                 } else {
@@ -887,6 +869,25 @@ export function ActionsCard() {
                 }
             }}>Save</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isLoadDialogOpen} onOpenChange={setLoadDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Load Project by ID</DialogTitle>
+                <DialogDescription>Enter the unique ID of the project you want to load.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+                <Label htmlFor="loadProjectId">Project ID</Label>
+                <Input id="loadProjectId" value={loadProjectIdInput} onChange={e => setLoadProjectIdInput(e.target.value)} placeholder="Enter project ID"/>
+            </div>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Cancel</Button>
+                </DialogClose>
+                <Button onClick={handleLoadProject}>Load Project</Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

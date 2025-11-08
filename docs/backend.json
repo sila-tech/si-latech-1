@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Project": {
@@ -7,7 +8,6 @@
       "type": "object",
       "properties": {
         "id": { "type": "string", "description": "Unique project identifier." },
-        "userId": { "type": "string", "description": "Owner's user ID." },
         "name": { "type": "string", "description": "Name of the project." },
         "rooms": {
           "type": "array",
@@ -27,10 +27,9 @@
           "description": "The current status of the project."
         },
         "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "purchasedAt": { "type": "string", "format": "date-time" }
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "name", "rooms", "settings", "createdAt", "status"]
+      "required": ["name", "rooms", "settings", "createdAt", "status"]
     },
     "Room": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -47,20 +46,12 @@
     }
   },
   "auth": {
-    "providers": ["anonymous"]
+    "providers": []
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/customers/{userId}/projects/{projectId}",
-        "definition": {
-          "entityName": "Project",
-          "schema": {
-            "$ref": "#/backend/entities/Project"
-          },
-          "description": "Stores project data for a specific user. `userId` MUST match `request.auth.uid`."
-        }
-      }
-    ]
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Stores project data accessible by anyone with the projectId."
+    }
   }
 }
