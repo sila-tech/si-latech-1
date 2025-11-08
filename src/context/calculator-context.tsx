@@ -25,6 +25,16 @@ import {
   calcTimberAndProps,
   calcLintelSteel,
 } from '@/lib/calculator';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import {
+  collection,
+  doc,
+  setDoc,
+  addDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { updateProjectData } from '@/firebase/data-manager';
+
 
 const LOCAL_PROJECTS_KEY = 'silacalc_projects';
 
@@ -34,7 +44,8 @@ export interface LocalProjectData {
   rooms: Room[];
   settings: CalculationDefaults;
   lintelLength: number;
-  createdAt: string;
+  createdAt: any;
+  userId: string;
 }
 
 type PerRoomCalculation = {
@@ -97,6 +108,7 @@ interface CalculatorContextType {
   localProjects: LocalProjectData[];
   loadProject: (project: LocalProjectData) => void;
   saveProject: (name?: string) => void;
+  isUserLoading: boolean;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -110,58 +122,53 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
-  const [localProjects, setLocalProjects] = useState<LocalProjectData[]>([]);
   const { toast } = useToast();
 
-  // Load projects from local storage on initial mount
+  const { firestore, user, isUserLoading } = useFirebase();
+
+  const projectsCollectionRef = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'customers', user.uid, 'projects') : null),
+    [firestore, user]
+  );
+  
+  const { data: localProjects = [] } = useCollection<LocalProjectData>(projectsCollectionRef);
+
+  // Auto-saving effect for Firestore
+  useEffect(() => {
+    if (isUserLoading || !loadedProjectId || !firestore || !user) {
+      return;
+    }
+
+    const projectRef = doc(firestore, 'customers', user.uid, 'projects', loadedProjectId);
+
+    const projectData = {
+      name: projectName,
+      rooms,
+      settings,
+      lintelLength,
+    };
+    
+    // Use a debounce to prevent excessive writes
+    const handler = setTimeout(() => {
+      updateProjectData(projectRef, projectData);
+    }, 1000); // Save 1 second after the last change
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore, user, isUserLoading]);
+
+
   useEffect(() => {
     try {
-      const savedProjects = localStorage.getItem(LOCAL_PROJECTS_KEY);
-      if (savedProjects) {
-        setLocalProjects(JSON.parse(savedProjects));
-      }
       const storedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
       if (storedLogo) {
         setLogoUrlState(storedLogo);
       }
     } catch (error) {
-      console.error("Failed to load data from localStorage:", error);
-      toast({ title: 'Error', description: 'Could not load saved projects.', variant: 'destructive'});
+      console.error("Failed to load logo from localStorage:", error);
     }
-  }, [toast]);
-  
-  // Real-time auto-saving effect
-  useEffect(() => {
-    // Only auto-save if a project is loaded (i.e., has an ID).
-    if (!loadedProjectId) {
-      return;
-    }
-    
-    // This is the auto-save logic
-    const currentProjectData: LocalProjectData = {
-      id: loadedProjectId,
-      name: projectName,
-      rooms,
-      settings,
-      lintelLength,
-      createdAt: localProjects.find(p => p.id === loadedProjectId)?.createdAt || new Date().toISOString(),
-    };
-
-    const updatedProjects = localProjects.map(p => p.id === loadedProjectId ? currentProjectData : p);
-    
-    // Check if there are actual changes to avoid unnecessary writes
-    if (JSON.stringify(localProjects) !== JSON.stringify(updatedProjects)) {
-        setLocalProjects(updatedProjects);
-        try {
-            localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updatedProjects));
-        } catch (error) {
-            console.error("Auto-save failed:", error);
-            // Optionally, inform the user that auto-save isn't working
-        }
-    }
-    
-  }, [rooms, settings, lintelLength, projectName, loadedProjectId, localProjects]);
-
+  }, []);
 
   const setLogoUrl = (url: string | null) => {
     try {
@@ -178,62 +185,58 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
 
   const loadProject = useCallback((project: LocalProjectData) => {
     setRooms(project.rooms || []);
-    setSettings(project.settings);
+    setSettings(project.settings || DEFAULTS);
     setLintelLength(project.lintelLength || 0);
     setLoadedProjectId(project.id);
     setProjectName(project.name);
     toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
   }, [toast]);
 
-  const saveProject = useCallback((nameForProject?: string) => {
-    const finalProjectName = nameForProject || projectName;
+  const saveProject = useCallback(async (nameForProject?: string) => {
+    if (!firestore || !user) {
+      toast({ title: 'Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
+      return;
+    }
 
+    const finalProjectName = nameForProject || projectName;
     if (!finalProjectName) {
       toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
       return;
     }
 
-    let updatedProjects: LocalProjectData[];
-    let message = '';
-    
+    const collectionRef = collection(firestore, 'customers', user.uid, 'projects');
+
     if (loadedProjectId) {
-      // Update existing project
-      const projectData: LocalProjectData = {
-        id: loadedProjectId,
-        name: finalProjectName,
-        rooms,
-        settings,
-        lintelLength,
-        createdAt: localProjects.find(p => p.id === loadedProjectId)?.createdAt || new Date().toISOString(),
-      };
-      updatedProjects = localProjects.map(p => p.id === loadedProjectId ? projectData : p);
-      message = `Project "${finalProjectName}" has been saved.`;
+      // Update existing project - auto-save handles this.
+      // This function can just confirm save.
+      const projectRef = doc(collectionRef, loadedProjectId);
+      updateProjectData(projectRef, { name: finalProjectName });
+      toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been updated.` });
+
     } else {
       // Create new project
-      const newId = crypto.randomUUID();
-      const projectData: LocalProjectData = {
-        id: newId,
+      const newProjectData = {
+        userId: user.uid,
         name: finalProjectName,
         rooms,
         settings,
         lintelLength,
-        createdAt: new Date().toISOString(),
+        status: 'pending' as const,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
-      updatedProjects = [...localProjects, projectData];
-      setLoadedProjectId(newId); // Set the ID for the newly created project
-      message = `Project "${finalProjectName}" has been created and saved.`;
+      
+      try {
+        const docRef = await addDoc(collectionRef, newProjectData);
+        setLoadedProjectId(docRef.id);
+        setProjectName(finalProjectName);
+        toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
+      } catch (error) {
+        console.error("Failed to create project:", error);
+        toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
+      }
     }
-    
-    setProjectName(finalProjectName);
-    setLocalProjects(updatedProjects);
-    try {
-      localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updatedProjects));
-      toast({ title: 'Project Saved', description: message });
-    } catch (error) {
-      console.error("Failed to save projects to localStorage:", error);
-      toast({ title: 'Error', description: 'Could not save project.', variant: 'destructive'});
-    }
-  }, [projectName, loadedProjectId, rooms, settings, lintelLength, localProjects, toast]);
+  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, user, toast]);
 
 
   const addRoom = () => {
@@ -378,9 +381,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setProjectName,
         logoUrl,
         setLogoUrl,
-        localProjects,
+        localProjects: localProjects ?? [],
         loadProject,
         saveProject,
+        isUserLoading,
       }}
     >
       {children}

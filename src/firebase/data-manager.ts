@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -5,6 +6,7 @@ import {
   collection,
   Firestore,
   DocumentReference,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { updateDocumentNonBlocking } from './non-blocking-updates';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
@@ -25,12 +27,23 @@ export function updateProjectStatus(
   projectRef: DocumentReference,
   status: 'pending' | 'purchased'
 ) {
-  const updateData: { status: string; purchasedAt?: string, updatedAt: string } = {
+  const updateData: { status: string; purchasedAt?: string, updatedAt: any } = {
     status,
-    updatedAt: new Date().toISOString(),
+    updatedAt: serverTimestamp(),
   };
   if (status === 'purchased') {
     updateData.purchasedAt = new Date().toISOString();
   }
+  updateDocumentNonBlocking(projectRef, updateData);
+}
+
+export function updateProjectData(
+  projectRef: DocumentReference,
+  data: Partial<ProjectData>
+) {
+  const updateData = {
+    ...data,
+    updatedAt: serverTimestamp(),
+  };
   updateDocumentNonBlocking(projectRef, updateData);
 }

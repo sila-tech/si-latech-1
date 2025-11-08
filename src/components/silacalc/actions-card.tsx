@@ -169,6 +169,7 @@ export function ActionsCard() {
     localProjects,
     loadProject,
     saveProject,
+    isUserLoading,
   } = useCalculator();
   const { toast } = useToast();
 
@@ -713,8 +714,8 @@ export function ActionsCard() {
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full">
-                <ChevronDown />
+              <Button variant="outline" className="w-full" disabled={isUserLoading}>
+                {isUserLoading ? <Loader2 className="animate-spin" /> : <ChevronDown />}
                 Load Project
               </Button>
             </DropdownMenuTrigger>
@@ -739,8 +740,9 @@ export function ActionsCard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="default" className="w-full" onClick={handleSaveClick}>
-            <Save /> {loadedProjectId ? 'Save Changes' : 'Save Project'}
+          <Button variant="default" className="w-full" onClick={handleSaveClick} disabled={isUserLoading}>
+            {isUserLoading ? <Loader2 className="animate-spin" /> : <Save />}
+            {loadedProjectId ? 'Save Changes' : 'Save Project'}
           </Button>
           
           <Button variant="secondary" className="w-full" onClick={() => handleDocumentDownload('invoice')}>
