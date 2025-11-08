@@ -146,6 +146,14 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore]);
 
+  const clearCalculator = useCallback(() => {
+    setRooms([]);
+    setSettings(DEFAULTS);
+    setLintelLength(0);
+    setLoadedProjectId(null);
+    setProjectName('');
+  }, []);
+
   const loadProjectData = useCallback((projectData: ProjectData | null) => {
     if (!projectData) {
       clearCalculator();
@@ -158,7 +166,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
     toast({ title: 'Project Loaded', description: `Loaded "${projectData.name}".`});
-  }, [toast]);
+  }, [toast, clearCalculator]);
 
 
   useEffect(() => {
@@ -255,13 +263,6 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setRooms(rooms.filter((room) => room.id !== id));
   };
   
-  const clearCalculator = () => {
-    setRooms([]);
-    setSettings(DEFAULTS);
-    setLintelLength(0);
-    setLoadedProjectId(null);
-    setProjectName('');
-  }
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
     const BEAM_PRICE_PER_METER = 545; // TODO: Make configurable
