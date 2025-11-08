@@ -45,7 +45,7 @@ export interface ProjectData {
   rooms: Room[];
   settings: CalculationDefaults;
   lintelLength: number;
-  createdAt: any;
+  createdAt: Timestamp;
 }
 
 type PerRoomCalculation = {
@@ -104,8 +104,6 @@ interface CalculatorContextType {
   setProjectName: (name: string) => void;
   logoUrl: string | null;
   setLogoUrl: (url: string | null) => void;
-  localProjects: LocalProject[];
-  removeLocalProject: (id: string) => void;
   saveProject: (name?: string) => Promise<string | undefined>;
   loadProjectData: (projectData: ProjectData | null) => void;
 }
@@ -121,81 +119,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
-  const [localProjects, setLocalProjects] = useState<LocalProject[]>([]);
   const { toast } = useToast();
   const { firestore } = useFirebase();
-
-  // Load and sanitize local projects from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_PROJECTS_KEY);
-      if (stored) {
-        const parsedProjects: LocalProject[] = JSON.parse(stored);
-        
-        // Sanitize data to prevent invalid date errors from old data
-        const sanitizedProjects = parsedProjects.map(proj => {
-          if (!proj.savedAt || isNaN(new Date(proj.savedAt).getTime())) {
-            // If savedAt is invalid or missing, fix it.
-            return { ...proj, savedAt: new Date().toISOString() };
-          }
-          return proj;
-        });
-
-        setLocalProjects(sanitizedProjects);
-
-        // Optionally, write the sanitized data back to localStorage
-        if (JSON.stringify(parsedProjects) !== JSON.stringify(sanitizedProjects)) {
-            localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(sanitizedProjects));
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load or sanitize projects from localStorage:", error);
-      // If parsing fails, clear the corrupted data
-      localStorage.removeItem(LOCAL_PROJECTS_KEY);
-    }
-  }, []);
-  
-  const updateLocalProjects = (projects: LocalProject[]) => {
-    try {
-      localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(projects));
-      setLocalProjects(projects);
-    } catch (error) {
-      console.error("Failed to save projects to localStorage:", error);
-    }
-  };
-
-  const addOrUpdateLocalProject = useCallback((id: string, name: string, savedAtDate?: Date) => {
-    const savedAt = (savedAtDate || new Date()).toISOString();
-    const newProject: LocalProject = { id, name, savedAt };
-    setLocalProjects(prevProjects => {
-      const existingIndex = prevProjects.findIndex(p => p.id === id);
-      let updatedProjects;
-
-      if (existingIndex > -1) {
-        updatedProjects = [...prevProjects];
-        updatedProjects[existingIndex] = newProject;
-      } else {
-        updatedProjects = [newProject, ...prevProjects];
-      }
-      
-      updatedProjects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
-      
-      try {
-        localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updatedProjects));
-      } catch (error) {
-        console.error("Failed to save projects to localStorage:", error);
-      }
-
-      return updatedProjects;
-    });
-  }, []);
-  
-  const removeLocalProject = (id: string) => {
-    const updatedProjects = localProjects.filter(p => p.id !== id);
-    updateLocalProjects(updatedProjects);
-    toast({ title: "Project Removed", description: "The project has been removed from your local list." });
-  };
-
 
   // Auto-saving effect for Firestore
   useEffect(() => {
@@ -214,13 +139,12 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     
     const handler = setTimeout(() => {
       updateProjectData(projectRef, projectData);
-      addOrUpdateLocalProject(loadedProjectId, projectName, new Date());
     }, 1000); // Save 1 second after the last change
 
     return () => {
       clearTimeout(handler);
     };
-  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore, addOrUpdateLocalProject]);
+  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore]);
 
   const clearCalculator = useCallback(() => {
     setRooms([]);
@@ -238,18 +162,12 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const savedAtDate = projectData.createdAt instanceof Timestamp 
-      ? projectData.createdAt.toDate() 
-      : new Date();
-
     setRooms(projectData.rooms || []);
     setSettings(projectData.settings || DEFAULTS);
     setLintelLength(projectData.lintelLength || 0);
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
-    addOrUpdateLocalProject(projectData.id, projectData.name, savedAtDate);
-    // Toast is removed from here to prevent repeated notifications
-  }, [clearCalculator, addOrUpdateLocalProject, loadedProjectId]);
+  }, [clearCalculator, loadedProjectId]);
 
 
   useEffect(() => {
@@ -292,7 +210,6 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     if (loadedProjectId) {
       const projectRef = doc(firestore, 'projects', loadedProjectId);
       updateProjectData(projectRef, { name: finalProjectName, rooms, settings, lintelLength });
-      addOrUpdateLocalProject(loadedProjectId, finalProjectName, new Date());
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been updated.` });
       return loadedProjectId;
     }
@@ -312,14 +229,13 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       const docRef = await addDoc(collectionRef, newProjectData);
       setLoadedProjectId(docRef.id);
       setProjectName(finalProjectName);
-      addOrUpdateLocalProject(docRef.id, finalProjectName, new Date());
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
       return docRef.id;
     } catch (error) {
       console.error("Failed to create project:", error);
       toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
     }
-  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast, addOrUpdateLocalProject]);
+  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast]);
 
 
   const addRoom = () => {
@@ -457,8 +373,6 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setProjectName,
         logoUrl,
         setLogoUrl,
-        localProjects,
-        removeLocalProject,
         saveProject,
         loadProjectData,
       }}

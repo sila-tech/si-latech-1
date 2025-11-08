@@ -43,13 +43,16 @@ import {
 import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, CalculationDefaults, LocalProject } from '@/lib/calculator';
+import type { Room, CalculationDefaults } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
+import type { ProjectData } from '@/context/calculator-context';
 
 
 type ClientInfo = {
@@ -154,8 +157,15 @@ const addPdfBackground = (doc: jsPDF) => {
 
 const LoadProjectDialog = () => {
     const router = useRouter();
-    const { localProjects, removeLocalProject } = useCalculator();
     const [isOpen, setIsOpen] = useState(false);
+    const { firestore } = useFirebase();
+
+    const projectsQuery = useMemoFirebase(
+      () => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc')) : null,
+      [firestore]
+    );
+
+    const { data: projects, isLoading } = useCollection<ProjectData>(projectsQuery);
 
     const handleLoad = (id: string) => {
         router.push(`/project/${id}`);
@@ -173,32 +183,28 @@ const LoadProjectDialog = () => {
                 <DialogHeader>
                     <DialogTitle>Load Project</DialogTitle>
                     <DialogDescription>
-                        Select a project from your browser's storage to continue working.
+                        Select a project from the list below to continue working.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-96 -mx-6 px-6">
                     <div className="space-y-2 py-4">
-                        {localProjects.length > 0 ? (
-                            localProjects.map((proj) => (
+                        {isLoading && <p className="text-center text-muted-foreground">Loading projects...</p>}
+                        {!isLoading && projects && projects.length > 0 ? (
+                            projects.map((proj) => (
                                 <div key={proj.id} className="group flex items-center justify-between p-2 rounded-md hover:bg-muted">
                                     <div className="flex-1 cursor-pointer" onClick={() => handleLoad(proj.id)}>
                                         <p className="font-semibold">{proj.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Saved {formatDistanceToNow(new Date(proj.savedAt), { addSuffix: true })}
-                                        </p>
+                                        {proj.createdAt && (
+                                            <p className="text-xs text-muted-foreground">
+                                                Created {formatDistanceToNow(proj.createdAt.toDate(), { addSuffix: true })}
+                                            </p>
+                                        )}
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive"
-                                        onClick={() => removeLocalProject(proj.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    {/* Optional: Add delete button here if needed in the future */}
                                 </div>
                             ))
                         ) : (
-                            <p className="text-center text-muted-foreground py-8">No saved projects found in this browser.</p>
+                           !isLoading && <p className="text-center text-muted-foreground py-8">No saved projects found.</p>
                         )}
                     </div>
                 </ScrollArea>
