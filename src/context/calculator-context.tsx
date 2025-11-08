@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect, useCallback } from 'react';
@@ -26,13 +25,14 @@ import {
   calcTimberAndProps,
   calcLintelSteel,
 } from '@/lib/calculator';
-import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import {
   collection,
   doc,
   setDoc,
   addDoc,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { updateProjectData } from '@/firebase/data-manager';
 
@@ -146,20 +146,22 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addOrUpdateLocalProject = useCallback((id: string, name: string) => {
-    const newProject: LocalProject = { id, name, savedAt: new Date().toISOString() };
+  const addOrUpdateLocalProject = useCallback((id: string, name: string, savedAtDate?: Date) => {
+    const savedAt = (savedAtDate || new Date()).toISOString();
+    const newProject: LocalProject = { id, name, savedAt };
     const existingIndex = localProjects.findIndex(p => p.id === id);
     let updatedProjects;
+
     if (existingIndex > -1) {
       updatedProjects = [...localProjects];
       updatedProjects[existingIndex] = newProject;
     } else {
       updatedProjects = [newProject, ...localProjects];
     }
-    // Sort by date and update
+    
     updatedProjects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
     updateLocalProjects(updatedProjects);
-  }, [localProjects]);
+}, [localProjects]);
   
   const removeLocalProject = (id: string) => {
     const updatedProjects = localProjects.filter(p => p.id !== id);
@@ -185,7 +187,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     
     const handler = setTimeout(() => {
       updateProjectData(projectRef, projectData);
-      addOrUpdateLocalProject(loadedProjectId, projectName);
+      addOrUpdateLocalProject(loadedProjectId, projectName, new Date());
     }, 1000); // Save 1 second after the last change
 
     return () => {
@@ -207,12 +209,17 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Project not found", description: "The requested project does not exist.", variant: "destructive"});
       return;
     }
+
+    const savedAtDate = projectData.createdAt instanceof Timestamp 
+      ? projectData.createdAt.toDate() 
+      : new Date();
+
     setRooms(projectData.rooms || []);
     setSettings(projectData.settings || DEFAULTS);
     setLintelLength(projectData.lintelLength || 0);
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
-    addOrUpdateLocalProject(projectData.id, projectData.name);
+    addOrUpdateLocalProject(projectData.id, projectData.name, savedAtDate);
     toast({ title: 'Project Loaded', description: `Loaded "${projectData.name}".`});
   }, [toast, clearCalculator, addOrUpdateLocalProject]);
 
@@ -254,16 +261,14 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    // If it's an existing project, update it. Auto-save handles this, but this is for manual trigger.
     if (loadedProjectId) {
       const projectRef = doc(firestore, 'projects', loadedProjectId);
       updateProjectData(projectRef, { name: finalProjectName, rooms, settings, lintelLength });
-      addOrUpdateLocalProject(loadedProjectId, finalProjectName);
+      addOrUpdateLocalProject(loadedProjectId, finalProjectName, new Date());
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been updated.` });
       return loadedProjectId;
     }
 
-    // Create a new project
     const collectionRef = collection(firestore, 'projects');
     const newProjectData = {
       name: finalProjectName,
@@ -279,7 +284,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       const docRef = await addDoc(collectionRef, newProjectData);
       setLoadedProjectId(docRef.id);
       setProjectName(finalProjectName);
-      addOrUpdateLocalProject(docRef.id, finalProjectName);
+      addOrUpdateLocalProject(docRef.id, finalProjectName, new Date());
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
       return docRef.id;
     } catch (error) {
@@ -442,3 +447,5 @@ export const useCalculator = (): CalculatorContextType => {
   }
   return context;
 };
+
+    
