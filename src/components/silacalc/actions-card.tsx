@@ -49,12 +49,14 @@ import {
 import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, AggregatedRoomGroup, CalculationDefaults } from '@/lib/calculator';
+import type { Room, CalculationDefaults } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import type { LocalProjectData } from '@/context/calculator-context';
+
 
 type ClientInfo = {
   clientName: string;
@@ -63,19 +65,6 @@ type ClientInfo = {
   clientContact: string;
   contactPerson: string;
 };
-
-// Simplified ProjectData for localStorage
-export interface LocalProjectData {
-  id: string;
-  name: string;
-  rooms: Room[];
-  settings: CalculationDefaults;
-  lintelLength: number;
-  createdAt: string;
-}
-
-const LOCAL_STORAGE_KEY = 'silacalc_projects';
-
 
 function SubmitButton({
   children,
@@ -91,9 +80,10 @@ function SubmitButton({
 }
 
 const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenChange }: { onGenerateClick: (clientInfo: ClientInfo) => void; title: string; description: string; open: boolean, onOpenChange: (open: boolean) => void; }) => {
+  const { projectName } = useCalculator();
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: '',
-    projectName: '',
+    projectName: projectName || '',
     projectLocation: '',
     clientContact: '',
     contactPerson: '',
@@ -169,21 +159,16 @@ const addPdfBackground = (doc: jsPDF) => {
 };
 
 export function ActionsCard() {
-  const { 
-    rooms, 
-    setRooms, 
-    settings,
-    setSettings,
-    lintelLength,
-    setLintelLength,
-    totals, 
-    perRoomCalculations, 
+  const {
+    totals,
+    perRoomCalculations,
     aggregatedBreakdown,
     loadedProjectId,
-    setLoadedProjectId,
     projectName,
-    setProjectName,
     clearCalculator,
+    localProjects,
+    loadProject,
+    saveProject,
   } = useCalculator();
   const { toast } = useToast();
 
@@ -196,83 +181,20 @@ export function ActionsCard() {
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   
-  const [localProjects, setLocalProjects] = useState<LocalProjectData[]>([]);
-
-  useEffect(() => {
-    try {
-      const savedProjects = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedProjects) {
-        setLocalProjects(JSON.parse(savedProjects));
-      }
-    } catch (error) {
-      console.error("Failed to load projects from localStorage:", error);
-      toast({ title: 'Error', description: 'Could not load saved projects.', variant: 'destructive'});
-    }
-  }, []);
   
   const sortedProjects = useMemo(() => {
     return [...localProjects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [localProjects]);
 
 
-  const handleLoadProject = (project: LocalProjectData) => {
-    setRooms(project.rooms || []);
-    setSettings(project.settings);
-    setLintelLength(project.lintelLength || 0);
-    setLoadedProjectId(project.id);
-    setProjectName(project.name);
-    toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
-  };
-
-  const handleSaveProject = (nameForProject?: string) => {
-    const finalProjectName = nameForProject || projectName;
-  
-    if (!finalProjectName) {
-      setSaveDialogOpen(true);
-      return;
-    }
-  
-    let updatedProjects: LocalProjectData[];
-    
-    if (loadedProjectId) {
-      // Update existing project
-      const projectData: LocalProjectData = {
-        id: loadedProjectId,
-        name: finalProjectName,
-        rooms,
-        settings,
-        lintelLength,
-        createdAt: localProjects.find(p => p.id === loadedProjectId)?.createdAt || new Date().toISOString(),
-      };
-      updatedProjects = localProjects.map(p => p.id === loadedProjectId ? projectData : p);
-      toast({ title: 'Project Updated', description: `Your changes to project "${finalProjectName}" have been saved.` });
+  const handleSaveClick = () => {
+    // If project already has a name (and thus an ID), just save.
+    if (projectName && loadedProjectId) {
+      saveProject();
     } else {
-      // Create new project
-      const newId = crypto.randomUUID();
-      const projectData: LocalProjectData = {
-        id: newId,
-        name: finalProjectName,
-        rooms,
-        settings,
-        lintelLength,
-        createdAt: new Date().toISOString(),
-      };
-      updatedProjects = [...localProjects, projectData];
-      setLoadedProjectId(newId);
-      toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been saved.` });
+      // Otherwise, open the dialog to ask for a name.
+      setSaveDialogOpen(true);
     }
-    
-    setProjectName(finalProjectName);
-    setLocalProjects(updatedProjects);
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
-    } catch (error) {
-      console.error("Failed to save projects to localStorage:", error);
-      toast({ title: 'Error', description: 'Could not save project.', variant: 'destructive'});
-    }
-  
-    setSaveDialogOpen(false);
-    setNewProjectName('');
   };
 
 
@@ -754,12 +676,11 @@ export function ActionsCard() {
   const handleDocumentDownload = (
     docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber'
   ) => {
-    const loadedProject = localProjects.find(p => p.id === loadedProjectId);
-
-    if (loadedProject) {
+    // If there is a loaded project, we can use its name directly
+    if (loadedProjectId && projectName) {
       const info = {
-        projectName: loadedProject.name,
-        clientName: '', // These fields aren't saved yet
+        projectName: projectName,
+        clientName: '', 
         projectLocation: '',
         clientContact: '',
         contactPerson: '',
@@ -770,6 +691,7 @@ export function ActionsCard() {
       else if (docType === 'aggregated') handleDownloadAggregatedBreakdown(info);
       else if (docType === 'timber') handleDownloadTimberSchedule(info);
     } else {
+      // Otherwise, we need to ask for project info
       if (docType === 'invoice') setInvoiceDialogOpen(true);
       else if (docType === 'material') setScheduleDialogOpen(true);
       else if (docType === 'promax') setBreakdownDialogOpen(true);
@@ -785,7 +707,7 @@ export function ActionsCard() {
         <CardHeader>
           <CardTitle className="font-headline">Project Actions</CardTitle>
           <CardDescription>
-            Generate documents, use AI to analyze plans, or get a quote.
+            Generate documents, analyze plans, or manage your project.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -804,7 +726,7 @@ export function ActionsCard() {
               <DropdownMenuSeparator />
               {sortedProjects && sortedProjects.length > 0 ? (
                 sortedProjects.map(p => (
-                  <DropdownMenuItem key={p.id} onSelect={() => handleLoadProject(p)}>
+                  <DropdownMenuItem key={p.id} onSelect={() => loadProject(p)}>
                     <div className="flex flex-col">
                       <span className="font-medium">{p.name}</span>
                       <span className="text-xs text-muted-foreground">Saved: {format(new Date(p.createdAt), 'PP')}</span>
@@ -817,7 +739,7 @@ export function ActionsCard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="default" className="w-full" onClick={() => handleSaveProject()}>
+          <Button variant="default" className="w-full" onClick={handleSaveClick}>
             <Save /> {loadedProjectId ? 'Save Changes' : 'Save Project'}
           </Button>
           
@@ -955,7 +877,9 @@ export function ActionsCard() {
             </DialogClose>
             <Button onClick={() => {
                 if (newProjectName.trim()) {
-                    handleSaveProject(newProjectName.trim());
+                    saveProject(newProjectName.trim());
+                    setSaveDialogOpen(false);
+                    setNewProjectName('');
                 } else {
                     toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
                 }
