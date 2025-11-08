@@ -21,8 +21,14 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
       if (!authInstance.currentUser) {
         try {
           await signInAnonymously(authInstance);
-        } catch (error) {
-          console.error("Anonymous sign-in failed", error);
+        } catch (error: any) {
+          if (error.code === 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked') {
+            console.warn(
+              "SilaCalc: Anonymous sign-in is disabled in your Firebase project. Saving and loading projects will not work until it's enabled. Please go to your Firebase Console -> Authentication -> Sign-in method -> and enable 'Anonymous' provider."
+            );
+          } else {
+            console.error("Anonymous sign-in failed", error);
+          }
         }
       }
     };
