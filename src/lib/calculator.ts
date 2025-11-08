@@ -1,9 +1,16 @@
 
+
 export interface Room {
   id: string;
   name: string;
   length: number;
   width: number;
+}
+
+export interface LocalProject {
+  id: string;
+  name: string;
+  savedAt: string;
 }
 
 export interface CalculationDefaults {

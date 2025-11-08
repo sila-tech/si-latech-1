@@ -14,6 +14,7 @@ import type {
   LintelCalculation,
   TimberAndPropsCalculation,
   LintelSteelCalculation,
+  LocalProject,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
@@ -103,7 +104,8 @@ interface CalculatorContextType {
   setProjectName: (name: string) => void;
   logoUrl: string | null;
   setLogoUrl: (url: string | null) => void;
-  // Project management
+  localProjects: LocalProject[];
+  removeLocalProject: (id: string) => void;
   saveProject: (name?: string) => Promise<string | undefined>;
   loadProjectData: (projectData: ProjectData | null) => void;
 }
@@ -119,8 +121,52 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
+  const [localProjects, setLocalProjects] = useState<LocalProject[]>([]);
   const { toast } = useToast();
   const { firestore } = useFirebase();
+
+  // Load local projects from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LOCAL_PROJECTS_KEY);
+      if (stored) {
+        setLocalProjects(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("Failed to load projects from localStorage:", error);
+    }
+  }, []);
+  
+  const updateLocalProjects = (projects: LocalProject[]) => {
+    try {
+      localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(projects));
+      setLocalProjects(projects);
+    } catch (error) {
+      console.error("Failed to save projects to localStorage:", error);
+    }
+  };
+
+  const addOrUpdateLocalProject = (id: string, name: string) => {
+    const newProject: LocalProject = { id, name, savedAt: new Date().toISOString() };
+    const existingIndex = localProjects.findIndex(p => p.id === id);
+    let updatedProjects;
+    if (existingIndex > -1) {
+      updatedProjects = [...localProjects];
+      updatedProjects[existingIndex] = newProject;
+    } else {
+      updatedProjects = [newProject, ...localProjects];
+    }
+    // Sort by date and update
+    updatedProjects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+    updateLocalProjects(updatedProjects);
+  };
+  
+  const removeLocalProject = (id: string) => {
+    const updatedProjects = localProjects.filter(p => p.id !== id);
+    updateLocalProjects(updatedProjects);
+    toast({ title: "Project Removed", description: "The project has been removed from your local list." });
+  };
+
 
   // Auto-saving effect for Firestore
   useEffect(() => {
@@ -139,6 +185,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     
     const handler = setTimeout(() => {
       updateProjectData(projectRef, projectData);
+      addOrUpdateLocalProject(loadedProjectId, projectName);
     }, 1000); // Save 1 second after the last change
 
     return () => {
@@ -165,6 +212,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLintelLength(projectData.lintelLength || 0);
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
+    addOrUpdateLocalProject(projectData.id, projectData.name);
     toast({ title: 'Project Loaded', description: `Loaded "${projectData.name}".`});
   }, [toast, clearCalculator]);
 
@@ -206,10 +254,11 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
-    // If it's an existing project, auto-save will handle it. We just toast.
+    // If it's an existing project, update it. Auto-save handles this, but this is for manual trigger.
     if (loadedProjectId) {
       const projectRef = doc(firestore, 'projects', loadedProjectId);
-      updateProjectData(projectRef, { name: finalProjectName });
+      updateProjectData(projectRef, { name: finalProjectName, rooms, settings, lintelLength });
+      addOrUpdateLocalProject(loadedProjectId, finalProjectName);
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been updated.` });
       return loadedProjectId;
     }
@@ -230,13 +279,14 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       const docRef = await addDoc(collectionRef, newProjectData);
       setLoadedProjectId(docRef.id);
       setProjectName(finalProjectName);
+      addOrUpdateLocalProject(docRef.id, finalProjectName);
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
       return docRef.id;
     } catch (error) {
       console.error("Failed to create project:", error);
       toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
     }
-  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast]);
+  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast, localProjects]);
 
 
   const addRoom = () => {
@@ -374,6 +424,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setProjectName,
         logoUrl,
         setLogoUrl,
+        localProjects,
+        removeLocalProject,
         saveProject,
         loadProjectData,
       }}
