@@ -146,7 +146,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addOrUpdateLocalProject = (id: string, name: string) => {
+  const addOrUpdateLocalProject = useCallback((id: string, name: string) => {
     const newProject: LocalProject = { id, name, savedAt: new Date().toISOString() };
     const existingIndex = localProjects.findIndex(p => p.id === id);
     let updatedProjects;
@@ -159,7 +159,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     // Sort by date and update
     updatedProjects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
     updateLocalProjects(updatedProjects);
-  };
+  }, [localProjects]);
   
   const removeLocalProject = (id: string) => {
     const updatedProjects = localProjects.filter(p => p.id !== id);
@@ -191,7 +191,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore]);
+  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore, addOrUpdateLocalProject]);
 
   const clearCalculator = useCallback(() => {
     setRooms([]);
@@ -214,7 +214,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setProjectName(projectData.name);
     addOrUpdateLocalProject(projectData.id, projectData.name);
     toast({ title: 'Project Loaded', description: `Loaded "${projectData.name}".`});
-  }, [toast, clearCalculator]);
+  }, [toast, clearCalculator, addOrUpdateLocalProject]);
 
 
   useEffect(() => {
@@ -286,7 +286,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to create project:", error);
       toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
     }
-  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast, localProjects]);
+  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast, addOrUpdateLocalProject]);
 
 
   const addRoom = () => {
