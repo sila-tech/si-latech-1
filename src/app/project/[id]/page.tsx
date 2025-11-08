@@ -64,12 +64,12 @@ function ProjectLoader({ projectId }: { projectId: string }) {
 }
 
 
-export default function ProjectPage({ params }: ProjectPageProps) {
+export default function ProjectPage({ params: { id } }: ProjectPageProps) {
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
       <main className="flex-1 p-4 sm:p-6 md:p-8">
-        <ProjectLoader projectId={params.id} />
+        <ProjectLoader projectId={id} />
       </main>
     </div>
   );
