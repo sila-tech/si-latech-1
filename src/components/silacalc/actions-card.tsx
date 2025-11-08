@@ -750,6 +750,7 @@ export function ActionsCard() {
     }
   };
 
+  const authReady = !isUserLoading;
 
   return (
     <>
@@ -763,7 +764,7 @@ export function ActionsCard() {
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full" disabled={!user || areProjectsLoading}>
+              <Button variant="outline" className="w-full" disabled={!authReady || areProjectsLoading}>
                 {areProjectsLoading ? <Loader2 className="mr-2 animate-spin" /> : <ChevronDown />}
                 Load Project
               </Button>
@@ -789,7 +790,7 @@ export function ActionsCard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="default" className="w-full" onClick={() => handleSaveProject()} disabled={!user}>
+          <Button variant="default" className="w-full" onClick={() => handleSaveProject()} disabled={!authReady}>
             <Save /> {loadedProjectId ? 'Save Changes' : 'Save Project'}
           </Button>
           
