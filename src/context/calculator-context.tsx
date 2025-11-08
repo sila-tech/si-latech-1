@@ -125,15 +125,33 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
-  // Load local projects from localStorage on mount
+  // Load and sanitize local projects from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LOCAL_PROJECTS_KEY);
       if (stored) {
-        setLocalProjects(JSON.parse(stored));
+        const parsedProjects: LocalProject[] = JSON.parse(stored);
+        
+        // Sanitize data to prevent invalid date errors from old data
+        const sanitizedProjects = parsedProjects.map(proj => {
+          if (!proj.savedAt || isNaN(new Date(proj.savedAt).getTime())) {
+            // If savedAt is invalid or missing, fix it.
+            return { ...proj, savedAt: new Date().toISOString() };
+          }
+          return proj;
+        });
+
+        setLocalProjects(sanitizedProjects);
+
+        // Optionally, write the sanitized data back to localStorage
+        if (JSON.stringify(parsedProjects) !== JSON.stringify(sanitizedProjects)) {
+            localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(sanitizedProjects));
+        }
       }
     } catch (error) {
-      console.error("Failed to load projects from localStorage:", error);
+      console.error("Failed to load or sanitize projects from localStorage:", error);
+      // If parsing fails, clear the corrupted data
+      localStorage.removeItem(LOCAL_PROJECTS_KEY);
     }
   }, []);
   
@@ -456,3 +474,5 @@ export const useCalculator = (): CalculatorContextType => {
   }
   return context;
 };
+
+    
