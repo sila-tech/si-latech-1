@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
 import { SettingsCard } from './settings-card';
@@ -11,9 +11,16 @@ import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { QuickQuoteCard } from './quick-quote-card';
 import { PlanReaderCard } from './plan-reader-card';
+import type { ProjectData } from '@/context/calculator-context';
 
-export function CalculatorShell() {
-  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom } = useCalculator();
+export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
+  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData } = useCalculator();
+
+  // Load initial data when the component mounts or when initialProjectData changes
+  useEffect(() => {
+    loadProjectData(initialProjectData || null);
+  }, [initialProjectData, loadProjectData]);
+
 
   return (
     <div id="calculator" className="container mx-auto max-w-7xl mt-8">

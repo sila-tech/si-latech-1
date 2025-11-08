@@ -231,9 +231,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const loadProjectData = useCallback((projectData: ProjectData | null) => {
+    if (projectData?.id === loadedProjectId && projectData) return; // Avoid reloading the same project
+
     if (!projectData) {
       clearCalculator();
-      toast({ title: "Project not found", description: "The requested project does not exist.", variant: "destructive"});
       return;
     }
 
@@ -247,8 +248,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
     addOrUpdateLocalProject(projectData.id, projectData.name, savedAtDate);
-    toast({ title: 'Project Loaded', description: `Loaded "${projectData.name}".`});
-  }, [toast, clearCalculator, addOrUpdateLocalProject]);
+    // Toast is removed from here to prevent repeated notifications
+  }, [clearCalculator, addOrUpdateLocalProject, loadedProjectId]);
 
 
   useEffect(() => {

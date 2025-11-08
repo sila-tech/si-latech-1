@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, use, useRef } from 'react';
+import { useEffect, use, useRef, useState } from 'react';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { useCalculator } from '@/context/calculator-context';
@@ -13,8 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function ProjectLoader({ projectId }: { projectId: string }) {
   const { firestore } = useFirebase();
-  const { loadProjectData } = useCalculator();
-  const hasLoadedRef = useRef(false);
+  const { toast } = useToast();
 
   const projectRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'projects', projectId) : null),
@@ -22,18 +21,18 @@ function ProjectLoader({ projectId }: { projectId: string }) {
   );
 
   const { data: projectData, isLoading, error } = useDoc<ProjectData>(projectRef);
+  const [hasShownNotFound, setHasShownNotFound] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && projectData && !hasLoadedRef.current) {
-      loadProjectData(projectData);
-      hasLoadedRef.current = true;
-    } else if (!isLoading && !projectData && !hasLoadedRef.current) {
-      // Handle case where project is not found but we still need to show an error
-      loadProjectData(null);
-      hasLoadedRef.current = true; // Mark as loaded to prevent multiple toasts
+    if (!isLoading && !projectData && !error && !hasShownNotFound) {
+      toast({
+        title: "Project not found",
+        description: "The requested project does not exist or has been deleted.",
+        variant: "destructive"
+      });
+      setHasShownNotFound(true);
     }
-  }, [projectData, isLoading, loadProjectData]);
-
+  }, [isLoading, projectData, error, hasShownNotFound, toast]);
 
   if (isLoading) {
     return (
@@ -53,15 +52,15 @@ function ProjectLoader({ projectId }: { projectId: string }) {
   }
   
   if (error) {
-      // The loadProjectData function handles showing a toast for not found
       return (
         <div className="flex items-center justify-center h-96">
-            <p className="text-destructive">Could not load project. It may have been deleted or the ID is incorrect.</p>
+            <p className="text-destructive">Could not load project due to a permission error.</p>
         </div>
       );
   }
 
-  return <CalculatorShell />;
+  // Pass the loaded project data directly to the CalculatorShell
+  return <CalculatorShell initialProjectData={projectData} />;
 }
 
 
