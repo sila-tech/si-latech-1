@@ -49,14 +49,11 @@ import {
 import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
-import type { Room, AggregatedRoomGroup } from '@/lib/calculator';
+import type { Room, AggregatedRoomGroup, CalculationDefaults } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import { saveProject, type ProjectData } from '@/firebase/data-manager';
 import { format } from 'date-fns';
 
 type ClientInfo = {
@@ -66,6 +63,19 @@ type ClientInfo = {
   clientContact: string;
   contactPerson: string;
 };
+
+// Simplified ProjectData for localStorage
+export interface LocalProjectData {
+  id: string;
+  name: string;
+  rooms: Room[];
+  settings: CalculationDefaults;
+  lintelLength: number;
+  createdAt: string;
+}
+
+const LOCAL_STORAGE_KEY = 'silacalc_projects';
+
 
 function SubmitButton({
   children,
@@ -176,7 +186,6 @@ export function ActionsCard() {
     clearCalculator,
   } = useCalculator();
   const { toast } = useToast();
-  const { firestore, user, isUserLoading } = useFirebase();
 
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -186,35 +195,36 @@ export function ActionsCard() {
   
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  
+  const [localProjects, setLocalProjects] = useState<LocalProjectData[]>([]);
 
-  // --- Project Loading Logic ---
-  const projectsQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, 'customers', user.uid, 'projects');
-  }, [firestore, user]);
-
-  const { data: projects, isLoading: areProjectsLoading } = useCollection<ProjectData>(projectsQuery);
-
+  useEffect(() => {
+    try {
+      const savedProjects = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedProjects) {
+        setLocalProjects(JSON.parse(savedProjects));
+      }
+    } catch (error) {
+      console.error("Failed to load projects from localStorage:", error);
+      toast({ title: 'Error', description: 'Could not load saved projects.', variant: 'destructive'});
+    }
+  }, []);
+  
   const sortedProjects = useMemo(() => {
-    if (!projects) return [];
-    return [...projects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [projects]);
+    return [...localProjects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [localProjects]);
 
-  const handleLoadProject = (project: ProjectData) => {
+
+  const handleLoadProject = (project: LocalProjectData) => {
     setRooms(project.rooms || []);
     setSettings(project.settings);
     setLintelLength(project.lintelLength || 0);
-    setLoadedProjectId(project.id!);
+    setLoadedProjectId(project.id);
     setProjectName(project.name);
     toast({ title: 'Project Loaded', description: `Loaded "${project.name}".`});
   };
 
-  const handleSaveProject = async (nameForProject?: string) => {
-    if (!user || !firestore) {
-      toast({ title: 'Authentication Error', description: 'You must be logged in to save a project.', variant: 'destructive' });
-      return;
-    }
-  
+  const handleSaveProject = (nameForProject?: string) => {
     const finalProjectName = nameForProject || projectName;
   
     if (!finalProjectName) {
@@ -222,25 +232,43 @@ export function ActionsCard() {
       return;
     }
   
-    const projectData = {
-      name: finalProjectName,
-      rooms,
-      settings,
-      lintelLength,
-      status: 'pending' as const,
-    };
-  
+    let updatedProjects: LocalProjectData[];
+    
     if (loadedProjectId) {
-      const existingProject = projects?.find(p => p.id === loadedProjectId);
-      saveProject(firestore, user.uid, { ...projectData, name: finalProjectName, id: loadedProjectId, createdAt: existingProject?.createdAt || new Date().toISOString() });
+      // Update existing project
+      const projectData: LocalProjectData = {
+        id: loadedProjectId,
+        name: finalProjectName,
+        rooms,
+        settings,
+        lintelLength,
+        createdAt: localProjects.find(p => p.id === loadedProjectId)?.createdAt || new Date().toISOString(),
+      };
+      updatedProjects = localProjects.map(p => p.id === loadedProjectId ? projectData : p);
       toast({ title: 'Project Updated', description: `Your changes to project "${finalProjectName}" have been saved.` });
     } else {
-      const newId = await saveProject(firestore, user.uid, { ...projectData, name: finalProjectName, createdAt: new Date().toISOString() });
-      if (newId) {
-        setLoadedProjectId(newId);
-        setProjectName(finalProjectName);
-      }
+      // Create new project
+      const newId = crypto.randomUUID();
+      const projectData: LocalProjectData = {
+        id: newId,
+        name: finalProjectName,
+        rooms,
+        settings,
+        lintelLength,
+        createdAt: new Date().toISOString(),
+      };
+      updatedProjects = [...localProjects, projectData];
+      setLoadedProjectId(newId);
       toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been saved.` });
+    }
+    
+    setProjectName(finalProjectName);
+    setLocalProjects(updatedProjects);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
+    } catch (error) {
+      console.error("Failed to save projects to localStorage:", error);
+      toast({ title: 'Error', description: 'Could not save project.', variant: 'destructive'});
     }
   
     setSaveDialogOpen(false);
@@ -726,7 +754,7 @@ export function ActionsCard() {
   const handleDocumentDownload = (
     docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber'
   ) => {
-    const loadedProject = projects?.find(p => p.id === loadedProjectId);
+    const loadedProject = localProjects.find(p => p.id === loadedProjectId);
 
     if (loadedProject) {
       const info = {
@@ -750,7 +778,6 @@ export function ActionsCard() {
     }
   };
 
-  const authReady = !isUserLoading;
 
   return (
     <>
@@ -764,8 +791,8 @@ export function ActionsCard() {
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full" disabled={!authReady || areProjectsLoading}>
-                {areProjectsLoading ? <Loader2 className="mr-2 animate-spin" /> : <ChevronDown />}
+              <Button variant="outline" className="w-full">
+                <ChevronDown />
                 Load Project
               </Button>
             </DropdownMenuTrigger>
@@ -790,7 +817,7 @@ export function ActionsCard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="default" className="w-full" onClick={() => handleSaveProject()} disabled={!authReady}>
+          <Button variant="default" className="w-full" onClick={() => handleSaveProject()}>
             <Save /> {loadedProjectId ? 'Save Changes' : 'Save Project'}
           </Button>
           

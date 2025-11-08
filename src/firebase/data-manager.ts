@@ -6,7 +6,7 @@ import {
   Firestore,
   DocumentReference,
 } from 'firebase/firestore';
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from './non-blocking-updates';
+import { updateDocumentNonBlocking } from './non-blocking-updates';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
 
 export interface ProjectData {
@@ -19,27 +19,6 @@ export interface ProjectData {
   createdAt: string;
   updatedAt?: string;
   purchasedAt?: string;
-}
-
-export function saveProject(
-  db: Firestore,
-  userId: string,
-  projectData: Omit<ProjectData, 'id' | 'updatedAt' | 'purchasedAt' | 'status'> & { id?: string; createdAt: string, status?: 'pending' | 'purchased' }
-): Promise<string | undefined> {
-  const { id, ...dataToSave } = projectData;
-  const timestamp = new Date().toISOString();
-  
-  if (id) {
-    // Update existing project
-    const projectRef = doc(db, 'customers', userId, 'projects', id);
-    updateDocumentNonBlocking(projectRef, { ...dataToSave, updatedAt: timestamp });
-    return Promise.resolve(id);
-  } else {
-    // Create new project
-    const projectsColRef = collection(db, 'customers', userId, 'projects');
-    const docPromise = addDocumentNonBlocking(projectsColRef, { ...dataToSave, status: 'pending', createdAt: timestamp });
-    return docPromise.then(docRef => docRef?.id);
-  }
 }
 
 export function updateProjectStatus(
