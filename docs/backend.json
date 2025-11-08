@@ -9,6 +9,10 @@
       "properties": {
         "id": { "type": "string", "description": "Unique project identifier." },
         "name": { "type": "string", "description": "Name of the project." },
+        "clientName": { "type": "string", "description": "Name of the client." },
+        "clientContact": { "type": "string", "description": "Contact information for the client." },
+        "projectLocation": { "type": "string", "description": "Physical location or address of the project site." },
+        "contactPerson": { "type": "string", "description": "The primary contact person on the project site (e.g., site foreman)." },
         "rooms": {
           "type": "array",
           "items": { "$ref": "#/entities/Room" }

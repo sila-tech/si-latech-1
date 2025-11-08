@@ -13,7 +13,6 @@ import type {
   LintelCalculation,
   TimberAndPropsCalculation,
   LintelSteelCalculation,
-  LocalProject,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
@@ -37,16 +36,27 @@ import {
 import { updateProjectData } from '@/firebase/data-manager';
 
 
-const LOCAL_PROJECTS_KEY = 'silacalc_projects';
-
 export interface ProjectData {
   id: string;
   name: string;
+  clientName?: string;
+  clientContact?: string;
+  projectLocation?: string;
+  contactPerson?: string;
   rooms: Room[];
   settings: CalculationDefaults;
   lintelLength: number;
   createdAt: Timestamp;
 }
+
+export type ProjectDetails = {
+    name: string;
+    clientName?: string;
+    clientContact?: string;
+    projectLocation?: string;
+    contactPerson?: string;
+};
+
 
 type PerRoomCalculation = {
   room: Room;
@@ -102,9 +112,13 @@ interface CalculatorContextType {
   setLoadedProjectId: (id: string | null) => void;
   projectName: string;
   setProjectName: (name: string) => void;
+  clientName: string;
+  clientContact: string;
+  projectLocation: string;
+  contactPerson: string;
   logoUrl: string | null;
   setLogoUrl: (url: string | null) => void;
-  saveProject: (name?: string) => Promise<string | undefined>;
+  saveProject: (details: ProjectDetails) => Promise<string | undefined>;
   loadProjectData: (projectData: ProjectData | null) => void;
 }
 
@@ -118,6 +132,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
+  const [clientName, setClientName] = useState<string>('');
+  const [clientContact, setClientContact] = useState<string>('');
+  const [projectLocation, setProjectLocation] = useState<string>('');
+  const [contactPerson, setContactPerson] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -132,6 +150,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
 
     const projectData = {
       name: projectName,
+      clientName,
+      clientContact,
+      projectLocation,
+      contactPerson,
       rooms,
       settings,
       lintelLength,
@@ -144,7 +166,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [rooms, settings, lintelLength, projectName, loadedProjectId, firestore]);
+  }, [rooms, settings, lintelLength, projectName, clientName, clientContact, projectLocation, contactPerson, loadedProjectId, firestore]);
 
   const clearCalculator = useCallback(() => {
     setRooms([]);
@@ -152,6 +174,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLintelLength(0);
     setLoadedProjectId(null);
     setProjectName('');
+    setClientName('');
+    setClientContact('');
+    setProjectLocation('');
+    setContactPerson('');
   }, []);
 
   const loadProjectData = useCallback((projectData: ProjectData | null) => {
@@ -167,6 +193,11 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLintelLength(projectData.lintelLength || 0);
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
+    setClientName(projectData.clientName || '');
+    setClientContact(projectData.clientContact || '');
+    setProjectLocation(projectData.projectLocation || '');
+    setContactPerson(projectData.contactPerson || '');
+
   }, [clearCalculator, loadedProjectId]);
 
 
@@ -195,31 +226,43 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   };
 
 
-  const saveProject = useCallback(async (nameForProject?: string) => {
+  const saveProject = useCallback(async (details: ProjectDetails) => {
     if (!firestore) {
       toast({ title: 'Error', description: 'Database connection not available.', variant: 'destructive' });
       return;
     }
 
-    const finalProjectName = nameForProject || projectName;
-    if (!finalProjectName) {
+    const { name, ...clientDetails } = details;
+
+    if (!name.trim()) {
       toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
       return;
     }
+
+    const projectDataToSave = {
+        name,
+        ...clientDetails,
+        rooms,
+        settings,
+        lintelLength,
+    };
     
     if (loadedProjectId) {
       const projectRef = doc(firestore, 'projects', loadedProjectId);
-      updateProjectData(projectRef, { name: finalProjectName, rooms, settings, lintelLength });
-      toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been updated.` });
+      updateProjectData(projectRef, projectDataToSave);
+      toast({ title: 'Project Updated', description: `Project "${name}" has been updated.` });
+      // Update local state as well
+      setProjectName(name);
+      setClientName(clientDetails.clientName || '');
+      setClientContact(clientDetails.clientContact || '');
+      setProjectLocation(clientDetails.projectLocation || '');
+      setContactPerson(clientDetails.contactPerson || '');
       return loadedProjectId;
     }
 
     const collectionRef = collection(firestore, 'projects');
     const newProjectData = {
-      name: finalProjectName,
-      rooms,
-      settings,
-      lintelLength,
+      ...projectDataToSave,
       status: 'pending' as const,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -228,14 +271,18 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     try {
       const docRef = await addDoc(collectionRef, newProjectData);
       setLoadedProjectId(docRef.id);
-      setProjectName(finalProjectName);
-      toast({ title: 'Project Saved', description: `Project "${finalProjectName}" has been created.` });
+      setProjectName(name);
+      setClientName(clientDetails.clientName || '');
+      setClientContact(clientDetails.clientContact || '');
+      setProjectLocation(clientDetails.projectLocation || '');
+      setContactPerson(clientDetails.contactPerson || '');
+      toast({ title: 'Project Saved', description: `Project "${name}" has been created.` });
       return docRef.id;
     } catch (error) {
       console.error("Failed to create project:", error);
       toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
     }
-  }, [projectName, loadedProjectId, rooms, settings, lintelLength, firestore, toast]);
+  }, [loadedProjectId, rooms, settings, lintelLength, firestore, toast]);
 
 
   const addRoom = () => {
@@ -371,6 +418,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setLoadedProjectId,
         projectName,
         setProjectName,
+        clientName,
+        clientContact,
+        projectLocation,
+        contactPerson,
         logoUrl,
         setLogoUrl,
         saveProject,
@@ -389,5 +440,3 @@ export const useCalculator = (): CalculatorContextType => {
   }
   return context;
 };
-
-    

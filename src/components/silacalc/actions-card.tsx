@@ -77,14 +77,26 @@ function SubmitButton({
 }
 
 const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenChange }: { onGenerateClick: (clientInfo: ClientInfo) => void; title: string; description: string; open: boolean, onOpenChange: (open: boolean) => void; }) => {
-  const { projectName } = useCalculator();
+  const { projectName, clientName, clientContact, projectLocation, contactPerson } = useCalculator();
+
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
-    clientName: '',
+    clientName: clientName || '',
     projectName: projectName || '',
-    projectLocation: '',
-    clientContact: '',
-    contactPerson: '',
+    projectLocation: projectLocation || '',
+    clientContact: clientContact || '',
+    contactPerson: contactPerson || '',
   });
+
+  useEffect(() => {
+    setClientInfo({
+        clientName: clientName || '',
+        projectName: projectName || '',
+        projectLocation: projectLocation || '',
+        clientContact: clientContact || '',
+        contactPerson: contactPerson || '',
+    });
+  }, [projectName, clientName, clientContact, projectLocation, contactPerson, open]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -227,6 +239,10 @@ export function ActionsCard() {
     aggregatedBreakdown,
     loadedProjectId,
     projectName,
+    clientName,
+    clientContact,
+    projectLocation,
+    contactPerson,
     clearCalculator,
     saveProject,
   } = useCalculator();
@@ -239,15 +255,29 @@ export function ActionsCard() {
   const [isTimberScheduleOpen, setTimberScheduleOpen] = useState(false);
   
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
+  
+  const [projectDetails, setProjectDetails] = useState({
+      name: '',
+      clientName: '',
+      clientContact: '',
+      projectLocation: '',
+      contactPerson: ''
+  });
+
+  useEffect(() => {
+    if (isSaveDialogOpen) {
+      setProjectDetails({
+        name: projectName || `Project on ${format(new Date(), 'PP')}`,
+        clientName: clientName || '',
+        clientContact: clientContact || '',
+        projectLocation: projectLocation || '',
+        contactPerson: contactPerson || ''
+      });
+    }
+  }, [isSaveDialogOpen, projectName, clientName, clientContact, projectLocation, contactPerson]);
 
   const handleSaveClick = async () => {
-    if (projectName && loadedProjectId) {
-      await saveProject();
-    } else {
-      setNewProjectName(projectName || `Project on ${format(new Date(), 'PP')}`);
-      setSaveDialogOpen(true);
-    }
+    setSaveDialogOpen(true);
   };
 
   const handleCreateNew = () => {
@@ -737,10 +767,10 @@ export function ActionsCard() {
     if (loadedProjectId && projectName) {
       const info = {
         projectName: projectName,
-        clientName: '', 
-        projectLocation: '',
-        clientContact: '',
-        contactPerson: '',
+        clientName: clientName || '', 
+        projectLocation: projectLocation || '',
+        clientContact: clientContact || '',
+        contactPerson: contactPerson || '',
       };
       if (docType === 'invoice') handleDownloadInvoice(info);
       else if (docType === 'material') handleDownloadMaterialSchedule(info);
@@ -776,7 +806,7 @@ export function ActionsCard() {
 
           <Button variant="default" className="w-full" onClick={handleSaveClick}>
             <Save />
-            {loadedProjectId ? 'Save Changes' : 'Save Project'}
+            {loadedProjectId ? 'Save / Edit Details' : 'Save Project'}
           </Button>
           
           <Button variant="secondary" className="w-full" onClick={() => handleDocumentDownload('invoice')}>
@@ -866,63 +896,89 @@ export function ActionsCard() {
         onOpenChange={setInvoiceDialogOpen}
         onGenerateClick={handleDownloadInvoice}
         title="Download Customer Invoice"
-        description="Please fill in client details for the invoice."
+        description="Please confirm or update the client details for the invoice."
       />
       <ClientInfoDialog
         open={isScheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
         onGenerateClick={handleDownloadMaterialSchedule}
         title="Download Material Schedule"
-        description="Please fill in client details for the schedule."
+        description="Please confirm or update the client details for the schedule."
       />
       <ClientInfoDialog
         open={isBreakdownDialogOpen}
         onOpenChange={setBreakdownDialogOpen}
         onGenerateClick={handleDownloadPromaxBreakdown}
         title="Download Promax Breakdown Report"
-        description="Please fill in project details for the manufacturing report."
+        description="Please confirm or update the project details for the manufacturing report."
       />
        <ClientInfoDialog
         open={isAggregatedDialogOpen}
         onOpenChange={setAggregatedDialogOpen}
         onGenerateClick={handleDownloadAggregatedBreakdown}
         title="Download Aggregated Report"
-        description="Please fill in client details for the report."
+        description="Please confirm or update the client details for the report."
       />
       <ClientInfoDialog
         open={isTimberScheduleOpen}
         onOpenChange={setTimberScheduleOpen}
         onGenerateClick={handleDownloadTimberSchedule}
         title="Download Timber & Props Schedule"
-        description="Please fill in project details for the timber report."
+        description="Please confirm or update the project details for the timber report."
       />
 
       <Dialog open={isSaveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save New Project</DialogTitle>
-            <DialogDescription>Enter a name for your new project. A unique ID will be generated to share and access it later.</DialogDescription>
+            <DialogTitle>{loadedProjectId ? 'Update Project Details' : 'Save New Project'}</DialogTitle>
+            <DialogDescription>
+                {loadedProjectId 
+                    ? 'Update the name and client details for this project.'
+                    : 'Enter the project and client details. A unique ID will be generated to access it later.'
+                }
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="projectNameDialog">Project Name</Label>
-            <Input id="projectNameDialog" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} placeholder="e.g., Karen Residential"/>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="projectName">Project Name</Label>
+                <Input id="projectName" value={projectDetails.name} onChange={e => setProjectDetails(prev => ({...prev, name: e.target.value}))} placeholder="e.g., Karen Residential"/>
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label htmlFor="clientName">Client Name</Label>
+                    <Input id="clientName" value={projectDetails.clientName} onChange={e => setProjectDetails(prev => ({...prev, clientName: e.target.value}))} placeholder="e.g., John Doe" />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="clientContact">Client Contact</Label>
+                    <Input id="clientContact" value={projectDetails.clientContact} onChange={e => setProjectDetails(prev => ({...prev, clientContact: e.target.value}))} placeholder="e.g., +254 7..."/>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="projectLocation">Project Location</Label>
+                <Input id="projectLocation" value={projectDetails.projectLocation} onChange={e => setProjectDetails(prev => ({...prev, projectLocation: e.target.value}))} placeholder="e.g., Karen, Nairobi" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="contactPerson">Site Contact Person</Label>
+                <Input id="contactPerson" value={projectDetails.contactPerson} onChange={e => setProjectDetails(prev => ({...prev, contactPerson: e.target.value}))} placeholder="e.g., Site Foreman" />
+            </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="secondary">Cancel</Button>
             </DialogClose>
             <Button onClick={async () => {
-                if (newProjectName.trim()) {
-                    const newId = await saveProject(newProjectName.trim());
-                    if (newId) {
+                if (projectDetails.name.trim()) {
+                    const newId = await saveProject(projectDetails);
+                    if (newId && !loadedProjectId) {
                       router.push(`/project/${newId}`);
                     }
                     setSaveDialogOpen(false);
-                    setNewProjectName('');
                 } else {
                     toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
                 }
-            }}>Save</Button>
+            }}>
+              {loadedProjectId ? 'Update Project' : 'Save Project'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
