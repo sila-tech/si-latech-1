@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, use } from 'react';
+import { useEffect, use, useRef } from 'react';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { useCalculator } from '@/context/calculator-context';
@@ -14,19 +14,26 @@ import { Skeleton } from '@/components/ui/skeleton';
 function ProjectLoader({ projectId }: { projectId: string }) {
   const { firestore } = useFirebase();
   const { loadProjectData } = useCalculator();
+  const hasLoadedRef = useRef(false);
 
   const projectRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'projects', projectId) : null),
     [firestore, projectId]
   );
-  
+
   const { data: projectData, isLoading, error } = useDoc<ProjectData>(projectRef);
-  
+
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && projectData && !hasLoadedRef.current) {
       loadProjectData(projectData);
+      hasLoadedRef.current = true;
+    } else if (!isLoading && !projectData && !hasLoadedRef.current) {
+      // Handle case where project is not found but we still need to show an error
+      loadProjectData(null);
+      hasLoadedRef.current = true; // Mark as loaded to prevent multiple toasts
     }
   }, [projectData, isLoading, loadProjectData]);
+
 
   if (isLoading) {
     return (
