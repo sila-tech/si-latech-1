@@ -149,19 +149,28 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const addOrUpdateLocalProject = useCallback((id: string, name: string, savedAtDate?: Date) => {
     const savedAt = (savedAtDate || new Date()).toISOString();
     const newProject: LocalProject = { id, name, savedAt };
-    const existingIndex = localProjects.findIndex(p => p.id === id);
-    let updatedProjects;
+    setLocalProjects(prevProjects => {
+      const existingIndex = prevProjects.findIndex(p => p.id === id);
+      let updatedProjects;
 
-    if (existingIndex > -1) {
-      updatedProjects = [...localProjects];
-      updatedProjects[existingIndex] = newProject;
-    } else {
-      updatedProjects = [newProject, ...localProjects];
-    }
-    
-    updatedProjects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
-    updateLocalProjects(updatedProjects);
-}, [localProjects]);
+      if (existingIndex > -1) {
+        updatedProjects = [...prevProjects];
+        updatedProjects[existingIndex] = newProject;
+      } else {
+        updatedProjects = [newProject, ...prevProjects];
+      }
+      
+      updatedProjects.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+      
+      try {
+        localStorage.setItem(LOCAL_PROJECTS_KEY, JSON.stringify(updatedProjects));
+      } catch (error) {
+        console.error("Failed to save projects to localStorage:", error);
+      }
+
+      return updatedProjects;
+    });
+  }, []);
   
   const removeLocalProject = (id: string) => {
     const updatedProjects = localProjects.filter(p => p.id !== id);
@@ -447,5 +456,3 @@ export const useCalculator = (): CalculatorContextType => {
   }
   return context;
 };
-
-    
