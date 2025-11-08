@@ -16,23 +16,23 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   const { firebaseApp, auth, firestore } = initializeFirebase();
 
   useEffect(() => {
-    const performAnonymousSignIn = async () => {
-      const authInstance = getAuth(firebaseApp);
-      if (!authInstance.currentUser) {
-        try {
-          await signInAnonymously(authInstance);
-        } catch (error: any) {
-          if (error.code === 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked') {
+    const authInstance = getAuth(firebaseApp);
+    if (!authInstance.currentUser) {
+      // "Fire-and-forget" sign-in. Don't await.
+      // The onAuthStateChanged listener in the provider will handle the result.
+      // This prevents a failed sign-in from crashing the entire application.
+      signInAnonymously(authInstance).catch((error: any) => {
+        // Log a warning only if the specific error occurs.
+        // This is for developer information and does not stop the app.
+        if (error.code === 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked') {
             console.warn(
               "SilaCalc: Anonymous sign-in is disabled in your Firebase project. Saving and loading projects will not work until it's enabled. Please go to your Firebase Console -> Authentication -> Sign-in method -> and enable 'Anonymous' provider."
             );
-          } else {
-            console.error("Anonymous sign-in failed", error);
-          }
+        } else {
+            console.error("Anonymous sign-in failed:", error);
         }
-      }
-    };
-    performAnonymousSignIn();
+      });
+    }
   }, [firebaseApp]);
 
   return (
