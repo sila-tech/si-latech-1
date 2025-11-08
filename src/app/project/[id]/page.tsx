@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, use } from 'react';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { useCalculator } from '@/context/calculator-context';
@@ -10,12 +10,6 @@ import type { ProjectData } from '@/context/calculator-context';
 import { Header } from '@/components/header';
 import { CalculatorShell } from '@/components/silacalc/calculator-shell';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface ProjectPageProps {
-  params: {
-    id: string;
-  };
-}
 
 function ProjectLoader({ projectId }: { projectId: string }) {
   const { firestore } = useFirebase();
@@ -64,7 +58,9 @@ function ProjectLoader({ projectId }: { projectId: string }) {
 }
 
 
-export default function ProjectPage({ params: { id } }: ProjectPageProps) {
+export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
