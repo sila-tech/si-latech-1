@@ -5,18 +5,19 @@ service cloud.firestore {
     
     // Public projects collection
     match /projects/{projectId} {
-      // Anyone can read any project.
       allow read: if true;
-      
-      // Anyone can create a new project.
       allow create: if true;
-
-      // Allow updates only if the project already exists.
-      // This prevents someone from creating a document at a known ID.
       allow update: if exists(/databases/$(database)/documents/projects/$(projectId));
-      
-      // Do not allow deletion of projects to prevent data loss.
       allow delete: if false;
+    }
+    
+    // Admin collections
+    match /investors/{investorId} {
+      allow read, write: if true; // In production, these should be restricted to admin auth
+    }
+
+    match /loans/{loanId} {
+      allow read, write: if true; // In production, these should be restricted to admin auth
     }
     
     // Legacy customers path. Deny all access.
