@@ -812,32 +812,10 @@ export function ActionsCard() {
           <Button className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white" onClick={() => handleDocumentDownload('invoice')}>
             <Download className="mr-2 h-4 w-4" /> Customer Invoice
           </Button>
-          
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('material')}>
-            <List className="mr-2 h-4 w-4" /> Material Schedule
-          </Button>
 
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('promax')}>
-              <FileDown className="mr-2 h-4 w-4" /> Promax Breakdown
-          </Button>
-          
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('aggregated')}>
-              <Warehouse className="mr-2 h-4 w-4" /> Aggregated Report
-          </Button>
-
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('timber')}>
-              <Hammer className="mr-2 h-4 w-4" /> Timber Schedule
-          </Button>
-          
-          <Button variant="outline" className="w-full text-green-700 border-green-600/50 bg-green-50/50 hover:bg-green-100 hover:text-green-800" asChild>
-            <Link href="/profit">
-              <Sheet className="mr-2 h-4 w-4" /> Internal Report
-            </Link>
-          </Button>
-          
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 col-span-2 lg:col-span-1">
+              <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100">
                 <FileText className="mr-2 h-4 w-4" /> Generate Quote (AI)
               </Button>
             </DialogTrigger>
@@ -866,6 +844,32 @@ export function ActionsCard() {
                </form>
             </DialogContent>
           </Dialog>
+
+          {/* Admin Only Actions */}
+          {typeof window !== 'undefined' && sessionStorage.getItem('admin_token') === btoa('Sila4927') && (
+            <div className="col-span-2 lg:col-span-3 mt-4 pt-4 border-t space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Admin Reports & Technicals</h4>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Button variant="outline" className="w-full text-green-700 border-green-600/50 bg-green-50/50 hover:bg-green-100 hover:text-green-800" asChild>
+                        <Link href="/profit">
+                            <Sheet className="mr-2 h-4 w-4" /> Internal Profit Report
+                        </Link>
+                    </Button>
+                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('material')}>
+                        <List className="mr-2 h-4 w-4" /> Material Schedule
+                    </Button>
+                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('promax')}>
+                        <FileDown className="mr-2 h-4 w-4" /> Promax Breakdown
+                    </Button>
+                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('aggregated')}>
+                        <Warehouse className="mr-2 h-4 w-4" /> Aggregated Report
+                    </Button>
+                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('timber')}>
+                        <Hammer className="mr-2 h-4 w-4" /> Timber Schedule
+                    </Button>
+                </div>
+            </div>
+          )}
 
           <Dialog open={isQuoteResultOpen} onOpenChange={setQuoteResultOpen}>
             <DialogContent>
