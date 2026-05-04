@@ -4,20 +4,20 @@
 
 @layer base {
   :root {
-    --background: 210 40% 96.1%;
+    --background: 210 40% 98%; /* Very light gray-blue */
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 205 88% 29%; /* #095388 - Navy */
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+    --secondary: 38 92% 50%; /* #f59e0b - Orange/Amber */
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 38 92% 50%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
@@ -25,7 +25,23 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.75rem;
   }
+}
 
+@layer base {
+  body {
+    @apply bg-[#f2f5f9] text-foreground font-sans antialiased selection:bg-primary/10 selection:text-primary;
+    background-image: radial-gradient(at 0% 0%, hsla(210, 40%, 98%, 1) 0, transparent 50%), 
+                      radial-gradient(at 50% 0%, hsla(210, 40%, 96%, 1) 0, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .premium-card {
+    @apply bg-white border border-slate-200/60 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300;
+  }
+}
+@layer base {
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
