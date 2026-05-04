@@ -13,11 +13,24 @@ service cloud.firestore {
     
     // Admin collections
     match /investors/{investorId} {
-      allow read, write: if true; // In production, these should be restricted to admin auth
+      allow read, write: if true;
+    }
+    match /investors/{document=**} {
+      allow read, write: if true;
     }
 
     match /loans/{loanId} {
-      allow read, write: if true; // In production, these should be restricted to admin auth
+      allow read, write: if true;
+    }
+    match /loans/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /invoices/{invoiceId} {
+      allow read, write: if true;
+    }
+    match /invoices/{document=**} {
+      allow read, write: if true;
     }
     
     // Legacy customers path. Deny all access.
