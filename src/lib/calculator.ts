@@ -155,7 +155,7 @@ const m = (mm: number) => mm / 1000;
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
-  beamSpacing: 0.6,
+  beamSpacing: 0.55,
   beamSectionW: m(120),
   beamSectionH: m(40),
   toppingThickness: 0.05,
