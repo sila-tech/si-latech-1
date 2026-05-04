@@ -807,44 +807,56 @@ export function ActionsCard() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Project Actions</CardTitle>
+          <CardTitle className="font-headline text-2xl text-slate-900">Project Actions</CardTitle>
           <CardDescription>
             Generate documents, analyze plans, or manage your project.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={handleCreateNew}>
+        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={handleCreateNew}>
             <FilePlus className="mr-2 h-4 w-4" /> New Project
           </Button>
 
           <LoadProjectDialog />
 
-          <Button className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white" onClick={handleSaveClick}>
+          <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold" onClick={handleSaveClick}>
             <Save className="mr-2 h-4 w-4" />
             {loadedProjectId ? 'Save / Edit Details' : 'Save Project'}
           </Button>
           
-          <Button className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white" onClick={() => handleDocumentDownload('invoice')}>
+          <Button className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
             <Download className="mr-2 h-4 w-4" /> Customer Invoice
+          </Button>
+
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={() => handleDocumentDownload('material')}>
+            <List className="mr-2 h-4 w-4" /> Material Schedule
+          </Button>
+
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={() => handleDocumentDownload('aggregated')}>
+            <Warehouse className="mr-2 h-4 w-4" /> Aggregated Report
+          </Button>
+
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={() => handleDocumentDownload('timber')}>
+            <Hammer className="mr-2 h-4 w-4" /> Timber Schedule
           </Button>
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100">
+              <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold">
                 <FileText className="mr-2 h-4 w-4" /> Generate Quote (AI)
               </Button>
             </DialogTrigger>
             <DialogContent>
                <form action={handleQuoteFormSubmit}>
                   <DialogHeader>
-                    <DialogTitle>Generate Monetary Quote</DialogTitle>
+                    <DialogTitle className="text-slate-900">Generate Monetary Quote</DialogTitle>
                     <DialogDescription>
                       Enter your region to get an AI-generated quote based on the
                       calculated material quantities.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="my-4">
-                    <Label htmlFor="region">Region</Label>
+                    <Label htmlFor="region" className="text-slate-900 font-bold">Region</Label>
                     <Input id="region" name="region" placeholder="e.g., Nairobi, Kenya" required/>
                     {quoteState?.error && <p className="text-sm text-destructive mt-1">{quoteState.error}</p>}
                   </div>
@@ -854,61 +866,40 @@ export function ActionsCard() {
                   <input type="hidden" name="brcRolls" value={totals.brc.rollsNeeded} />
                   <DialogFooter>
                      <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
-                     <SubmitButton><Wand2/> Generate</SubmitButton>
+                     <SubmitButton className="bg-primary hover:bg-primary/90 text-white"><Wand2/> Generate</SubmitButton>
                   </DialogFooter>
                </form>
             </DialogContent>
           </Dialog>
 
-          {/* Admin Only Actions */}
-          {typeof window !== 'undefined' && sessionStorage.getItem('admin_token') === btoa('Sila4927') && (
-            <div className="col-span-2 lg:col-span-3 mt-4 pt-4 border-t space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Admin Reports & Technicals</h4>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Button variant="outline" className="w-full text-green-700 border-green-600/50 bg-green-50/50 hover:bg-green-100 hover:text-green-800" asChild>
-                        <Link href="/profit">
-                            <Sheet className="mr-2 h-4 w-4" /> Internal Profit Report
-                        </Link>
-                    </Button>
-                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('material')}>
-                        <List className="mr-2 h-4 w-4" /> Material Schedule
-                    </Button>
-                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('promax')}>
-                        <FileDown className="mr-2 h-4 w-4" /> Promax Breakdown
-                    </Button>
-                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('aggregated')}>
-                        <Warehouse className="mr-2 h-4 w-4" /> Aggregated Report
-                    </Button>
-                    <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('timber')}>
-                        <Hammer className="mr-2 h-4 w-4" /> Timber Schedule
-                    </Button>
-                </div>
-            </div>
-          )}
-
-          <Dialog open={isQuoteResultOpen} onOpenChange={setQuoteResultOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Your Generated Quote</DialogTitle>
-                <DialogDescription>
-                  Here is the estimated quote based on your project details and region.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="my-4 rounded-md border bg-muted p-4">
-                <Textarea
-                    readOnly
-                    value={quoteState.data?.quote || 'No quote available.'}
-                    className="h-64 font-code text-sm"
-                />
-              </div>
-              <DialogFooter>
-                <Button onClick={() => setQuoteResultOpen(false)}>Close</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
+          <Button variant="outline" className="w-full bg-primary hover:bg-primary/90 text-white font-bold md:hidden lg:flex" asChild>
+              <Link href="/profit">
+                  <Sheet className="mr-2 h-4 w-4" /> Internal Profit Report
+              </Link>
+          </Button>
         </CardContent>
       </Card>
+
+      <Dialog open={isQuoteResultOpen} onOpenChange={setQuoteResultOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Your Generated Quote</DialogTitle>
+            <DialogDescription>
+              Here is the estimated quote based on your project details and region.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-4 rounded-md border bg-muted p-4">
+            <Textarea
+                readOnly
+                value={quoteState.data?.quote || 'No quote available.'}
+                className="h-64 font-code text-sm"
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setQuoteResultOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ClientInfoDialog
         open={isInvoiceDialogOpen}

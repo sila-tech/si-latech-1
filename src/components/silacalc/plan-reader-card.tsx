@@ -89,29 +89,32 @@ export function PlanReaderCard() {
   };
 
   return (
-    <Card>
+    <Card className="border-none shadow-sm">
       <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
-          <HardHat />
+        <CardTitle className="font-headline text-2xl text-slate-900 flex items-center gap-2">
+          <HardHat size={24} />
           AI Plan Reader
         </CardTitle>
         <CardDescription>
           Upload a floor plan (PDF, JPG, PNG) and the AI will automatically detect rooms and their dimensions. This will replace any existing rooms.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <Label htmlFor="plan-file">Floor Plan File</Label>
-        <Input
-          id="plan-file"
-          type="file"
-          onChange={handleFileChange}
-          accept="image/jpeg,image/png,application/pdf"
-          disabled={isProcessing}
-        />
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+            <Label htmlFor="plan-file" className="font-bold text-slate-900">Floor Plan File</Label>
+            <Input
+            id="plan-file"
+            type="file"
+            className="bg-[#eff3f8] border-none shadow-none cursor-pointer"
+            onChange={handleFileChange}
+            accept="image/jpeg,image/png,application/pdf"
+            disabled={isProcessing}
+            />
+        </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleAnalyze} className="w-full" disabled={isProcessing || !file}>
-          {isProcessing ? <Loader2 className="animate-spin" /> : <Wand2 />}
+        <Button onClick={handleAnalyze} className="w-full bg-[#707c8b] hover:bg-[#5a6470] text-white font-bold" disabled={isProcessing || !file}>
+          {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <Wand2 className="mr-2" />}
           {isProcessing ? 'Analyzing...' : 'Analyze Plan'}
         </Button>
       </CardFooter>

@@ -108,9 +108,9 @@ export function SettingsCard() {
   ];
 
   return (
-    <Card>
+    <Card className="border-none shadow-sm">
       <CardHeader>
-        <CardTitle className="font-headline">Configuration</CardTitle>
+        <CardTitle className="font-headline text-2xl text-slate-900">Configuration</CardTitle>
         <CardDescription>
           Adjust the default values for all calculations.
         </CardDescription>
@@ -119,12 +119,13 @@ export function SettingsCard() {
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           {basicSettings.map(({ key, label }) => (
             <div className="space-y-2" key={key}>
-              <Label htmlFor={key} className="text-sm">
+              <Label htmlFor={key} className="text-sm font-bold text-slate-900">
                 {label}
               </Label>
               <Input
                 id={key}
                 type="number"
+                className="bg-[#eff3f8] border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary"
                 value={settings[key as keyof CalculationDefaults]}
                 onChange={(e) =>
                   handleSettingChange(
@@ -143,16 +144,17 @@ export function SettingsCard() {
         <Separator />
 
         <div>
-          <Label className="text-base font-medium">Lintel Dimensions</Label>
+          <Label className="text-lg font-black text-slate-900">Lintel Dimensions</Label>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
             {lintelSettings.map(({ key, label }) => (
               <div className="space-y-2" key={key}>
-                <Label htmlFor={key} className="text-sm">
+                <Label htmlFor={key} className="text-sm font-bold text-slate-900">
                   {label}
                 </Label>
                 <Input
                   id={key}
                   type="number"
+                  className="bg-[#eff3f8] border-none shadow-none"
                   value={settings[key as keyof CalculationDefaults]}
                   onChange={(e) =>
                     handleSettingChange(
@@ -172,14 +174,15 @@ export function SettingsCard() {
         <Separator />
 
         <div>
-            <Label className="text-base font-medium">Lintel Steel</Label>
+            <Label className="text-lg font-black text-slate-900">Lintel Steel</Label>
             <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-2">
                 {steelSettings.map(({ key, label }) => (
                     <div className="space-y-2" key={key}>
-                        <Label htmlFor={key} className="text-sm">{label}</Label>
+                        <Label htmlFor={key} className="text-sm font-bold text-slate-900">{label}</Label>
                         <Input
                             id={key}
                             type="number"
+                            className="bg-[#eff3f8] border-none shadow-none"
                             value={settings[key as keyof CalculationDefaults]}
                             onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
                             min="0"

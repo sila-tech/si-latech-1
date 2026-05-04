@@ -75,39 +75,39 @@ export default function AdminDashboardPage() {
 
             {/* Top Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="border-none shadow-sm bg-white">
+                <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-primary">
+                        <CardDescription className="flex items-center gap-2 text-primary font-bold">
                             <TrendingUp size={16} /> Current Project Profit
                         </CardDescription>
-                        <CardTitle className="text-3xl font-bold">KSh {totals.totalProjectProfit.toLocaleString()}</CardTitle>
+                        <CardTitle className="text-4xl font-black text-slate-900">KSh {totals.totalProjectProfit.toLocaleString()}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-muted-foreground">Based on rooms currently in calculator</p>
+                        <p className="text-xs text-slate-500">Based on rooms currently in calculator</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm bg-white">
+                <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-primary">
+                        <CardDescription className="flex items-center gap-2 text-primary font-bold">
                             <Layers size={16} /> Total Saved Projects
                         </CardDescription>
-                        <CardTitle className="text-3xl font-bold">{projects?.length || 0}</CardTitle>
+                        <CardTitle className="text-4xl font-black text-slate-900">{projects?.length || 0}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-muted-foreground">Database project count</p>
+                        <p className="text-xs text-slate-500">Database project count</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm bg-white">
+                <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-primary">
+                        <CardDescription className="flex items-center gap-2 text-primary font-bold">
                             <History size={16} /> Historical Invoices
                         </CardDescription>
-                        <CardTitle className="text-3xl font-bold">{invoices?.length || 0}</CardTitle>
+                        <CardTitle className="text-4xl font-black text-slate-900">{invoices?.length || 0}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-muted-foreground">Total invoices generated</p>
+                        <p className="text-xs text-slate-500">Total invoices generated</p>
                     </CardContent>
                 </Card>
             </div>
@@ -127,43 +127,43 @@ export default function AdminDashboardPage() {
 
                 <TabsContent value="invoices" className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold font-headline text-[#0f172a]">Recent Invoices</h2>
+                        <h2 className="text-2xl font-bold font-headline text-slate-900">Recent Invoices</h2>
                     </div>
-                    <Card className="border-none shadow-sm overflow-hidden">
+                    <Card className="border border-slate-200 shadow-md overflow-hidden bg-white">
                         <Table>
-                            <TableHeader className="bg-slate-50/50 border-b">
+                            <TableHeader className="bg-slate-50 border-b">
                                 <TableRow>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Date</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Invoice #</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Client</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Project</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Amount (KSh)</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-center">Action</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Date</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Invoice #</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Client</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Project</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right text-slate-500">Amount (KSh)</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-center text-slate-500">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
-                            <TableBody>
+                            <TableBody className="bg-white">
                                 {!invoices || invoices.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-12 text-muted-foreground italic">
+                                        <TableCell colSpan={6} className="text-center py-12 text-slate-400 italic">
                                             No historical invoices found.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     invoices.map((inv) => (
-                                        <TableRow key={inv.id} className="hover:bg-slate-50 transition-colors">
-                                            <TableCell className="text-sm text-slate-500">
+                                        <TableRow key={inv.id} className="hover:bg-slate-50 transition-colors border-b">
+                                            <TableCell className="text-sm text-slate-600">
                                                 {inv.createdAt?.seconds ? format(new Date(inv.createdAt.seconds * 1000), 'dd MMM yyyy') : 'N/A'}
                                             </TableCell>
-                                            <TableCell className="text-sm font-medium text-slate-400">
+                                            <TableCell className="text-sm font-medium text-slate-500">
                                                 {inv.invoiceNumber}
                                             </TableCell>
-                                            <TableCell className="font-bold text-[#0f172a]">
+                                            <TableCell className="font-bold text-slate-900">
                                                 {inv.clientName}
                                             </TableCell>
                                             <TableCell className="text-sm text-slate-600">
                                                 {inv.projectName}
                                             </TableCell>
-                                            <TableCell className="text-right font-black text-[#0f172a]">
+                                            <TableCell className="text-right font-black text-primary">
                                                 KSh {inv.grandTotal?.toLocaleString()}
                                             </TableCell>
                                             <TableCell className="text-center">
@@ -181,47 +181,47 @@ export default function AdminDashboardPage() {
 
                 <TabsContent value="projects" className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold font-headline text-[#0f172a]">Project Database</h2>
+                        <h2 className="text-2xl font-bold font-headline text-slate-900">Project Database</h2>
                         <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
                             <Input 
                                 placeholder="Search projects..." 
-                                className="pl-8 bg-white" 
+                                className="pl-8 bg-white border-slate-200" 
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
-                    <Card className="border-none shadow-sm">
+                    <Card className="border border-slate-200 shadow-md bg-white">
                         <Table>
-                            <TableHeader className="bg-slate-50/50 border-b">
+                            <TableHeader className="bg-slate-50 border-b">
                                 <TableRow>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Project Name</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Client</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider">Status</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">View</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Project Name</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Client</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Status</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right text-slate-500">View</TableHead>
                                 </TableRow>
                             </TableHeader>
-                            <TableBody>
+                            <TableBody className="bg-white">
                                 {!filteredProjects || filteredProjects.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground italic">
+                                        <TableCell colSpan={4} className="text-center py-12 text-slate-400 italic">
                                             No projects match your search.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
                                     filteredProjects.map((p) => (
-                                        <TableRow key={p.id}>
+                                        <TableRow key={p.id} className="border-b">
                                             <TableCell className="font-bold text-primary">{p.name || 'Untitled'}</TableCell>
-                                            <TableCell className="text-sm font-medium">{p.clientName || 'N/A'}</TableCell>
+                                            <TableCell className="text-sm font-medium text-slate-700">{p.clientName || 'N/A'}</TableCell>
                                             <TableCell>
-                                                <Badge variant={p.status === 'purchased' ? 'default' : 'secondary'}>
+                                                <Badge variant={p.status === 'purchased' ? 'default' : 'secondary'} className="bg-sky-100 text-sky-700 hover:bg-sky-200 border-none">
                                                     {p.status || 'pending'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm" onClick={() => router.push(`/project/${p.id}`)}>
-                                                    <ArrowRight size={16} />
+                                                <Button variant="ghost" size="icon" onClick={() => router.push(`/project/${p.id}`)} className="text-slate-400 hover:text-primary">
+                                                    <ArrowRight size={18} />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -233,13 +233,15 @@ export default function AdminDashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="profit">
-                    <Card className="border-none shadow-sm bg-white p-8 text-center">
-                        <TrendingUp className="h-12 w-12 text-primary mx-auto mb-4" />
-                        <h3 className="text-xl font-bold mb-2">Detailed Profit Analysis</h3>
-                        <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    <Card className="border border-slate-200 shadow-lg bg-white p-12 text-center">
+                        <div className="bg-sky-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <TrendingUp className="h-10 w-10 text-primary" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-2">Detailed Profit Analysis</h3>
+                        <p className="text-slate-600 mb-8 max-w-md mx-auto">
                             Access the full financial breakdown including material margins, block commissions, and per-room profit analysis.
                         </p>
-                        <Button asChild className="bg-primary hover:bg-primary/90">
+                        <Button asChild size="lg" className="bg-primary hover:bg-primary/90 shadow-md">
                             <Link href="/profit">View Full Profit Report</Link>
                         </Button>
                     </Card>

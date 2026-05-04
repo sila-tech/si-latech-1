@@ -30,8 +30,6 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
           
           <PlanReaderCard />
 
-          <QuickQuoteCard />
-
           <div className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
             {rooms.map((room, i) => (
