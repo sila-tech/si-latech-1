@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,14 @@ export default function AdminDashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const router = useRouter();
 
-    const { data: projects, loading: projectsLoading } = useCollection<any>('projects');
+    const firestore = useFirestore();
+
+    const projectsQuery = useMemoFirebase(
+        () => query(collection(firestore, 'projects'), orderBy('createdAt', 'desc')),
+        [firestore]
+    );
+
+    const { data: projects, isLoading: projectsLoading } = useCollection<any>(projectsQuery);
 
     const filteredProjects = projects?.filter(p => 
         (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||

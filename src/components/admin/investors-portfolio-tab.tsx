@@ -7,7 +7,8 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { 
     addInvestor, 
     applyInterestToPortfolio, 
@@ -108,7 +109,12 @@ export function InvestorsPortfolioTab() {
   const [investorToDelete, setInvestorToDelete] = useState<Investor | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: investors, loading: investorsLoading } = useCollection<Investor>('investors');
+  const investorsQuery = useMemoFirebase(
+    () => query(collection(firestore, 'investors'), orderBy('createdAt', 'desc')),
+    [firestore]
+  );
+
+  const { data: investors, isLoading: investorsLoading } = useCollection<Investor>(investorsQuery);
 
   const addInvestorForm = useForm<z.infer<typeof addInvestorSchema>>({
     resolver: zodResolver(addInvestorSchema),

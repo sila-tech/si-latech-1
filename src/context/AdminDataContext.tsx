@@ -2,7 +2,8 @@
 'use client';
 
 import { createContext, useContext, ReactNode } from 'react';
-import { useCollection } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export interface AdminLoan {
   id: string;
@@ -57,8 +58,19 @@ const AdminDataContext = createContext<AdminDataContextValue>({
 });
 
 export function AdminDataProvider({ children }: { children: ReactNode }) {
-  const { data: loans, loading: loansLoading } = useCollection<AdminLoan>('loans');
-  const { data: investors, loading: investorsLoading } = useCollection<AdminInvestor>('investors');
+  const firestore = useFirestore();
+
+  const loansQuery = useMemoFirebase(
+    () => collection(firestore, 'loans'),
+    [firestore]
+  );
+  const investorsQuery = useMemoFirebase(
+    () => collection(firestore, 'investors'),
+    [firestore]
+  );
+
+  const { data: loans, isLoading: loansLoading } = useCollection<AdminLoan>(loansQuery);
+  const { data: investors, isLoading: investorsLoading } = useCollection<AdminInvestor>(investorsQuery);
 
   return (
     <AdminDataContext.Provider value={{ 
