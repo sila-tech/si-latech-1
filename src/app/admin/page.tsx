@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -27,12 +27,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
+import { generateInvoicePdf, generatePromaxPdf } from '@/lib/pdf-utils';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { MapPin } from 'lucide-react';
 
 export default function AdminDashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedProject, setSelectedProject] = useState<any>(null);
     const router = useRouter();
-    const { totals } = useCalculator();
+    const { totals: currentTotals } = useCalculator();
 
     const firestore = useFirestore();
 
@@ -47,6 +51,34 @@ export default function AdminDashboardPage() {
         [firestore]
     );
     const { data: invoices, isLoading: invoicesLoading } = useCollection<any>(invoicesQuery);
+
+    const handleDownloadSavedInvoice = (inv: any) => {
+        generateInvoicePdf({
+            invoiceNumber: inv.invoiceNumber,
+            clientInfo: {
+                clientName: inv.clientName,
+                projectName: inv.projectName,
+                projectLocation: inv.projectLocation,
+                clientContact: inv.clientContact || 'N/A',
+                contactPerson: inv.contactPerson || 'N/A'
+            },
+            totals: inv.totals,
+            perRoomCalculations: inv.rooms || []
+        });
+    };
+
+    const handleDownloadPromax = (proj: any) => {
+        generatePromaxPdf({
+            clientInfo: {
+                projectName: proj.name,
+                projectLocation: proj.projectLocation || 'N/A'
+            },
+            totals: {
+                totalBlocks: proj.rooms?.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0) || 0
+            },
+            perRoomCalculations: proj.rooms?.map((r: any) => r.roomCalcs || r) || []
+        });
+    };
 
     const filteredProjects = projects?.filter(p => 
         (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -74,25 +106,25 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Top Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <TrendingUp size={16} /> Current Project Profit
+                            <TrendingUp size={16} /> Current Profit
                         </CardDescription>
-                        <CardTitle className="text-4xl font-black text-slate-900">KSh {totals.totalProjectProfit.toLocaleString()}</CardTitle>
+                        <CardTitle className="text-3xl font-black text-slate-900">KSh {currentTotals.totalProjectProfit.toLocaleString()}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-slate-500">Based on rooms currently in calculator</p>
+                        <p className="text-xs text-slate-500">Active calculation profit</p>
                     </CardContent>
                 </Card>
 
                 <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <Layers size={16} /> Total Saved Projects
+                            <Layers size={16} /> Saved Projects
                         </CardDescription>
-                        <CardTitle className="text-4xl font-black text-slate-900">{projects?.length || 0}</CardTitle>
+                        <CardTitle className="text-3xl font-black text-slate-900">{projects?.length || 0}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-xs text-slate-500">Database project count</p>
@@ -102,28 +134,91 @@ export default function AdminDashboardPage() {
                 <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <History size={16} /> Historical Invoices
+                            <History size={16} /> Invoices
                         </CardDescription>
-                        <CardTitle className="text-4xl font-black text-slate-900">{invoices?.length || 0}</CardTitle>
+                        <CardTitle className="text-3xl font-black text-slate-900">{invoices?.length || 0}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-slate-500">Total invoices generated</p>
+                        <p className="text-xs text-slate-500">Total historical invoices</p>
+                    </CardContent>
+                </Card>
+
+                {/* Admin Actions Card */}
+                <Card className="border border-slate-200 shadow-md bg-slate-900 text-white md:col-span-1">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                             Administrative Controls
+                        </CardTitle>
+                        <CardDescription className="text-slate-400 text-xs">Technical reports & exports</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 gap-2 pt-2">
+                         <div className="flex items-center gap-2 text-xs text-slate-300 italic py-2">
+                            Select a project below to view its specific profit breakdown.
+                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <Tabs defaultValue="invoices" className="w-full">
+            <Tabs defaultValue="projects" className="w-full">
                 <TabsList className="bg-slate-100 p-1 h-12 w-auto inline-flex rounded-lg mb-8">
-                    <TabsTrigger value="invoices" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                        Invoice History
-                    </TabsTrigger>
                     <TabsTrigger value="projects" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Project Management
                     </TabsTrigger>
-                    <TabsTrigger value="profit" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                        Current Profit Detail
+                    <TabsTrigger value="invoices" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                        Invoice History
                     </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="projects" className="space-y-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <h2 className="text-2xl font-bold font-headline text-slate-900">Saved Projects</h2>
+                        <div className="relative w-full md:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input 
+                                placeholder="Search projects..." 
+                                className="pl-10"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredProjects?.map((proj) => (
+                            <Card key={proj.id} className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow bg-white overflow-hidden flex flex-col">
+                                <CardHeader className="bg-slate-50 border-b pb-4">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <CardTitle className="text-lg font-bold text-slate-900">{proj.name}</CardTitle>
+                                            <CardDescription className="text-xs">{proj.clientName || 'No Client Name'}</CardDescription>
+                                        </div>
+                                        <div className="bg-white px-2 py-1 rounded border border-slate-200 text-[10px] font-bold text-slate-500">
+                                            {proj.createdAt?.seconds ? format(new Date(proj.createdAt.seconds * 1000), 'dd MMM yy') : 'N/A'}
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="py-4 space-y-3 flex-grow">
+                                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                                        <MapPin size={14} className="text-primary" />
+                                        {proj.projectLocation || 'No location specified'}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                                        <Layers size={14} className="text-primary" />
+                                        {proj.rooms?.length || 0} Rooms / Project Areas
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="bg-slate-50 border-t p-3 grid grid-cols-2 gap-2">
+                                    <Button variant="outline" size="sm" className="bg-white font-bold text-xs" onClick={() => setSelectedProject(proj)}>
+                                        View Details
+                                    </Button>
+                                    <Button size="sm" className="bg-slate-900 hover:bg-slate-800 font-bold text-xs" onClick={() => handleDownloadPromax(proj)}>
+                                        <Download size={14} className="mr-1" /> Promax
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
 
                 <TabsContent value="invoices" className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -167,7 +262,12 @@ export default function AdminDashboardPage() {
                                                 KSh {inv.grandTotal?.toLocaleString()}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-primary">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="text-slate-400 hover:text-primary"
+                                                    onClick={() => handleDownloadSavedInvoice(inv)}
+                                                >
                                                     <Download size={16} />
                                                 </Button>
                                             </TableCell>
@@ -178,75 +278,100 @@ export default function AdminDashboardPage() {
                         </Table>
                     </Card>
                 </TabsContent>
+            </Tabs>
 
-                <TabsContent value="projects" className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold font-headline text-slate-900">Project Database</h2>
-                        <div className="relative w-full sm:w-64">
-                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
-                            <Input 
-                                placeholder="Search projects..." 
-                                className="pl-8 bg-white border-slate-200" 
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+            {/* Project Details Dialog */}
+            <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-primary">{selectedProject?.name}</DialogTitle>
+                        <p className="text-sm text-muted-foreground">{selectedProject?.clientName} — {selectedProject?.projectLocation}</p>
+                    </DialogHeader>
+                    
+                    <div className="space-y-8 py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card className="bg-slate-50 border-none">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-500">Technical Breakdown</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-slate-600">Total Area:</span>
+                                        <span className="font-bold">
+                                            {selectedProject?.rooms?.reduce((acc: number, r: any) => acc + (r.length * r.width), 0).toFixed(2)} m²
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-slate-600">Actual Beams Required:</span>
+                                        <span className="font-bold">
+                                            {selectedProject?.rooms?.reduce((acc: number, r: any) => acc + (r.roomCalcs?.actualBeamCount || 0), 0)} pcs
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-slate-600">Standard Blocks (Invoice):</span>
+                                        <span className="font-bold text-primary">
+                                            {selectedProject?.rooms?.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0).toLocaleString()} pcs
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="bg-slate-900 text-white border-none">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-400">Profit Overview</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-slate-400">Beam Profit:</span>
+                                        <span className="font-bold text-sky-400">
+                                            KSh {selectedProject?.rooms?.reduce((acc: number, r: any) => acc + (r.roomCalcs?.beamProfitValue || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-slate-400">Block Commission:</span>
+                                        <span className="font-bold text-sky-400">
+                                            KSh {selectedProject?.rooms?.reduce((acc: number, r: any) => acc + (r.roomCalcs?.blockCommission || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="border-t border-slate-700 pt-2 mt-2 flex justify-between items-center">
+                                        <span className="font-bold">Estimated Project Profit:</span>
+                                        <span className="text-xl font-black text-white">
+                                            KSh {selectedProject?.rooms?.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalRoomProfit || 0), 0).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div>
+                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                <Layers size={18} className="text-primary" />
+                                Room Breakdown
+                            </h3>
+                            <div className="space-y-3">
+                                {selectedProject?.rooms?.map((room: any, i: number) => (
+                                    <div key={i} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+                                        <div>
+                                            <p className="font-bold text-slate-900">{room.name}</p>
+                                            <p className="text-xs text-slate-500">{room.length}m x {room.width}m — {(room.length * room.width).toFixed(2)} m²</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-bold text-primary">{room.roomCalcs?.invoiceBeamCount} Beams (Invoiced)</p>
+                                            <p className="text-[10px] text-slate-400">Actual: {room.roomCalcs?.actualBeamCount} Beams</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 pt-4 border-t">
+                            <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold flex-1 h-12" onClick={() => handleDownloadPromax(selectedProject)}>
+                                <Download className="mr-2 h-5 w-5" /> Download Promax Manufacturing Order
+                            </Button>
                         </div>
                     </div>
-                    <Card className="border border-slate-200 shadow-md bg-white">
-                        <Table>
-                            <TableHeader className="bg-slate-50 border-b">
-                                <TableRow>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Project Name</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Client</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Status</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right text-slate-500">View</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody className="bg-white">
-                                {!filteredProjects || filteredProjects.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-center py-12 text-slate-400 italic">
-                                            No projects match your search.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    filteredProjects.map((p) => (
-                                        <TableRow key={p.id} className="border-b">
-                                            <TableCell className="font-bold text-primary">{p.name || 'Untitled'}</TableCell>
-                                            <TableCell className="text-sm font-medium text-slate-700">{p.clientName || 'N/A'}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={p.status === 'purchased' ? 'default' : 'secondary'} className="bg-sky-100 text-sky-700 hover:bg-sky-200 border-none">
-                                                    {p.status || 'pending'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" onClick={() => router.push(`/project/${p.id}`)} className="text-slate-400 hover:text-primary">
-                                                    <ArrowRight size={18} />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="profit">
-                    <Card className="border border-slate-200 shadow-lg bg-white p-12 text-center">
-                        <div className="bg-sky-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <TrendingUp className="h-10 w-10 text-primary" />
-                        </div>
-                        <h3 className="text-2xl font-black text-slate-900 mb-2">Detailed Profit Analysis</h3>
-                        <p className="text-slate-600 mb-8 max-w-md mx-auto">
-                            Access the full financial breakdown including material margins, block commissions, and per-room profit analysis.
-                        </p>
-                        <Button asChild size="lg" className="bg-primary hover:bg-primary/90 shadow-md">
-                            <Link href="/profit">View Full Profit Report</Link>
-                        </Button>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

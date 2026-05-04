@@ -196,26 +196,46 @@ export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
   opts: Partial<CalculationDefaults> = {},
-  beamPricePerMeter: number = 545
+  beamPricePerMeter: number = 750,
+  roomName: string = ''
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
+  const area = lengthMeters * widthMeters;
 
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
+  // --- 1. GEOMETRIC PHYSICAL CALCULATION (Actual Layout) ---
   const beamSpaces = longer > 0 && C.beamSpacing > 0 ? ceil(longer / C.beamSpacing) : 0;
-  
   const actualBeamCount = beamSpaces > 0 ? beamSpaces + 1 : 0;
-  const profitBeams = C.profitBeamsPerRoom;
-  const invoiceBeamCount = actualBeamCount + profitBeams;
-
   const blocksPerBeamRow = shorter > 0 && C.blockWidth > 0 ? ceil(shorter / C.blockWidth) : 0;
-  const totalBlocks = beamSpaces * blocksPerBeamRow;
   
+  const actualTotalBlocks = beamSpaces * blocksPerBeamRow;
   const actualTotalBeamLength = actualBeamCount * shorter;
-  const invoiceTotalBeamLength = invoiceBeamCount * shorter;
-  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
 
+  // --- 2. HARDCODED CONDITIONAL BILLING ---
+  let invoiceTotalBeamLength: number;
+  let invoiceBeamCount: number;
+  
+  // Detect if this is a "Quick Quote" (Meter Square) or a manual "Room"
+  const isAreaMode = roomName.toLowerCase().includes('project area');
+
+  if (isAreaMode) {
+    // METRE SQUARE MODE: Multiply Area by 2.4
+    invoiceTotalBeamLength = area * 2.4;
+    invoiceBeamCount = shorter > 0 ? ceil(invoiceTotalBeamLength / shorter) : 0;
+  } else {
+    // ROOM MODE: Actual Beams + 2 Beams
+    const profitBeamsPerRoom = 2;
+    invoiceBeamCount = actualBeamCount + profitBeamsPerRoom;
+    invoiceTotalBeamLength = invoiceBeamCount * shorter;
+  }
+
+  // Blocks remain constant at 10 blocks per m2 as agreed
+  const totalBlocks = ceil(area * 10);
+
+  // --- 3. PROFIT CALCULATION ---
+  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
   const beamProfitValue = profitBeamLength * beamPricePerMeter;
   const blockCommission = totalBlocks * C.blockCommissionRate;
   const totalRoomProfit = beamProfitValue + blockCommission;
@@ -226,7 +246,7 @@ export function calcRoomBlocksAndBeams(
     shorter,
     longer,
     actualBeamCount,
-    profitBeams,
+    profitBeams: invoiceBeamCount - actualBeamCount,
     invoiceBeamCount,
     beamSpaces,
     blocksPerBeamRow,

@@ -235,6 +235,7 @@ const LoadProjectDialog = () => {
 export function ActionsCard() {
   const router = useRouter();
   const {
+    rooms,
     totals,
     perRoomCalculations,
     aggregatedBreakdown,
@@ -423,18 +424,35 @@ export function ActionsCard() {
     setInvoiceDialogOpen(false);
 
     // Save to Admin section
-    const { firestore } = initializeFirebase(); // Quick access to firestore
+    const { firestore } = initializeFirebase();
     saveGeneratedInvoice(firestore, {
         invoiceNumber,
         clientName: clientInfo.clientName,
         projectName: clientInfo.projectName,
         projectLocation: clientInfo.projectLocation,
+        clientContact: clientInfo.clientContact,
+        contactPerson: clientInfo.contactPerson,
         grandTotal,
+        totals, // Full snapshot of totals
+        rooms,  // Full snapshot of rooms
         items: {
             blocks: totals.totalBlocks,
             beamsLength: totals.totalInvoiceBeamLength
         }
-    }).catch(console.error);
+    }).then(() => {
+        toast({
+            title: "Invoice Archived",
+            description: `Invoice #${invoiceNumber} has been saved to the admin database.`,
+            variant: "default",
+        });
+    }).catch((err) => {
+        console.error(err);
+        toast({
+            title: "Archiving Failed",
+            description: "Invoice was downloaded but could not be saved to the database.",
+            variant: "destructive",
+        });
+    });
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
@@ -516,12 +534,15 @@ export function ActionsCard() {
 
   const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
-    const primaryColor = '#095388';
+    const primaryColor = '#0f172a'; // Slate-900
+    const accentColor = '#0ea5e9'; // Sky Blue
+    
     addPdfBackground(doc);
     addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
     
+    // Aggregate beams by length
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
         const length = p.roomCalcs.shorter;
@@ -529,50 +550,61 @@ export function ActionsCard() {
         beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);
     });
 
-    const tableColumn = ['BEAM LENGTH (m)', 'TOTAL PIECES'];
-    const tableRows = Array.from(beamAggregates.entries())
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(primaryColor);
+    doc.text('PROMAX MANUFACTURING ORDER', 14, 40);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Project: ${clientInfo.projectName}`, 14, 50);
+    doc.text(`Location: ${clientInfo.projectLocation}`, 14, 55);
+    doc.text(`Date: ${reportDate}`, 14, 60);
+    doc.text(`Order ID: ${reportNumber}`, 145, 60);
+
+    // Beams Table
+    const beamColumn = ['DESCRIPTION', 'LENGTH (M)', 'QUANTITY', 'TOTAL LM'];
+    const beamRows = Array.from(beamAggregates.entries())
         .sort((a, b) => a[0] - b[0])
         .map(([length, count]) => ([
+            'Prestressed Beam',
             length.toFixed(2),
-            count.toString()
+            `${count} pcs`,
+            (length * count).toFixed(2)
         ]));
 
-    const totalPieces = tableRows.reduce((sum, row) => sum + parseInt(row[1]), 0);
-
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(primaryColor);
-    doc.text('Promax Manufacturing Order', 60, 22);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 55);
-    doc.text(`Date: ${reportDate}`, 14, 60);
-
     (doc as any).autoTable({
-        head: [tableColumn],
-        body: tableRows,
+        head: [beamColumn],
+        body: beamRows,
         startY: 70,
         theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        headStyles: { fillColor: primaryColor, textColor: 255 },
         styles: { fontSize: 10 },
         columnStyles: {
-            1: { halign: 'right' },
+            1: { halign: 'center' },
+            2: { halign: 'center' },
+            3: { halign: 'right' },
         }
     });
 
-    let finalY = (doc as any).lastAutoTable.finalY;
+    let finalY = (doc as any).lastAutoTable.finalY + 15;
 
-    doc.setFontSize(10);
+    // Blocks Section
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Beam Pieces:', 14, finalY + 10);
-    doc.text(`${totalPieces} pcs`, 196, finalY + 10, { align: 'right' });
+    doc.setFontSize(12);
+    doc.text('TOTAL BLOCK REQUIREMENTS:', 14, finalY);
+    doc.text(`${totals.totalBlocks.toLocaleString()} pcs`, 196, finalY, { align: 'right' });
     
-    doc.setFont('helvetica', 'normal');
+    finalY += 10;
+    doc.setDrawColor(200);
+    doc.line(14, finalY, 196, finalY);
+
+    finalY += 15;
+
     doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
     doc.setTextColor(100);
-    doc.text('This breakdown is for manufacturing purposes and contains the exact beam quantities and lengths to be produced.', 14, finalY + 20);
+    doc.text('Note: Beam quantities are based on actual physical room spans. Block quantities include standard project allowance.', 14, finalY);
 
     doc.save(`Promax-Breakdown-${reportNumber}.pdf`);
     setBreakdownDialogOpen(false);
@@ -824,20 +856,8 @@ export function ActionsCard() {
             {loadedProjectId ? 'Save / Edit Details' : 'Save Project'}
           </Button>
           
-          <Button className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
-            <Download className="mr-2 h-4 w-4" /> Customer Invoice
-          </Button>
-
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={() => handleDocumentDownload('material')}>
-            <List className="mr-2 h-4 w-4" /> Material Schedule
-          </Button>
-
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={() => handleDocumentDownload('aggregated')}>
-            <Warehouse className="mr-2 h-4 w-4" /> Aggregated Report
-          </Button>
-
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={() => handleDocumentDownload('timber')}>
-            <Hammer className="mr-2 h-4 w-4" /> Timber Schedule
+          <Button id="real-invoice-btn" className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
+            <Download className="mr-2 h-4 w-4" /> Download Invoice
           </Button>
 
           <Dialog>
@@ -871,12 +891,6 @@ export function ActionsCard() {
                </form>
             </DialogContent>
           </Dialog>
-
-          <Button variant="outline" className="w-full bg-primary hover:bg-primary/90 text-white font-bold md:hidden lg:flex" asChild>
-              <Link href="/profit">
-                  <Sheet className="mr-2 h-4 w-4" /> Internal Profit Report
-              </Link>
-          </Button>
         </CardContent>
       </Card>
 

@@ -51,30 +51,33 @@ export function QuickQuoteCard() {
   };
 
   return (
-    <Card>
+    <Card className="border-none shadow-sm">
       <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
-          <Calculator />
+        <CardTitle className="font-headline text-2xl text-slate-900 flex items-center gap-2">
+          <Calculator size={24} />
           Quick Quote Generator
         </CardTitle>
         <CardDescription>
           Generate a full project estimate from a single total area value. This will replace any existing rooms.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <Label htmlFor="total-area">Total Project Area (m²)</Label>
-        <Input
-          id="total-area"
-          type="number"
-          value={area}
-          onChange={(e) => setArea(parseFloat(e.target.value) || '')}
-          placeholder="e.g., 150"
-          min="0"
-        />
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+            <Label htmlFor="total-area" className="font-bold text-slate-900">Total Project Area (m²)</Label>
+            <Input
+            id="total-area"
+            type="number"
+            value={area}
+            onChange={(e) => setArea(parseFloat(e.target.value) || '')}
+            placeholder="e.g., 150"
+            min="0"
+            className="bg-[#eff3f8] border-none shadow-none"
+            />
+        </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleGenerate} className="w-full">
-          <Wand2 />
+        <Button onClick={handleGenerate} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold h-12 shadow-md">
+          <Wand2 className="mr-2" />
           Generate Estimate
         </Button>
       </CardFooter>

@@ -77,51 +77,6 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
           </div>
         </div>
       </CardContent>
-      <Separator />
-      <CardFooter className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 text-sm">
-         <div className="flex items-center gap-2">
-            <BrickWall className="h-5 w-5 text-primary" />
-            <div>
-                <div className="font-semibold">{roomCalcs.totalBlocks}</div>
-                <div className="text-muted-foreground">Blocks</div>
-            </div>
-         </div>
-         <div className="flex items-center gap-2">
-            <MoveHorizontal className="h-5 w-5 text-primary" />
-            <div>
-                <div className="font-semibold">{roomCalcs.actualTotalBeamLength.toFixed(2)}m</div>
-                <div className="text-muted-foreground">Actual Beams</div>
-            </div>
-         </div>
-         <div className="flex items-center gap-2">
-            <Beaker className="h-5 w-5 text-primary" />
-            <div>
-                <div className="font-semibold">{concreteCalcs.wetVolume.toFixed(3)}m³</div>
-                <div className="text-muted-foreground">Concrete</div>
-            </div>
-         </div>
-         <div className="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M20 9V7a2 2 0 0 0-2-2h-3"/><path d="M4 15v2a2 2 0 0 0 2 2h3"/><path d="M20 15v2a2 2 0 0 1-2 2h-3"/><path d="M4 9V7a2 2 0 0 1 2-2h3"/><rect width="6" height="6" x="9" y="9"/></svg>
-            <div>
-                <div className="font-semibold">{concreteCalcs.area.toFixed(2)}m²</div>
-                <div className="text-muted-foreground">Area</div>
-            </div>
-         </div>
-         <div className="flex items-center gap-2">
-            <Hammer className="h-5 w-5 text-amber-500" />
-            <div>
-                <div className="font-semibold">{timberCalcs.total3x2m.toFixed(2)}m</div>
-                <div className="text-muted-foreground">3x2 Timber</div>
-            </div>
-         </div>
-         <div className="flex items-center gap-2">
-            <Hammer className="h-5 w-5 text-amber-500" />
-            <div>
-                <div className="font-semibold">{timberCalcs.total6x1m.toFixed(2)}m</div>
-                <div className="text-muted-foreground">6x1 Timber</div>
-            </div>
-         </div>
-      </CardFooter>
     </Card>
   );
 }
