@@ -121,3 +121,12 @@ export async function deleteInvestor(db: Firestore, investorId: string) {
     const docRef = doc(db, 'investors', investorId);
     return await deleteDoc(docRef);
 }
+
+// Invoices
+export async function saveGeneratedInvoice(db: Firestore, data: any) {
+    const colRef = collection(db, 'invoices');
+    return await addDoc(colRef, {
+        ...data,
+        createdAt: serverTimestamp()
+    });
+}

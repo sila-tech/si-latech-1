@@ -50,8 +50,9 @@ import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase, initializeFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
+import { saveGeneratedInvoice } from '@/lib/firestore';
 import type { ProjectData } from '@/context/calculator-context';
 
 
@@ -420,6 +421,20 @@ export function ActionsCard() {
 
     doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
     setInvoiceDialogOpen(false);
+
+    // Save to Admin section
+    const { firestore } = initializeFirebase(); // Quick access to firestore
+    saveGeneratedInvoice(firestore, {
+        invoiceNumber,
+        clientName: clientInfo.clientName,
+        projectName: clientInfo.projectName,
+        projectLocation: clientInfo.projectLocation,
+        grandTotal,
+        items: {
+            blocks: totals.totalBlocks,
+            beamsLength: totals.totalInvoiceBeamLength
+        }
+    }).catch(console.error);
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
