@@ -798,47 +798,47 @@ export function ActionsCard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <Button variant="outline" className="w-full" onClick={handleCreateNew}>
-            <FilePlus /> New Project
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={handleCreateNew}>
+            <FilePlus className="mr-2 h-4 w-4" /> New Project
           </Button>
 
           <LoadProjectDialog />
 
-          <Button variant="default" className="w-full" onClick={handleSaveClick}>
-            <Save />
+          <Button className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white" onClick={handleSaveClick}>
+            <Save className="mr-2 h-4 w-4" />
             {loadedProjectId ? 'Save / Edit Details' : 'Save Project'}
           </Button>
           
-          <Button variant="secondary" className="w-full" onClick={() => handleDocumentDownload('invoice')}>
-            <Download /> Customer Invoice
+          <Button className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white" onClick={() => handleDocumentDownload('invoice')}>
+            <Download className="mr-2 h-4 w-4" /> Customer Invoice
           </Button>
           
-          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('material')}>
-            <List /> Material Schedule
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('material')}>
+            <List className="mr-2 h-4 w-4" /> Material Schedule
           </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('promax')}>
-              <FileDown /> Promax Breakdown
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('promax')}>
+              <FileDown className="mr-2 h-4 w-4" /> Promax Breakdown
           </Button>
           
-          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('aggregated')}>
-              <Warehouse /> Aggregated Report
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('aggregated')}>
+              <Warehouse className="mr-2 h-4 w-4" /> Aggregated Report
           </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => handleDocumentDownload('timber')}>
-              <Hammer /> Timber Schedule
+          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100" onClick={() => handleDocumentDownload('timber')}>
+              <Hammer className="mr-2 h-4 w-4" /> Timber Schedule
           </Button>
           
-          <Button variant="outline" className="w-full text-green-600 border-green-600/50 hover:bg-green-100 hover:text-green-700" asChild>
+          <Button variant="outline" className="w-full text-green-700 border-green-600/50 bg-green-50/50 hover:bg-green-100 hover:text-green-800" asChild>
             <Link href="/profit">
-              <Sheet /> Internal Report
+              <Sheet className="mr-2 h-4 w-4" /> Internal Report
             </Link>
           </Button>
           
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="accent" className="w-full col-span-2 lg:col-span-1">
-                <FileText /> Generate Quote (AI)
+              <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 col-span-2 lg:col-span-1">
+                <FileText className="mr-2 h-4 w-4" /> Generate Quote (AI)
               </Button>
             </DialogTrigger>
             <DialogContent>
