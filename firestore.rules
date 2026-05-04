@@ -10,22 +10,8 @@ service cloud.firestore {
       allow update: if exists(/databases/$(database)/documents/projects/$(projectId));
       allow delete: if false;
     }
-    
-    // Admin collections
-    match /investors/{investorId} {
-      allow read, write: if true;
-    }
-    match /investors/{document=**} {
-      allow read, write: if true;
-    }
 
-    match /loans/{loanId} {
-      allow read, write: if true;
-    }
-    match /loans/{document=**} {
-      allow read, write: if true;
-    }
-
+    // Invoices collection
     match /invoices/{invoiceId} {
       allow read, write: if true;
     }

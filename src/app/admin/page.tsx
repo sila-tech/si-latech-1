@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
         <div className="max-w-7xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-black font-headline text-[#095388] tracking-tight">Admin Dashboard</h1>
+                    <h1 className="text-4xl font-black font-headline text-primary tracking-tight">Admin Dashboard</h1>
                     <p className="text-muted-foreground">Management overview for SI-LATECH operations.</p>
                 </div>
                 <Button asChild variant="outline" className="bg-white hover:bg-slate-50 border-slate-200">
@@ -77,7 +77,7 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="border-none shadow-sm bg-white">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-[#f59e0b]">
+                        <CardDescription className="flex items-center gap-2 text-primary">
                             <TrendingUp size={16} /> Current Project Profit
                         </CardDescription>
                         <CardTitle className="text-3xl font-bold">KSh {totals.totalProjectProfit.toLocaleString()}</CardTitle>
@@ -89,7 +89,7 @@ export default function AdminDashboardPage() {
 
                 <Card className="border-none shadow-sm bg-white">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-[#095388]">
+                        <CardDescription className="flex items-center gap-2 text-primary">
                             <Layers size={16} /> Total Saved Projects
                         </CardDescription>
                         <CardTitle className="text-3xl font-bold">{projects?.length || 0}</CardTitle>
@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
 
                 <Card className="border-none shadow-sm bg-white">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-[#f59e0b]">
+                        <CardDescription className="flex items-center gap-2 text-primary">
                             <History size={16} /> Historical Invoices
                         </CardDescription>
                         <CardTitle className="text-3xl font-bold">{invoices?.length || 0}</CardTitle>
@@ -164,10 +164,10 @@ export default function AdminDashboardPage() {
                                                 {inv.projectName}
                                             </TableCell>
                                             <TableCell className="text-right font-black text-[#0f172a]">
-                                                {inv.grandTotal?.toLocaleString()}
+                                                KSh {inv.grandTotal?.toLocaleString()}
                                             </TableCell>
                                             <TableCell className="text-center">
-                                                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-[#095388]">
+                                                <Button variant="ghost" size="sm" className="text-slate-400 hover:text-primary">
                                                     <Download size={16} />
                                                 </Button>
                                             </TableCell>
@@ -212,7 +212,7 @@ export default function AdminDashboardPage() {
                                 ) : (
                                     filteredProjects.map((p) => (
                                         <TableRow key={p.id}>
-                                            <TableCell className="font-bold text-[#095388]">{p.name || 'Untitled'}</TableCell>
+                                            <TableCell className="font-bold text-primary">{p.name || 'Untitled'}</TableCell>
                                             <TableCell className="text-sm font-medium">{p.clientName || 'N/A'}</TableCell>
                                             <TableCell>
                                                 <Badge variant={p.status === 'purchased' ? 'default' : 'secondary'}>
@@ -234,12 +234,12 @@ export default function AdminDashboardPage() {
 
                 <TabsContent value="profit">
                     <Card className="border-none shadow-sm bg-white p-8 text-center">
-                        <TrendingUp className="h-12 w-12 text-[#f59e0b] mx-auto mb-4" />
+                        <TrendingUp className="h-12 w-12 text-primary mx-auto mb-4" />
                         <h3 className="text-xl font-bold mb-2">Detailed Profit Analysis</h3>
                         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                             Access the full financial breakdown including material margins, block commissions, and per-room profit analysis.
                         </p>
-                        <Button asChild className="bg-[#095388] hover:bg-[#07426d]">
+                        <Button asChild className="bg-primary hover:bg-primary/90">
                             <Link href="/profit">View Full Profit Report</Link>
                         </Button>
                     </Card>
