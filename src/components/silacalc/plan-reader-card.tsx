@@ -89,35 +89,44 @@ export function PlanReaderCard() {
   };
 
   return (
-    <Card className="border-none shadow-sm">
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl text-slate-900 flex items-center gap-2">
-          <HardHat size={24} />
-          AI Plan Reader
-        </CardTitle>
-        <CardDescription>
-          Upload a floor plan (PDF, JPG, PNG) and the AI will automatically detect rooms and their dimensions. This will replace any existing rooms.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-            <Label htmlFor="plan-file" className="font-bold text-slate-900">Floor Plan File</Label>
-            <Input
-            id="plan-file"
-            type="file"
-            className="bg-[#eff3f8] border-none shadow-none cursor-pointer"
-            onChange={handleFileChange}
-            accept="image/jpeg,image/png,application/pdf"
-            disabled={isProcessing}
-            />
+    <div className="relative group">
+        <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center rounded-xl transition-all border-2 border-dashed border-slate-200">
+            <div className="bg-white px-6 py-3 rounded-full shadow-lg border border-slate-100 transform rotate-[-2deg]">
+                <span className="text-sm font-black text-slate-900 tracking-widest uppercase">Coming Soon</span>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-4 font-bold uppercase tracking-tighter">Under Construction</p>
         </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={handleAnalyze} className="w-full bg-[#707c8b] hover:bg-[#5a6470] text-white font-bold" disabled={isProcessing || !file}>
-          {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <Wand2 className="mr-2" />}
-          {isProcessing ? 'Analyzing...' : 'Analyze Plan'}
-        </Button>
-      </CardFooter>
-    </Card>
+
+        <Card className="border-none shadow-sm opacity-40 grayscale-[0.5]">
+        <CardHeader>
+            <CardTitle className="font-headline text-2xl text-slate-900 flex items-center gap-2">
+            <HardHat size={24} />
+            AI Plan Reader
+            </CardTitle>
+            <CardDescription>
+            Upload a floor plan (PDF, JPG, PNG) and the AI will automatically detect rooms and their dimensions. This will replace any existing rooms.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="plan-file" className="font-bold text-slate-900">Floor Plan File</Label>
+                <Input
+                id="plan-file"
+                type="file"
+                className="bg-[#eff3f8] border-none shadow-none cursor-not-allowed"
+                onChange={handleFileChange}
+                accept="image/jpeg,image/png,application/pdf"
+                disabled={true}
+                />
+            </div>
+        </CardContent>
+        <CardFooter>
+            <Button className="w-full bg-[#707c8b] hover:bg-[#5a6470] text-white font-bold cursor-not-allowed" disabled={true}>
+            <Wand2 className="mr-2" />
+            Analyze Plan
+            </Button>
+        </CardFooter>
+        </Card>
+    </div>
   );
 }

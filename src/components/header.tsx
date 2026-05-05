@@ -18,7 +18,7 @@ export function Header() {
 
         <div className="hidden md:flex flex-col items-end">
           <span className="text-sm font-black uppercase tracking-tighter text-slate-900">Beam to Beam Calculator</span>
-          <span className="text-[10px] font-medium text-slate-400">Get Instant Quotes & Invoices</span>
+          <span className="text-[10px] font-medium text-slate-400">Get Instant Official Quotes</span>
         </div>
       </div>
     </header>

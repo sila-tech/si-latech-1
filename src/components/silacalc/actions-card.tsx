@@ -52,7 +52,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
 import { useCollection, useFirebase, useMemoFirebase, initializeFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { saveGeneratedInvoice } from '@/lib/firestore';
+import { saveGeneratedQuote } from '@/lib/firestore';
 import type { ProjectData } from '@/context/calculator-context';
 
 
@@ -297,7 +297,7 @@ export function ActionsCard() {
     let currentY = 15;
     
     const BLOCK_PRICE = 85;
-    const BEAM_PRICE_PER_METER = 545;
+    const BEAM_PRICE_PER_METER = 145;
 
     const blocksTotal = totals.totalBlocks * BLOCK_PRICE;
     const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
@@ -308,7 +308,7 @@ export function ActionsCard() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('Beam & Block Slab Quotation', 60, 22);
+    doc.text('OFFICIAL QUOTE', 60, 22);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -323,7 +323,7 @@ export function ActionsCard() {
     
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
-    doc.text('INVOICE TO', invoiceToX, currentY);
+    doc.text('QUOTE TO', invoiceToX, currentY);
     doc.text('SHIP / SITE TO', shipToX, currentY);
     currentY += 6;
 
@@ -341,7 +341,7 @@ export function ActionsCard() {
     doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, currentY);
     
     const metaY = currentY + 10;
-    doc.text(`Invoice No.:`, 14, metaY);
+    doc.text(`Quote No.:`, 14, metaY);
     doc.text(`Date:`, 14, metaY + 5);
     doc.text(`Terms:`, 14, metaY + 10);
     doc.text(`Due Date:`, 14, metaY + 15);
@@ -420,12 +420,12 @@ export function ActionsCard() {
     doc.text('5. Optional: We can provide a plumber or electrician to be paid by the client if the client is interested.', 14, notesY);
 
 
-    doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
+    doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
     setInvoiceDialogOpen(false);
 
     // Save to Admin section
     const { firestore } = initializeFirebase();
-    saveGeneratedInvoice(firestore, {
+    saveGeneratedQuote(firestore, {
         invoiceNumber,
         clientName: clientInfo.clientName,
         projectName: clientInfo.projectName,
@@ -441,15 +441,15 @@ export function ActionsCard() {
         }
     }).then(() => {
         toast({
-            title: "Invoice Archived",
-            description: `Invoice #${invoiceNumber} has been saved to the admin database.`,
+            title: "Quote Archived",
+            description: `Quote #${invoiceNumber} has been saved to the admin database.`,
             variant: "default",
         });
     }).catch((err) => {
         console.error(err);
         toast({
             title: "Archiving Failed",
-            description: "Invoice was downloaded but could not be saved to the database.",
+            description: "Quote was downloaded but could not be saved to the database.",
             variant: "destructive",
         });
     });
@@ -857,7 +857,7 @@ export function ActionsCard() {
           </Button>
           
           <Button id="real-invoice-btn" className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
-            <Download className="mr-2 h-4 w-4" /> Download Invoice
+            <Download className="mr-2 h-4 w-4" /> Download Quote
           </Button>
 
           <Dialog>
@@ -919,8 +919,8 @@ export function ActionsCard() {
         open={isInvoiceDialogOpen}
         onOpenChange={setInvoiceDialogOpen}
         onGenerateClick={handleDownloadInvoice}
-        title="Download Customer Invoice"
-        description="Please confirm or update the client details for the invoice."
+        title="Download Customer Quote"
+        description="Please confirm or update the client details for the quote."
       />
       <ClientInfoDialog
         open={isScheduleDialogOpen}

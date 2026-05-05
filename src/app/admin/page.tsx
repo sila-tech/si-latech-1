@@ -27,7 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
-import { generateInvoicePdf, generatePromaxPdf } from '@/lib/pdf-utils';
+import { generateQuotePdf, generatePromaxPdf } from '@/lib/pdf-utils';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MapPin } from 'lucide-react';
@@ -47,13 +47,13 @@ export default function AdminDashboardPage() {
     const { data: projects, isLoading: projectsLoading } = useCollection<any>(projectsQuery);
 
     const invoicesQuery = useMemoFirebase(
-        () => query(collection(firestore, 'invoices'), orderBy('createdAt', 'desc')),
+        () => query(collection(firestore, 'quotes'), orderBy('createdAt', 'desc')),
         [firestore]
     );
     const { data: invoices, isLoading: invoicesLoading } = useCollection<any>(invoicesQuery);
 
-    const handleDownloadSavedInvoice = (inv: any) => {
-        generateInvoicePdf({
+    const handleDownloadSavedQuote = (inv: any) => {
+        generateQuotePdf({
             invoiceNumber: inv.invoiceNumber,
             clientInfo: {
                 clientName: inv.clientName,
@@ -134,12 +134,12 @@ export default function AdminDashboardPage() {
                 <Card className="border border-slate-200 shadow-md bg-white">
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <History size={16} /> Invoices
+                            <History size={16} /> Saved Quotes
                         </CardDescription>
                         <CardTitle className="text-3xl font-black text-slate-900">{invoices?.length || 0}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-slate-500">Total historical invoices</p>
+                        <p className="text-xs text-slate-500">Total historical quotes</p>
                     </CardContent>
                 </Card>
 
@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
                         Project Management
                     </TabsTrigger>
                     <TabsTrigger value="invoices" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                        Invoice History
+                        Quote History
                     </TabsTrigger>
                 </TabsList>
 
@@ -222,14 +222,14 @@ export default function AdminDashboardPage() {
 
                 <TabsContent value="invoices" className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-bold font-headline text-slate-900">Recent Invoices</h2>
+                        <h2 className="text-2xl font-bold font-headline text-slate-900">Recent Quotes</h2>
                     </div>
                     <Card className="border border-slate-200 shadow-md overflow-hidden bg-white">
                         <Table>
                             <TableHeader className="bg-slate-50 border-b">
                                 <TableRow>
                                     <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Date</TableHead>
-                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Invoice #</TableHead>
+                                    <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Quote #</TableHead>
                                     <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Client</TableHead>
                                     <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Project</TableHead>
                                     <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right text-slate-500">Amount (KSh)</TableHead>
@@ -240,7 +240,7 @@ export default function AdminDashboardPage() {
                                 {!invoices || invoices.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-12 text-slate-400 italic">
-                                            No historical invoices found.
+                                            No historical quotes found.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -266,7 +266,7 @@ export default function AdminDashboardPage() {
                                                     variant="ghost" 
                                                     size="sm" 
                                                     className="text-slate-400 hover:text-primary"
-                                                    onClick={() => handleDownloadSavedInvoice(inv)}
+                                                    onClick={() => handleDownloadSavedQuote(inv)}
                                                 >
                                                     <Download size={16} />
                                                 </Button>

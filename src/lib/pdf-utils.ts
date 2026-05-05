@@ -19,7 +19,7 @@ export const addPdfBackground = (doc: jsPDF) => {
     }
 };
 
-export const generateInvoicePdf = (data: {
+export const generateQuotePdf = (data: {
     invoiceNumber: string;
     clientInfo: {
         clientName: string;
@@ -51,7 +51,7 @@ export const generateInvoicePdf = (data: {
     // Header Info
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('ESTIMATE / INVOICE', 145, 14);
+    doc.text('OFFICIAL QUOTE', 145, 14);
     doc.setFontSize(14);
     doc.setTextColor(primaryColor);
     doc.text(`#${invoiceNumber}`, 145, 22);
@@ -87,9 +87,8 @@ export const generateInvoicePdf = (data: {
     // Table
     const tableColumn = ['DESCRIPTION', 'QTY', 'UNIT', 'RATE', 'AMOUNT'];
     const tableRows = [
-        ['Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', '750.00', ((safeTotals.totalInvoiceBeamLength || 0) * 750).toLocaleString()],
-        ['Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', '135.00', ((safeTotals.totalBlocks || 0) * 135).toLocaleString()],
-        ['Technician Installation Fee', (safeTotals.totalArea || 0).toFixed(2), 'm²', '150.00', ((safeTotals.totalArea || 0) * 150).toLocaleString()],
+        ['Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', '145.00', ((safeTotals.totalInvoiceBeamLength || 0) * 145).toLocaleString()],
+        ['Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', '85.00', ((safeTotals.totalBlocks || 0) * 85).toLocaleString()],
     ];
 
     (doc as any).autoTable({
@@ -108,7 +107,7 @@ export const generateInvoicePdf = (data: {
     });
 
     let finalY = (doc as any).lastAutoTable.finalY + 10;
-    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * 750) + ((safeTotals.totalBlocks || 0) * 135) + ((safeTotals.totalArea || 0) * 150);
+    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * 145) + ((safeTotals.totalBlocks || 0) * 85);
 
     // Totals Section
     const totalsX = 145;
@@ -117,7 +116,7 @@ export const generateInvoicePdf = (data: {
     doc.text('GRAND TOTAL: ', totalsX, finalY, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString()}`, totalsValueX, finalY, { align: 'right' });
 
-    doc.save(`SI-LATECH-Invoice-${invoiceNumber}.pdf`);
+    doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
     return true;
 };
 

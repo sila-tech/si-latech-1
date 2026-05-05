@@ -51,7 +51,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                 }} 
                 className="flex-1 bg-[#f59e0b] hover:bg-[#d97706] text-white font-black shadow-md h-12"
             >
-                <Download className="mr-2 h-5 w-5" /> Download Invoice
+                <Download className="mr-2 h-5 w-5" /> Download Quote
             </Button>
           </div>
 

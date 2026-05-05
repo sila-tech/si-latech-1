@@ -6,9 +6,9 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 
-// Invoices
-export async function saveGeneratedInvoice(db: Firestore, data: any) {
-    const colRef = collection(db, 'invoices');
+// Quotes
+export async function saveGeneratedQuote(db: Firestore, data: any) {
+    const colRef = collection(db, 'quotes');
     return await addDoc(colRef, {
         ...data,
         createdAt: serverTimestamp()
