@@ -151,20 +151,48 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
 };
 
 const addLogoToPdf = (doc: jsPDF, color: string) => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(color);
-    doc.text('SI-LATECH', 14, 22);
+    try {
+        // Reduced size and adjusted position to avoid header overlap
+        doc.addImage('/logo.png', 'PNG', 14, 5, 18, 18);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(color);
+        doc.text('SI-LATECH', 35, 18);
+    } catch (e) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(color);
+        doc.text('SI-LATECH', 14, 22);
+    }
 };
 
 
 const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
-    const backgroundColor = '#f2f5f9'; // HSL(210, 40%, 96.1%)
-    doc.setFillColor(backgroundColor);
+    const backgroundColor = '#ffffff';
+    
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        doc.setFillColor(backgroundColor);
         doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
+        
+        try {
+            // Add a very faint "blurred" watermark in the center of the page
+            // We use GState for transparency if supported by the environment
+            if ((doc as any).setGState) {
+                const gState = new (doc as any).GState({ opacity: 0.03 });
+                (doc as any).setGState(gState);
+            }
+            doc.addImage('/logo.png', 'PNG', 45, 90, 120, 120, undefined, 'FAST');
+            
+            // Reset state
+            if ((doc as any).setGState) {
+                const gStateReset = new (doc as any).GState({ opacity: 1.0 });
+                (doc as any).setGState(gStateReset);
+            }
+        } catch (e) {
+            // Skip watermark if image or GState is missing
+        }
     }
 };
 
@@ -297,7 +325,7 @@ export function ActionsCard() {
     let currentY = 15;
     
     const BLOCK_PRICE = 85;
-    const BEAM_PRICE_PER_METER = 145;
+    const BEAM_PRICE_PER_METER = 545;
 
     const blocksTotal = totals.totalBlocks * BLOCK_PRICE;
     const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
@@ -308,14 +336,19 @@ export function ActionsCard() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(primaryColor);
-    doc.text('OFFICIAL QUOTE', 60, 22);
+    doc.text('OFFICIAL QUOTE', 75, 22); // Pushed further right to avoid SI-LATECH overlap
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text('Head Office: Juja, Kenya', 145, 22);
-    doc.text('Tel: +254 741 557960', 145, 27);
+    doc.text('Tel: +254 701 792088', 145, 27);
     doc.text('Email: info@silatech.co.ke', 145, 32);
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38); // Moved down to avoid header overlap
 
     currentY = 60;
     const invoiceToX = 14;
@@ -401,6 +434,8 @@ export function ActionsCard() {
     doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
 
+    finalY += 15;
+
     let notesY = finalY + 15;
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -412,12 +447,7 @@ export function ActionsCard() {
     notesY += 5;
     doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
     notesY += 5;
-    doc.text('3. We provide a technician paid by the customer to help in the installation process.', 14, notesY);
-    notesY += 5;
-    doc.text('4. We do regular site visits paid by the customer to check on the progress of the project.', 14, notesY);
-    notesY += 5;
-    doc.setFont('helvetica', 'italic');
-    doc.text('5. Optional: We can provide a plumber or electrician to be paid by the client if the client is interested.', 14, notesY);
+    doc.text('3. We provide a technician paid by the client.', 14, notesY);
 
 
     doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
@@ -440,10 +470,13 @@ export function ActionsCard() {
             beamsLength: totals.totalInvoiceBeamLength
         }
     }).then(() => {
-        toast({
-            title: "Quote Archived",
-            description: `Quote #${invoiceNumber} has been saved to the admin database.`,
-            variant: "default",
+        // Also save to Project Management section
+        saveProject({
+            name: clientInfo.projectName,
+            clientName: clientInfo.clientName,
+            clientContact: clientInfo.clientContact,
+            projectLocation: clientInfo.projectLocation,
+            contactPerson: clientInfo.contactPerson
         });
     }).catch((err) => {
         console.error(err);
@@ -882,8 +915,6 @@ export function ActionsCard() {
                   </div>
                   <input type="hidden" name="blocks" value={totals.totalBlocks} />
                   <input type="hidden" name="beamLength" value={totals.totalInvoiceBeamLength} />
-                  <input type="hidden" name="concreteVolume" value={totals.totalConcreteVolume} />
-                  <input type="hidden" name="brcRolls" value={totals.brc.rollsNeeded} />
                   <DialogFooter>
                      <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                      <SubmitButton className="bg-primary hover:bg-primary/90 text-white"><Wand2/> Generate</SubmitButton>

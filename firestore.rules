@@ -3,15 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Public projects collection
+    // Projects collection
     match /projects/{projectId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if exists(/databases/$(database)/documents/projects/$(projectId));
+      allow read, create, update: if true;
       allow delete: if false;
     }
 
-    // Invoices collection
+    // Quotes collection
+    match /quotes/{quoteId} {
+      allow read, write: if true;
+    }
+    match /quotes/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Invoices collection (Legacy/Backup)
     match /invoices/{invoiceId} {
       allow read, write: if true;
     }
@@ -19,8 +25,8 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
-    // Legacy customers path. Deny all access.
-    match /customers/{userId}/{document=**} {
+    // Deny all other access
+    match /{document=**} {
       allow read, write: if false;
     }
   }

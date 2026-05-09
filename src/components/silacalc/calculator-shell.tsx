@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { QuickQuoteCard } from './quick-quote-card';
 import { PlanReaderCard } from './plan-reader-card';
+import { ProcessGuide, TechnicalGuide } from './installation-guide';
 import type { ProjectData } from '@/context/calculator-context';
 
 export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
@@ -23,7 +24,8 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
 
 
   return (
-    <div id="calculator" className="container mx-auto max-w-7xl mt-8">
+    <div id="calculator" className="container mx-auto max-w-7xl mt-8 px-4">
+      <ProcessGuide />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
           <div className="space-y-4">
@@ -67,6 +69,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
           <TotalsCard />
         </div>
       </div>
+      <TechnicalGuide />
     </div>
   );
 }

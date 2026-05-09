@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { CalculatorProvider } from '@/context/calculator-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { WhatsAppButton } from '@/components/whatsapp-button';
 
 export const metadata: Metadata = {
   title: 'SI-LATECH',
@@ -34,6 +35,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <CalculatorProvider>
             {children}
+            <WhatsAppButton />
             <Toaster />
           </CalculatorProvider>
         </FirebaseClientProvider>

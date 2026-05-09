@@ -3,19 +3,42 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 export const addLogoToPdf = (doc: jsPDF, color: string) => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(color);
-    doc.text('SI-LATECH', 14, 22);
+    try {
+        doc.addImage('/logo.png', 'PNG', 14, 5, 18, 18);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(color);
+        doc.text('SI-LATECH', 35, 18);
+    } catch (e) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(color);
+        doc.text('SI-LATECH', 14, 22);
+    }
 };
 
 export const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
     const backgroundColor = '#ffffff'; 
-    doc.setFillColor(backgroundColor);
+    
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        doc.setFillColor(backgroundColor);
         doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
+        
+        try {
+            if ((doc as any).setGState) {
+                const gState = new (doc as any).GState({ opacity: 0.03 });
+                (doc as any).setGState(gState);
+            }
+            doc.addImage('/logo.png', 'PNG', 45, 90, 120, 120, undefined, 'FAST');
+            if ((doc as any).setGState) {
+                const gStateReset = new (doc as any).GState({ opacity: 1.0 });
+                (doc as any).setGState(gStateReset);
+            }
+        } catch (e) {
+            // Skip watermark if image fails
+        }
     }
 };
 
@@ -201,5 +224,116 @@ export const generatePromaxPdf = (data: {
     doc.text('Note: Beam quantities are based on actual physical room spans. Block quantities include standard project allowance.', 14, finalY);
 
     doc.save(`Promax-Breakdown-${reportNumber}.pdf`);
+    return true;
+};
+
+export const generateProfitRequestPdf = (data: {
+    clientInfo: {
+        projectName: string;
+        projectLocation: string;
+        clientName: string;
+    };
+    totals: {
+        beamProfit: number;
+        blockCommission: number;
+        totalProfit: number;
+        totalBeams: number;
+        totalBlocks: number;
+    };
+}) => {
+    const { clientInfo, totals } = data;
+    const doc = new jsPDF();
+    const primaryColor = '#095388'; // Brand blue
+    
+    addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
+    
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+    const invoiceNumber = `PR-SILA-${String(Date.now()).slice(-6)}`;
+
+    // Title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(primaryColor);
+    doc.text('COMMISSION REQUEST INVOICE', 14, 45);
+
+    // Bill To Section (Promax)
+    doc.setFontSize(10);
+    doc.setTextColor(primaryColor);
+    doc.text('BILL TO:', 14, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50);
+    doc.text('PROMAX KENYA LTD', 14, 66);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nairobi, Kenya', 14, 71);
+
+    // Project Info Section
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT REFERENCE:', 100, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
+    doc.text(`Project: ${clientInfo.projectName}`, 100, 66);
+    doc.text(`Client: ${clientInfo.clientName}`, 100, 71);
+    doc.text(`Location: ${clientInfo.projectLocation}`, 100, 76);
+
+    // Metadata
+    doc.setFont('helvetica', 'bold');
+    doc.text('DATE:', 155, 60);
+    doc.setFont('helvetica', 'normal');
+    doc.text(invoiceDate, 175, 60);
+    doc.setFont('helvetica', 'bold');
+    doc.text('REF NO:', 155, 66);
+    doc.setFont('helvetica', 'normal');
+    doc.text(invoiceNumber, 175, 66);
+
+    // Table
+    const tableColumn = ['DESCRIPTION', 'DETAILS', 'UNIT RATE', 'TOTAL AMOUNT (KSH)'];
+    const tableRows = [
+        [
+            'Beam Commission (Extra Meterage)', 
+            `${totals.totalBeams.toFixed(2)} m (billed)`, 
+            'Calculated', 
+            totals.beamProfit.toLocaleString()
+        ],
+        [
+            'Block Commission', 
+            `${totals.totalBlocks} pcs`, 
+            '5.00 / pc', 
+            totals.blockCommission.toLocaleString()
+        ]
+    ];
+
+    (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 90,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255 },
+        styles: { fontSize: 10 },
+        columnStyles: {
+            3: { halign: 'right' }
+        }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 20;
+    
+    // Total Amount Due
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(primaryColor);
+    doc.text('TOTAL AMOUNT DUE:', 14, finalY);
+    doc.setFontSize(14);
+    doc.text(`Ksh ${totals.totalProfit.toLocaleString()}`, 196, finalY, { align: 'right' });
+
+    // Footer
+    const footerY = 270;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(100);
+    doc.text('This invoice is a formal request for commission and rebates on the referenced project.', 14, footerY);
+    doc.text('Please process the payment as per the agreed terms.', 14, footerY + 5);
+
+    doc.save(`Commission-Request-${clientInfo.projectName}-${invoiceNumber}.pdf`);
     return true;
 };

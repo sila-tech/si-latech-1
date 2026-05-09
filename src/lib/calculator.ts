@@ -173,7 +173,7 @@ export const DEFAULTS: CalculationDefaults = {
   wheelbarrowVolume: 0.065, 
   wheelbarrowsPerTonne: 6,
   profitBeamsPerRoom: 2,
-  blockCommissionRate: 10, 
+  blockCommissionRate: 5, 
   lintelHeight: 0.40,
   lintelWidth: 0.20,
   timber3x2Spacing: 0.6,
@@ -196,7 +196,7 @@ export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
   opts: Partial<CalculationDefaults> = {},
-  beamPricePerMeter: number = 750,
+  beamPricePerMeter: number = 545,
   roomName: string = ''
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
