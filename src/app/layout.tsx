@@ -7,8 +7,12 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { WhatsAppButton } from '@/components/whatsapp-button';
 
 export const metadata: Metadata = {
-  title: 'SI-LATECH',
-  description: 'Construction Material Calculator',
+  title: 'SI-LATECH | SilaCalc Construction Calculator',
+  description: 'Precision construction material calculator for blocks and beams by SI-LATECH.',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  }
 };
 
 export default function RootLayout({
