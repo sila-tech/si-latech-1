@@ -30,12 +30,13 @@ import { useCalculator } from '@/context/calculator-context';
 import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { MapPin } from 'lucide-react';
+import { MapPin, Image as ImageIcon } from 'lucide-react';
+import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 
 export default function AdminDashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedProject, setSelectedProject] = useState<any>(null);
+    const [isLayoutViewOpen, setIsLayoutViewOpen] = useState(false);
     const router = useRouter();
     const { totals: currentTotals } = useCalculator();
 
@@ -444,6 +445,13 @@ export default function AdminDashboardPage() {
                                     <Button 
                                         variant="outline" 
                                         className="border-primary text-primary hover:bg-primary/5 font-bold flex-1 h-12"
+                                        onClick={() => setIsLayoutViewOpen(true)}
+                                    >
+                                        <ImageIcon className="mr-2 h-5 w-5" /> View Layout Diagrams
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold flex-1 h-12"
                                         onClick={() => generateProfitRequestPdf({
                                             clientInfo: {
                                                 projectName: selectedProject.name,
@@ -459,13 +467,46 @@ export default function AdminDashboardPage() {
                                             }
                                         })}
                                     >
-                                        <FileText className="mr-2 h-5 w-5" /> Request Profit from Promax
+                                        <FileText className="mr-2 h-5 w-5" /> Profit Request
                                     </Button>
                                 </div>
                             </div>
                             </>
                         );
                     })()}
+                </DialogContent>
+            </Dialog>
+
+            {/* Layout Diagrams Dialog for Admin/Staff */}
+            <Dialog open={isLayoutViewOpen} onOpenChange={setIsLayoutViewOpen}>
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-slate-900">Technical Layout Diagrams</DialogTitle>
+                        <CardDescription>Visual guide for staff and site technicians.</CardDescription>
+                    </DialogHeader>
+                    <ScrollArea className="flex-1 pr-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6">
+                            {selectedProject?.rooms?.map((r: any, idx: number) => {
+                                // Recalculate room layout
+                                const BEAM_PRICE_PER_METER = 545;
+                                const settings = selectedProject.settings || {
+                                    beamSpacing: 0.55,
+                                    blockWidth: 0.2,
+                                    wastagePercentage: 10
+                                };
+                                const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
+                                return (
+                                    <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />
+                                );
+                            })}
+                        </div>
+                    </ScrollArea>
+                    <CardFooter className="flex justify-between border-t pt-4">
+                        <p className="text-xs text-slate-400 italic">SI-LATECH Internal Staff Document</p>
+                        <Button onClick={() => window.print()} className="bg-primary font-bold">
+                            <Download size={16} className="mr-2" /> Print for Site Technician
+                        </Button>
+                    </CardFooter>
                 </DialogContent>
             </Dialog>
         </div>

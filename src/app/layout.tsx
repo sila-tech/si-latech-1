@@ -8,11 +8,42 @@ import { WhatsAppButton } from '@/components/whatsapp-button';
 
 export const metadata: Metadata = {
   title: 'SI-LATECH | SilaCalc Construction Calculator',
-  description: 'Precision construction material calculator for blocks and beams by SI-LATECH.',
+  description: 'Precision construction material calculator for blocks and beams by SI-LATECH. Get instant official quotes for your construction projects.',
+  keywords: ['SI-LATECH', 'SilaCalc', 'Construction Calculator', 'Beam and Block', 'Kenya Construction', 'Material Estimator'],
+  authors: [{ name: 'SI-LATECH' }],
+  openGraph: {
+    title: 'SI-LATECH | Precision Construction Calculator',
+    description: 'The definitive tool for beam and block construction calculations.',
+    url: 'https://si-latech.com',
+    siteName: 'SI-LATECH',
+    images: [
+      {
+        url: '/logo.png',
+        width: 800,
+        height: 800,
+        alt: 'SI-LATECH Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SI-LATECH | Precision Construction Calculator',
+    description: 'The definitive tool for beam and block construction calculations.',
+    images: ['/logo.png'],
+  },
   icons: {
-    icon: '/icon.png',
-    apple: '/icon.png',
-  }
+    icon: [
+      { url: '/icon.png' },
+      { url: '/icon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icon.png' },
+    ],
+  },
+  manifest: '/manifest.webmanifest',
 };
 
 export default function RootLayout({

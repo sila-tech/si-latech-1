@@ -893,6 +893,7 @@ export function ActionsCard() {
             <Download className="mr-2 h-4 w-4" /> Download Quote
           </Button>
 
+
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold">
@@ -1037,6 +1038,7 @@ export function ActionsCard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
       
     </>
   );

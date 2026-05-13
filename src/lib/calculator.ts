@@ -64,6 +64,14 @@ export interface RoomCalculation {
   beamProfitValue: number;
   blockCommission: number;
   totalRoomProfit: number;
+  layout: {
+    gapAtEnd: number;
+    needsExtraBeam: boolean;
+    needsHalfBlock: boolean;
+    beamSpacing: number;
+    beamCount: number;
+    blocksPerRow: number;
+  };
 }
 
 export interface ConcreteCalculation {
@@ -156,7 +164,7 @@ export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
   beamSpacing: 0.55,
-  beamSectionW: m(120),
+  beamSectionW: m(200),  // beam is ~200mm wide (affects gap threshold)
   beamSectionH: m(40),
   toppingThickness: 0.05,
   brcRollLength: 48,
@@ -205,12 +213,50 @@ export function calcRoomBlocksAndBeams(
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
-  // --- 1. GEOMETRIC PHYSICAL CALCULATION (Actual Layout) ---
-  const beamSpaces = longer > 0 && C.beamSpacing > 0 ? ceil(longer / C.beamSpacing) : 0;
-  const actualBeamCount = beamSpaces > 0 ? beamSpaces + 1 : 0;
+  // --- 1. GEOMETRIC PHYSICAL CALCULATION ---
+  // 0.55m is the CLEAR gap between beam faces (not centre-to-centre).
+  // Beam width = 0.20m, so each beam+gap unit along the longer span = 0.75m.
+  //
+  // Layout pattern:
+  //   Wall | 0.55m gap | 0.20m beam | 0.55m gap | 0.20m beam | ... | end gap | Wall
+  //
+  // First gap is always 0.55m. After that, each beam costs 0.75m.
+  // beamCount = floor((longer - clearGap) / unitSpan)
+  const clearGap = C.beamSpacing;        // 0.55m — clear face-to-face gap
+  const beamWidth = C.beamSectionW;      // 0.20m — beam width
+  const unitSpan = clearGap + beamWidth; // 0.75m — one beam + one gap
+
+  let actualBeamCount = 0;
+  let endGap = 0;
+
+  if (longer > 0) {
+    if (longer <= clearGap) {
+      // Room shorter than one gap — no beams needed, wall-to-wall is the gap
+      actualBeamCount = 0;
+      endGap = longer;
+    } else {
+      actualBeamCount = Math.floor((longer - clearGap) / unitSpan);
+      // Space used = first gap + (beamCount × unitSpan)
+      const usedLength = clearGap + actualBeamCount * unitSpan;
+      endGap = longer - usedLength; // remaining space at the far end
+
+      // If end gap exceeds a full clear gap (0.55m), an extra beam is needed
+      // to properly bound that space before the wall
+      if (endGap > clearGap) {
+        actualBeamCount += 1;
+        endGap = longer - (clearGap + actualBeamCount * unitSpan);
+      }
+    }
+  }
+
+  actualBeamCount = Math.max(0, actualBeamCount);
+
+  // numberOfSpaces = beamCount + 1 (every gap between supports gets a row of blocks)
+  // blocksPerRow = ceil(shorter / blockWidth) — blocks laid along the shorter span
+  const numberOfSpaces = actualBeamCount + 1;
   const blocksPerBeamRow = shorter > 0 && C.blockWidth > 0 ? ceil(shorter / C.blockWidth) : 0;
-  
-  const actualTotalBlocks = beamSpaces * blocksPerBeamRow;
+
+  const actualTotalBlocks = numberOfSpaces * blocksPerBeamRow;
   const actualTotalBeamLength = actualBeamCount * shorter;
 
   // --- 2. HARDCODED CONDITIONAL BILLING ---
@@ -231,8 +277,8 @@ export function calcRoomBlocksAndBeams(
     invoiceTotalBeamLength = invoiceBeamCount * shorter;
   }
 
-  // Blocks remain constant at 10 blocks per m2 as agreed
-  const totalBlocks = ceil(area * 10);
+  // Blocks: geometric count — every space between supports × blocks per space
+  const totalBlocks = actualTotalBlocks;
 
   // --- 3. PROFIT CALCULATION ---
   const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
@@ -248,7 +294,7 @@ export function calcRoomBlocksAndBeams(
     actualBeamCount,
     profitBeams: invoiceBeamCount - actualBeamCount,
     invoiceBeamCount,
-    beamSpaces,
+    beamSpaces: actualBeamCount > 0 ? actualBeamCount - 1 : 0,
     blocksPerBeamRow,
     totalBlocks,
     actualTotalBeamLength,
@@ -257,6 +303,14 @@ export function calcRoomBlocksAndBeams(
     beamProfitValue,
     blockCommission,
     totalRoomProfit,
+    layout: {
+      gapAtEnd: endGap,
+      needsExtraBeam: endGap > clearGap,
+      needsHalfBlock: endGap > 0 && endGap <= clearGap,
+      beamSpacing: C.beamSpacing,
+      beamCount: actualBeamCount,
+      blocksPerRow: blocksPerBeamRow,
+    }
   };
 }
 
