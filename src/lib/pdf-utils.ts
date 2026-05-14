@@ -110,7 +110,7 @@ export const generateQuotePdf = (data: {
     // Table
     const tableColumn = ['DESCRIPTION', 'QTY', 'UNIT', 'RATE', 'AMOUNT'];
     const tableRows = [
-        ['Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', '145.00', ((safeTotals.totalInvoiceBeamLength || 0) * 145).toLocaleString()],
+        ['Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', '545.00', ((safeTotals.totalInvoiceBeamLength || 0) * 545).toLocaleString()],
         ['Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', '85.00', ((safeTotals.totalBlocks || 0) * 85).toLocaleString()],
     ];
 
@@ -130,7 +130,7 @@ export const generateQuotePdf = (data: {
     });
 
     let finalY = (doc as any).lastAutoTable.finalY + 10;
-    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * 145) + ((safeTotals.totalBlocks || 0) * 85);
+    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * 545) + ((safeTotals.totalBlocks || 0) * 85);
 
     // Totals Section
     const totalsX = 145;
