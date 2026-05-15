@@ -69,6 +69,8 @@ export interface RoomCalculation {
     needsExtraBeam: boolean;
     needsHalfBlock: boolean;
     beamSpacing: number;
+    beamWidth: number;
+    unitSpan: number;
     beamCount: number;
     blocksPerRow: number;
   };
@@ -163,8 +165,8 @@ const m = (mm: number) => mm / 1000;
 export const DEFAULTS: CalculationDefaults = {
   blockLength: m(400),
   blockWidth: m(200),
-  beamSpacing: 0.55,
-  beamSectionW: m(200),  // beam is ~200mm wide (affects gap threshold)
+  beamSpacing: 0.40,
+  beamSectionW: 0.15,  // beam is 150mm wide
   beamSectionH: m(40),
   toppingThickness: 0.05,
   brcRollLength: 48,
@@ -307,7 +309,9 @@ export function calcRoomBlocksAndBeams(
       gapAtEnd: endGap,
       needsExtraBeam: endGap > clearGap,
       needsHalfBlock: endGap > 0 && endGap <= clearGap,
-      beamSpacing: C.beamSpacing,
+      beamSpacing: clearGap,
+      beamWidth: beamWidth,
+      unitSpan: unitSpan,
       beamCount: actualBeamCount,
       blocksPerRow: blocksPerBeamRow,
     }

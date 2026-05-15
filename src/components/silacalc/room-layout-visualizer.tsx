@@ -63,24 +63,25 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
           {/* Beams and Blocks */}
           {Array.from({ length: layout.beamCount }).map((_, i) => {
             // Beams start at one spacing interval from the wall
-            const pos = ((i + 1) * layout.beamSpacing) * scale;
+            const pos = (layout.beamSpacing + i * layout.unitSpan) * scale;
+            const bWidth = layout.beamWidth * scale;
             
             return (
               <g key={i}>
                 {/* Beam */}
                 {isLengthShorter ? (
-                   <rect x={20 + pos} y="20" width="6" height={svgHeight} fill="#475569" rx="1" />
+                   <rect x={20 + pos} y="20" width={bWidth} height={svgHeight} fill="#475569" rx="1" />
                 ) : (
-                   <rect x="20" y={20 + pos} width={svgWidth} height="6" fill="#475569" rx="1" />
+                   <rect x="20" y={20 + pos} width={svgWidth} height={bWidth} fill="#475569" rx="1" />
                 )}
               </g>
             );
           })}
 
           {/* Block Indicator Groups */}
-          {Array.from({ length: Math.ceil(longer / layout.beamSpacing) }).map((_, i) => {
+          {Array.from({ length: layout.beamCount + 1 }).map((_, i) => {
             // Block rows are between supports (Wall-Beam, Beam-Beam, or Beam-Wall)
-            const rowCenterPos = (i * layout.beamSpacing + layout.beamSpacing / 2) * scale;
+            const rowCenterPos = (i * layout.unitSpan + layout.beamSpacing / 2) * scale;
             
             return (
               <g key={`row-${i}`}>
