@@ -88,3 +88,64 @@
     }
   }
 }
+
+/* Technical Layout Diagrams Print Stylesheet */
+@media print {
+  /* Hide the rest of the web application */
+  main, header, footer, nav, aside, .no-print, [data-state=open].fixed.inset-0, button[aria-label="Close"], .print\:hidden {
+    display: none !important;
+  }
+  
+  /* Restructure the layout modal to fill the printed page natively */
+  .print-dialog-content {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    z-index: 9999 !important;
+  }
+
+  /* Expand Radix ScrollArea so it does not crop or show scrollbars */
+  [data-radix-scroll-area-viewport] {
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Prevent Scrollbar visual elements */
+  [data-radix-scroll-area-scrollbar] {
+    display: none !important;
+  }
+
+  /* Technical Room Card printable formats */
+  .print-room-card {
+    background: white !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    padding: 24px !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* Ensure page margins are clean and remove default browser headers/footers */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  body {
+    padding: 15mm !important;
+  }
+}

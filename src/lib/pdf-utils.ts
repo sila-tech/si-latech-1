@@ -17,6 +17,29 @@ export const addLogoToPdf = (doc: jsPDF, color: string) => {
     }
 };
 
+let fadedLogoBase64 = '';
+
+if (typeof window !== 'undefined') {
+  const img = new window.Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.globalAlpha = 0.025; // 2.5% opacity for perfect faded watermark look
+        ctx.drawImage(img, 0, 0);
+        fadedLogoBase64 = canvas.toDataURL('image/png');
+      }
+    } catch (e) {
+      console.error('Failed to pre-fade watermark logo:', e);
+    }
+  };
+  img.src = '/logo.png';
+}
+
 export const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
     const backgroundColor = '#ffffff'; 
@@ -27,14 +50,20 @@ export const addPdfBackground = (doc: jsPDF) => {
         doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
         
         try {
-            if ((doc as any).setGState) {
-                const gState = new (doc as any).GState({ opacity: 0.03 });
-                (doc as any).setGState(gState);
-            }
-            doc.addImage('/logo.png', 'PNG', 45, 90, 120, 120, undefined, 'FAST');
-            if ((doc as any).setGState) {
-                const gStateReset = new (doc as any).GState({ opacity: 1.0 });
-                (doc as any).setGState(gStateReset);
+            if (fadedLogoBase64) {
+                // Pre-faded base64 has baked-in transparency, rendering perfectly on all mobile phones & laptops
+                doc.addImage(fadedLogoBase64, 'PNG', 45, 90, 120, 120, undefined, 'FAST');
+            } else {
+                // Fallback to GState if base64 is not yet loaded
+                if ((doc as any).setGState) {
+                    const gState = new (doc as any).GState({ opacity: 0.03 });
+                    (doc as any).setGState(gState);
+                }
+                doc.addImage('/logo.png', 'PNG', 45, 90, 120, 120, undefined, 'FAST');
+                if ((doc as any).setGState) {
+                    const gStateReset = new (doc as any).GState({ opacity: 1.0 });
+                    (doc as any).setGState(gStateReset);
+                }
             }
         } catch (e) {
             // Skip watermark if image fails

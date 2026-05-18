@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { AdminDataProvider } from '@/context/AdminDataContext';
 import { Header } from '@/components/header';
 
 const SESSION_STORAGE_KEY = 'sila-admin-auth';

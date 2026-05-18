@@ -91,7 +91,7 @@ export default function AdminDashboardPage() {
             };
         }) || [];
 
-        const totalBlocks = reCalculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.totalBlocks || 0), 0);
+        const totalBlocks = reCalculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0);
 
         generatePromaxPdf({
             clientInfo: {
@@ -337,7 +337,7 @@ export default function AdminDashboardPage() {
 
             {/* Project Details Dialog */}
             <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:hidden">
                     {(() => {
                         if (!selectedProject) return null;
                         
@@ -360,12 +360,12 @@ export default function AdminDashboardPage() {
                         }) || [];
 
                         const totals = {
-                            area: calculatedRooms.reduce((acc, r) => acc + (r.length * r.width), 0),
-                            actualBeams: calculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.actualBeamCount || 0), 0),
-                            invoiceBlocks: calculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.totalBlocks || 0), 0),
-                            beamProfit: calculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.beamProfitValue || 0), 0),
-                            blockCommission: calculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.blockCommission || 0), 0),
-                            totalProfit: calculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.totalRoomProfit || 0), 0)
+                            area: calculatedRooms.reduce((acc: number, r: any) => acc + (r.length * r.width), 0),
+                            actualBeams: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.actualBeamCount || 0), 0),
+                            invoiceBlocks: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0),
+                            beamProfit: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.beamProfitValue || 0), 0),
+                            blockCommission: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.blockCommission || 0), 0),
+                            totalProfit: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalRoomProfit || 0), 0)
                         };
 
                         return (
@@ -432,7 +432,7 @@ export default function AdminDashboardPage() {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="text-xs font-bold text-primary">{room.roomCalcs?.invoiceBeamCount} Beams (Invoiced)</p>
-                                                    <p className="text-[10px] text-slate-400">Actual: {room.roomCalcs?.actualBeamCount} Beams</p>
+                                                    <p className="text-[10px] text-slate-400">{room.roomCalcs?.actualBeamCount} Beams</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -463,7 +463,7 @@ export default function AdminDashboardPage() {
                                                 beamProfit: totals.beamProfit,
                                                 blockCommission: totals.blockCommission,
                                                 totalProfit: totals.totalProfit,
-                                                totalBeams: calculatedRooms.reduce((acc, r) => acc + (r.roomCalcs?.invoiceTotalBeamLength || 0), 0),
+                                                totalBeams: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.invoiceTotalBeamLength || 0), 0),
                                                 totalBlocks: totals.invoiceBlocks
                                             }
                                         })}
@@ -480,13 +480,42 @@ export default function AdminDashboardPage() {
 
             {/* Layout Diagrams Dialog for Admin/Staff */}
             <Dialog open={isLayoutViewOpen} onOpenChange={setIsLayoutViewOpen}>
-                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-                    <DialogHeader>
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print-dialog-content">
+                    <DialogHeader className="print:hidden">
                         <DialogTitle className="text-2xl font-black text-slate-900">Technical Layout Diagrams</DialogTitle>
                         <CardDescription>Visual guide for staff and site technicians.</CardDescription>
                     </DialogHeader>
-                    <ScrollArea className="flex-1 pr-4">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6">
+                    
+                    {/* Printable Sheet Header (hidden on screen, shown in print) */}
+                    <div className="hidden print:block border-b-2 border-slate-955 pb-4 mb-6">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h1 className="text-2xl font-black text-slate-950 tracking-tight">SI-LATECH</h1>
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Prestressed Beams & Concrete Blocks</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-slate-900">TECHNICAL LAYOUT SHEET</p>
+                                <p className="text-xs text-slate-500">{new Date().toLocaleDateString('en-GB')}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-200 text-xs">
+                            <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Project Name</span>
+                                <strong className="text-slate-900 font-bold">{selectedProject?.name}</strong>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Client Name</span>
+                                <strong className="text-slate-900 font-bold">{selectedProject?.clientName || 'N/A'}</strong>
+                            </div>
+                            <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase block">Location</span>
+                                <strong className="text-slate-900 font-bold">{selectedProject?.projectLocation || 'N/A'}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-2 print:overflow-visible print:h-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
                                 // Recalculate room layout
                                 const BEAM_PRICE_PER_METER = 545;
@@ -501,8 +530,9 @@ export default function AdminDashboardPage() {
                                 );
                             })}
                         </div>
-                    </ScrollArea>
-                    <CardFooter className="flex justify-between border-t pt-4">
+                    </div>
+                    
+                    <CardFooter className="flex justify-between border-t pt-4 print:hidden">
                         <p className="text-xs text-slate-400 italic">SI-LATECH Internal Staff Document</p>
                         <Button onClick={() => window.print()} className="bg-primary font-bold">
                             <Download size={16} className="mr-2" /> Print for Site Technician

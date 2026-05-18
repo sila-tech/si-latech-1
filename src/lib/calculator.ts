@@ -224,42 +224,45 @@ export function calcRoomBlocksAndBeams(
   //
   // First gap is always 0.55m. After that, each beam costs 0.75m.
   // beamCount = floor((longer - clearGap) / unitSpan)
-  const clearGap = C.beamSpacing;        // 0.55m — clear face-to-face gap
-  const beamWidth = C.beamSectionW;      // 0.20m — beam width
-  const unitSpan = clearGap + beamWidth; // 0.75m — one beam + one gap
+  const clearGap = C.beamSpacing;        // clear face-to-face gap (0.40m)
+  const beamWidth = C.beamSectionW;      // beam width (0.15m)
+  const unitSpan = 0.55;                 // 0.55m standard spacing unit (clearGap + beamWidth)
 
   let actualBeamCount = 0;
   let endGap = 0;
 
-  if (longer > 0) {
-    if (longer <= clearGap) {
-      // Room shorter than one gap — no beams needed, wall-to-wall is the gap
-      actualBeamCount = 0;
-      endGap = longer;
-    } else {
-      actualBeamCount = Math.floor((longer - clearGap) / unitSpan);
-      // Space used = first gap + (beamCount × unitSpan)
-      const usedLength = clearGap + actualBeamCount * unitSpan;
-      endGap = longer - usedLength; // remaining space at the far end
+  const isBalcony = roomName.toLowerCase().includes('balcony') || 
+                    roomName.toLowerCase().includes('verandah') || 
+                    roomName.toLowerCase().includes('velander') || 
+                    roomName.toLowerCase().includes('veranda') || 
+                    roomName.toLowerCase().includes('velanda');
 
-      // If end gap exceeds a full clear gap (0.55m), an extra beam is needed
-      // to properly bound that space before the wall
-      if (endGap > clearGap) {
-        actualBeamCount += 1;
-        endGap = longer - (clearGap + actualBeamCount * unitSpan);
-      }
+  if (longer > 0) {
+    if (isBalcony) {
+      // Balcony / Verandah: Beams run parallel to the longer side, laid across the shorter side
+      actualBeamCount = Math.ceil(shorter / 0.55);
+      
+      const lastBeamEnd = (actualBeamCount - 1) * 0.55 + 0.15;
+      endGap = Math.max(0, shorter - lastBeamEnd);
+    } else {
+      // Standard rooms: Beams run parallel to the shorter side, laid across the longer side
+      actualBeamCount = Math.ceil(longer / 0.55);
+      
+      const lastBeamEnd = (actualBeamCount - 1) * 0.55 + 0.15;
+      endGap = Math.max(0, longer - lastBeamEnd);
     }
   }
 
   actualBeamCount = Math.max(0, actualBeamCount);
 
-  // numberOfSpaces = beamCount + 1 (every gap between supports gets a row of blocks)
-  // blocksPerRow = ceil(shorter / blockWidth) — blocks laid along the shorter span
-  const numberOfSpaces = actualBeamCount + 1;
-  const blocksPerBeamRow = shorter > 0 && C.blockWidth > 0 ? ceil(shorter / C.blockWidth) : 0;
+  // Owner's master formula for blocks: total blocks = total beam metres * 4
+  // For Balcony, beam length is `longer`. For Standard, beam length is `shorter`.
+  const beamLength = isBalcony ? longer : shorter;
+  const blocksPerBeamRow = beamLength > 0 ? beamLength * 4 : 0;
+  const numberOfSpaces = actualBeamCount;
 
-  const actualTotalBlocks = numberOfSpaces * blocksPerBeamRow;
-  const actualTotalBeamLength = actualBeamCount * shorter;
+  const actualTotalBlocks = actualBeamCount * beamLength * 4;
+  const actualTotalBeamLength = actualBeamCount * beamLength;
 
   // --- 2. HARDCODED CONDITIONAL BILLING ---
   let invoiceTotalBeamLength: number;
@@ -272,6 +275,10 @@ export function calcRoomBlocksAndBeams(
     // METRE SQUARE MODE: Multiply Area by 2.4
     invoiceTotalBeamLength = area * 2.4;
     invoiceBeamCount = shorter > 0 ? ceil(invoiceTotalBeamLength / shorter) : 0;
+  } else if (isBalcony) {
+    // BALCONY / VERANDAH MODE: No profits/rebates for the beams (invoice = actual)
+    invoiceBeamCount = actualBeamCount;
+    invoiceTotalBeamLength = actualTotalBeamLength;
   } else {
     // ROOM MODE: Actual Beams + 2 Beams
     const profitBeamsPerRoom = 2;
