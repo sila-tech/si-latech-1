@@ -58,6 +58,7 @@ export interface RoomCalculation {
   beamSpaces: number;
   blocksPerBeamRow: number;
   totalBlocks: number;
+  individualBeamLength: number;
   actualTotalBeamLength: number;
   invoiceTotalBeamLength: number;
   profitBeamLength: number;
@@ -257,12 +258,15 @@ export function calcRoomBlocksAndBeams(
 
   // Owner's master formula for blocks: total blocks = total beam metres * 4
   // For Balcony, beam length is `longer`. For Standard, beam length is `shorter`.
-  const beamLength = isBalcony ? longer : shorter;
-  const blocksPerBeamRow = beamLength > 0 ? beamLength * 4 : 0;
+  const clearBeamLength = isBalcony ? longer : shorter;
+  const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
+
+  // Blocks are laid between the walls (clear span)
+  const blocksPerBeamRow = clearBeamLength > 0 ? clearBeamLength * 4 : 0;
   const numberOfSpaces = actualBeamCount;
 
-  const actualTotalBlocks = actualBeamCount * beamLength * 4;
-  const actualTotalBeamLength = actualBeamCount * beamLength;
+  const actualTotalBlocks = actualBeamCount * blocksPerBeamRow;
+  const actualTotalBeamLength = actualBeamCount * individualBeamLength;
 
   // --- 2. HARDCODED CONDITIONAL BILLING ---
   let invoiceTotalBeamLength: number;
@@ -283,7 +287,7 @@ export function calcRoomBlocksAndBeams(
     // ROOM MODE: Actual Beams + 2 Beams
     const profitBeamsPerRoom = 2;
     invoiceBeamCount = actualBeamCount + profitBeamsPerRoom;
-    invoiceTotalBeamLength = invoiceBeamCount * shorter;
+    invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
   }
 
   // Blocks: geometric count — every space between supports × blocks per space
@@ -300,6 +304,7 @@ export function calcRoomBlocksAndBeams(
     width: widthMeters,
     shorter,
     longer,
+    individualBeamLength,
     actualBeamCount,
     profitBeams: invoiceBeamCount - actualBeamCount,
     invoiceBeamCount,
@@ -434,14 +439,14 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
   rooms.forEach(room => {
-      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings);
+      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, 545, room.name);
       const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
       if (!roomGroups.has(sizeKey)) roomGroups.set(sizeKey, { rooms: [], calcs });
       roomGroups.get(sizeKey)!.rooms.push(room);
   });
   return Array.from(roomGroups.entries()).map(([sizeKey, group]) => ({
       sizeKey, shorter: group.calcs.shorter, longer: group.calcs.longer, roomCount: group.rooms.length,
-      beamsPerRoom: group.calcs.actualBeamCount, beamLengthEach: group.calcs.shorter, totalBeams: group.calcs.actualBeamCount * group.rooms.length, totalBeamLength: group.calcs.actualBeamCount * group.rooms.length * group.calcs.shorter,
+      beamsPerRoom: group.calcs.actualBeamCount, beamLengthEach: group.calcs.individualBeamLength, totalBeams: group.calcs.actualBeamCount * group.rooms.length, totalBeamLength: group.calcs.actualBeamCount * group.rooms.length * group.calcs.individualBeamLength,
       blocksPerRoom: group.calcs.totalBlocks, totalBlocks: group.calcs.totalBlocks * group.rooms.length
   })).sort((a, b) => (b.shorter * b.longer) - (a.shorter * a.longer));
 }

@@ -596,10 +596,9 @@ export function ActionsCard() {
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
     
-    // Aggregate beams by length
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
-        const length = p.roomCalcs.shorter;
+        const length = p.roomCalcs.individualBeamLength || p.roomCalcs.shorter;
         const count = p.roomCalcs.actualBeamCount;
         beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);
     });

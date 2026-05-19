@@ -192,7 +192,14 @@ export const generatePromaxPdf = (data: {
     const beamAggregates = new Map<number, number>();
     perRoomCalculations.forEach(p => {
         const calcs = p.roomCalcs || p;
-        const length = typeof calcs.shorter === 'number' ? calcs.shorter : 0;
+        const roomName = p.room?.name || calcs.name || '';
+        const isBalcony = roomName.toLowerCase().includes('balcony') || 
+                          roomName.toLowerCase().includes('verandah') || 
+                          roomName.toLowerCase().includes('velander') || 
+                          roomName.toLowerCase().includes('veranda') || 
+                          roomName.toLowerCase().includes('velanda');
+        const clearLength = isBalcony ? calcs.longer : calcs.shorter;
+        const length = calcs.individualBeamLength ?? (typeof clearLength === 'number' && clearLength > 0 ? clearLength + 0.20 : 0);
         const count = typeof calcs.actualBeamCount === 'number' ? calcs.actualBeamCount : 0;
         if (length > 0) {
             beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);

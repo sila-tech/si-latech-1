@@ -33,7 +33,8 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
                     roomName.toLowerCase().includes('velanda');
 
   const beamsParallelToLength = isBalcony ? (length >= width) : (length <= width);
-  const beamLength = isBalcony ? longer : shorter;
+  const clearBeamLength = isBalcony ? longer : shorter;
+  const physicalBeamLength = calc.individualBeamLength || (clearBeamLength > 0 ? clearBeamLength + 0.20 : 0);
   const spanLength = isBalcony ? shorter : longer;
   
   return (
@@ -92,7 +93,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
             return (
               <g key={`row-${i}`}>
                 {Array.from({ length: layout.blocksPerRow }).map((_, j) => {
-                  const blockPos = (j * (beamLength / layout.blocksPerRow) + (beamLength / layout.blocksPerRow) / 2) * scale;
+                  const blockPos = (j * (clearBeamLength / layout.blocksPerRow) + (clearBeamLength / layout.blocksPerRow) / 2) * scale;
                   
                   return (
                     <rect 
@@ -132,7 +133,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
         <p className="text-sm text-slate-700 leading-relaxed print:text-slate-800">
           {layout.beamCount > 0 ? (
             <>
-              This room requires <strong className="text-slate-950 font-black">{layout.beamCount} beams</strong> of <strong className="text-slate-950 font-black">{beamLength.toFixed(2)} metres</strong>. 
+              This room requires <strong className="text-slate-950 font-black">{layout.beamCount} beams</strong> of <strong className="text-slate-950 font-black">{physicalBeamLength.toFixed(2)} metres</strong>. 
               The concrete blocks are laid alongside the beams with <strong className="text-slate-950 font-black">{layout.blocksPerRow} pieces</strong> per row, totaling <strong className="text-slate-950 font-black">{calc.totalBlocks} blocks</strong> (calculated at exactly 4 blocks per beam-meter).
             </>
           ) : (
@@ -190,7 +191,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
         <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm print:border-slate-200">
           <p className="text-[10px] font-bold text-slate-400 uppercase print:text-slate-500">Layout Specs</p>
           <p className="text-xs text-slate-600 mt-1 print:text-slate-800 font-medium">
-            Beams: {layout.beamCount} × {beamLength.toFixed(2)}m
+            Beams: {layout.beamCount} × {physicalBeamLength.toFixed(2)}m
             <br />
             Blocks: {calc.totalBlocks} pcs
           </p>
