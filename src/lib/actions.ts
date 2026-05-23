@@ -17,7 +17,6 @@ const QuoteSchema = z.object({
   region: z.string().min(1, { message: 'Region is required.' }),
   blocks: z.coerce.number(),
   beamLength: z.coerce.number(),
-  concreteVolume: z.coerce.number(),
   brcRolls: z.coerce.number(),
 });
 
@@ -28,7 +27,6 @@ export async function handleGenerateQuote(
     region: formData.get('region'),
     blocks: formData.get('blocks'),
     beamLength: formData.get('beamLength'),
-    concreteVolume: formData.get('concreteVolume'),
     brcRolls: formData.get('brcRolls'),
   });
 

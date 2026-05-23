@@ -44,6 +44,7 @@ import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
+import { calculateProjectTotals } from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';
@@ -62,6 +63,7 @@ type ClientInfo = {
   projectLocation: string;
   clientContact: string;
   contactPerson: string;
+  selectedFloor?: string;
 };
 
 function SubmitButton({
@@ -78,7 +80,7 @@ function SubmitButton({
 }
 
 const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenChange }: { onGenerateClick: (clientInfo: ClientInfo) => void; title: string; description: string; open: boolean, onOpenChange: (open: boolean) => void; }) => {
-  const { projectName, clientName, clientContact, projectLocation, contactPerson } = useCalculator();
+  const { projectName, clientName, clientContact, projectLocation, contactPerson, rooms } = useCalculator();
 
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: clientName || '',
@@ -86,7 +88,18 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
     projectLocation: projectLocation || '',
     clientContact: clientContact || '',
     contactPerson: contactPerson || '',
+    selectedFloor: 'all',
   });
+
+  const uniqueFloors = useMemo(() => {
+    const floorsSet = new Set<string>();
+    rooms.forEach(r => {
+      if (r.name.includes(':')) {
+        floorsSet.add(r.name.split(':')[0].trim());
+      }
+    });
+    return Array.from(floorsSet);
+  }, [rooms]);
 
   useEffect(() => {
     setClientInfo({
@@ -95,8 +108,9 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
         projectLocation: projectLocation || '',
         clientContact: clientContact || '',
         contactPerson: contactPerson || '',
+        selectedFloor: uniqueFloors.length > 0 ? 'separate' : 'all',
     });
-  }, [projectName, clientName, clientContact, projectLocation, contactPerson, open]);
+  }, [projectName, clientName, clientContact, projectLocation, contactPerson, open, uniqueFloors]);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,6 +152,33 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
             <Label htmlFor="contactPerson">Site Contact Person</Label>
             <Input id="contactPerson" value={clientInfo.contactPerson} onChange={handleChange} placeholder="e.g., Site Foreman" />
           </div>
+          
+          {uniqueFloors.length > 0 && (
+            <div className="space-y-3 p-3.5 border border-amber-500/20 bg-amber-500/5 rounded-lg shadow-inner">
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <p className="text-xs font-bold text-amber-500 uppercase tracking-wider">Plan Reader Intelligence</p>
+              </div>
+              <p className="text-sm text-foreground font-medium">
+                I can see {uniqueFloors.length} floor{uniqueFloors.length > 1 ? 's' : ''} on the plan ({uniqueFloors.join(', ')}). Which quote do you want?
+              </p>
+              <div className="space-y-1.5">
+                <Label htmlFor="selectedFloor" className="text-xs text-muted-foreground font-bold">Choose Quote Scope</Label>
+                <select
+                  id="selectedFloor"
+                  value={clientInfo.selectedFloor}
+                  onChange={(e) => setClientInfo(prev => ({ ...prev, selectedFloor: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="separate">All Floors (Separate Pages in One PDF)</option>
+                  <option value="all">All Floors (Combined Summary Page Only)</option>
+                  {uniqueFloors.map(floor => (
+                    <option key={floor} value={floor}>{floor} Only</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <DialogClose asChild>
@@ -192,12 +233,9 @@ if (typeof window !== 'undefined') {
 
 const addPdfBackground = (doc: jsPDF) => {
     const pageCount = (doc as any).internal.getNumberOfPages();
-    const backgroundColor = '#ffffff';
     
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFillColor(backgroundColor);
-        doc.rect(0, 0, doc.internal.pageSize.width, doc.internal.pageSize.height, 'F');
         
         try {
             if (fadedLogoBase64) {
@@ -290,6 +328,7 @@ export function ActionsCard() {
   const {
     rooms,
     totals,
+    settings,
     perRoomCalculations,
     aggregatedBreakdown,
     loadedProjectId,
@@ -302,6 +341,24 @@ export function ActionsCard() {
     saveProject,
   } = useCalculator();
   const { toast } = useToast();
+
+  const [aiQuoteFloor, setAiQuoteFloor] = useState<string>('all');
+
+  const uniqueFloors = useMemo(() => {
+    const floorsSet = new Set<string>();
+    rooms.forEach(r => {
+      if (r.name.includes(':')) {
+        floorsSet.add(r.name.split(':')[0].trim());
+      }
+    });
+    return Array.from(floorsSet);
+  }, [rooms]);
+
+  const activeQuoteTotals = useMemo(() => {
+    if (aiQuoteFloor === 'all') return totals;
+    const floorRooms = rooms.filter(r => r.name.startsWith(aiQuoteFloor + ':'));
+    return calculateProjectTotals(floorRooms, settings, 0);
+  }, [aiQuoteFloor, rooms, totals, settings]);
 
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -343,136 +400,186 @@ export function ActionsCard() {
   const handleDownloadInvoice = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
-    addPdfBackground(doc);
-    addLogoToPdf(doc, primaryColor);
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
-    let currentY = 15;
     
     const BLOCK_PRICE = 85;
     const BEAM_PRICE_PER_METER = 545;
 
-    const blocksTotal = totals.totalBlocks * BLOCK_PRICE;
-    const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
-    const grandTotal = blocksTotal + beamsTotal;
+    const renderFloorQuotePage = (pageTitle: string, pageTotals: any) => {
+      addLogoToPdf(doc, primaryColor);
+      
+      const blocksTotal = pageTotals.totalBlocks * BLOCK_PRICE;
+      const beamsTotal = pageTotals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
+      const grandTotal = blocksTotal + beamsTotal;
 
-    
-    // --- Header ---
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(primaryColor);
-    doc.text('OFFICIAL QUOTE', 75, 22); // Pushed further right to avoid SI-LATECH overlap
+      // --- Header ---
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 75, 22);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text('Head Office: Juja, Kenya', 140, 22);
-    doc.text('Tel: +254 701 792088', 140, 27);
-    doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text('Head Office: Juja, Kenya', 140, 22);
+      doc.text('Tel: +254 701 792088', 140, 27);
+      doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
 
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38); // Moved down to avoid header overlap
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38);
 
-    currentY = 60;
-    const invoiceToX = 14;
-    const shipToX = 110;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
-    doc.text('QUOTE TO', invoiceToX, currentY);
-    doc.text('SHIP / SITE TO', shipToX, currentY);
-    currentY += 6;
+      let currentY = 60;
+      const invoiceToX = 14;
+      const shipToX = 110;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('QUOTE TO', invoiceToX, currentY);
+      doc.text('SHIP / SITE TO', shipToX, currentY);
+      currentY += 6;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50);
-    doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, currentY);
-    doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, currentY);
-    currentY += 5;
-    doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, currentY);
-    doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, currentY);
-    currentY += 5;
-    doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, currentY);
-    doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, currentY);
-    currentY += 5;
-    doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, currentY);
-    
-    const metaY = currentY + 10;
-    doc.text(`Quote No.:`, 14, metaY);
-    doc.text(`Date:`, 14, metaY + 5);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${invoiceNumber}`, 44, metaY);
-    doc.text(`${invoiceDate}`, 44, metaY + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, currentY);
+      doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, currentY);
+      currentY += 5;
+      doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, currentY);
+      doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, currentY);
+      currentY += 5;
+      doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, currentY);
+      doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, currentY);
+      currentY += 5;
+      doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, currentY);
+      
+      const metaY = currentY + 10;
+      doc.text(`Quote No.:`, 14, metaY);
+      doc.text(`Date:`, 14, metaY + 5);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${invoiceNumber}`, 44, metaY);
+      doc.text(`${invoiceDate}`, 44, metaY + 5);
 
-    const tableRows = [
-      [
-        'Total Invoiced Beams (m)',
-        totals.totalInvoiceBeamLength.toFixed(2),
-        BEAM_PRICE_PER_METER.toFixed(2),
-        beamsTotal.toFixed(2)
-      ],
-      [
-        'Total Blocks (pcs)',
-        totals.totalBlocks.toString(),
-        BLOCK_PRICE.toFixed(2),
-        blocksTotal.toFixed(2)
-      ]
-    ];
+      const tableRows = [
+        [
+          'Total Invoiced Beams (m)',
+          pageTotals.totalInvoiceBeamLength.toFixed(2),
+          BEAM_PRICE_PER_METER.toFixed(2),
+          beamsTotal.toFixed(2)
+        ],
+        [
+          'Total Blocks (pcs)',
+          pageTotals.totalBlocks.toString(),
+          BLOCK_PRICE.toFixed(2),
+          blocksTotal.toFixed(2)
+        ]
+      ];
 
+      (doc as any).autoTable({
+        head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
+        body: tableRows,
+        startY: metaY + 15,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, fontStyle: 'bold' },
+        columnStyles: {
+          1: { halign: 'right' },
+          2: { halign: 'right' },
+          3: { halign: 'right' },
+        }
+      });
 
-    (doc as any).autoTable({
-      head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
-      body: tableRows,
-      startY: metaY + 15,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 9, fontStyle: 'bold' },
-      columnStyles: {
-        1: { halign: 'right' },
-        2: { halign: 'right' },
-        3: { halign: 'right' },
+      let finalY = (doc as any).lastAutoTable.finalY;
+      const totalsX = 145;
+      const totalsValueX = 200;
+      
+      finalY += 10;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor('#D32F2F');
+      doc.text('NB: Transportation of all materials is to be paid for by the customer.', 14, finalY);
+
+      finalY += 10;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(50);
+      doc.setFillColor(240,240,240);
+      doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
+      doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
+      doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
+
+      finalY += 15;
+
+      let notesY = finalY + 15;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('NOTES', 14, notesY);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      notesY += 5;
+      doc.text(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+      notesY += 5;
+      doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
+      notesY += 5;
+      doc.text('3. We provide a technician paid by the client.', 14, notesY);
+      notesY += 5;
+      doc.text('4. Disclaimer: This quote was generated by an AI assistant based on the provided plan.', 14, notesY);
+      notesY += 5;
+      doc.text('It may contain errors. Please countercheck with a SI-LATECH technician for an official quote.', 14, notesY);
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+
+    const uniqueFloors = Array.from(new Set(rooms.map(r => {
+      if (r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
       }
-    });
+      return '';
+    }).filter(Boolean)));
 
-    let finalY = (doc as any).lastAutoTable.finalY;
-    const totalsX = 145;
-    const totalsValueX = 200;
+    let activeTotals = totals;
+    let activeRooms = rooms;
+
+    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+      uniqueFloors.forEach((floor, idx) => {
+        if (idx > 0) {
+          doc.addPage();
+        }
+        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        renderFloorQuotePage(`OFFICIAL QUOTE - ${floor.toUpperCase()}`, floorTotals);
+      });
+
+      // Add combined summary page at the end
+      doc.addPage();
+      renderFloorQuotePage('OFFICIAL QUOTE - COMBINED SUMMARY', totals);
+      activeTotals = totals;
+      activeRooms = rooms;
+    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+      // Single specific floor
+      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      renderFloorQuotePage(`OFFICIAL QUOTE - ${selectedFloor.toUpperCase()}`, floorTotals);
+      activeTotals = floorTotals;
+      activeRooms = floorRooms;
+    } else {
+      // Combined quote (single page)
+      renderFloorQuotePage('OFFICIAL QUOTE', totals);
+      activeTotals = totals;
+      activeRooms = rooms;
+    }
+
+    addPdfBackground(doc);
     
-    finalY += 10;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor('#D32F2F'); // A red color for attention
-    doc.text('NB: Transportation of all materials is to be paid for by the customer.', 14, finalY);
-
-    finalY += 10;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(50);
-    doc.setFillColor(240,240,240);
-    doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
-    doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
-    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
-
-    finalY += 15;
-
-    let notesY = finalY + 15;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
-    doc.text('NOTES', 14, notesY);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50);
-    notesY += 5;
-    doc.text(`1. BRC Mesh: Based on your calculations, you may require ${totals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
-    notesY += 5;
-    doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
-    notesY += 5;
-    doc.text('3. We provide a technician paid by the client.', 14, notesY);
-
+    const blocksTotal = activeTotals.totalBlocks * BLOCK_PRICE;
+    const beamsTotal = activeTotals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
+    const grandTotal = blocksTotal + beamsTotal;
 
     doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
     setInvoiceDialogOpen(false);
+
 
     // Save to Admin section
     const { firestore } = initializeFirebase();
@@ -484,11 +591,11 @@ export function ActionsCard() {
         clientContact: clientInfo.clientContact,
         contactPerson: clientInfo.contactPerson,
         grandTotal,
-        totals, // Full snapshot of totals
-        rooms,  // Full snapshot of rooms
+        totals: activeTotals, // Filtered floor totals or combined totals
+        rooms: activeRooms,  // Filtered floor rooms or combined rooms
         items: {
-            blocks: totals.totalBlocks,
-            beamsLength: totals.totalInvoiceBeamLength
+            blocks: activeTotals.totalBlocks,
+            beamsLength: activeTotals.totalInvoiceBeamLength
         }
     }).then(() => {
         // Also save to Project Management section
@@ -510,78 +617,113 @@ export function ActionsCard() {
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
-    const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel, timber, lintelSteel } = totals;
-    
-    const combinedCementBags = totalCementBags + lintel.cementBags;
-    const combinedSandTonnes = totalSandTonnes + lintel.sandTonnes;
-    const combinedBallastTonnes = totalBallastTonnes + lintel.ballastTonnes;
-    const combinedWetVolume = totalConcreteVolume + lintel.wetVolume;
-
     const doc = new jsPDF();
     const primaryColor = '#095388';
-    addPdfBackground(doc);
-    addLogoToPdf(doc, primaryColor);
     const scheduleDate = new Date().toLocaleDateString('en-GB');
     const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(primaryColor);
-    doc.text('Consolidated Materials Schedule', 60, 22);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
-    doc.text('PROJECT DETAILS', 14, 55);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50);
-    doc.text(`Client: ${clientInfo.clientName}`, 14, 61);
-    doc.text(`Project: ${clientInfo.projectName}`, 14, 66);
-    doc.text(`Location: ${clientInfo.projectLocation}`, 14, 71);
 
-    doc.text(`Schedule No.: ${scheduleNumber}`, 145, 61);
-    doc.text(`Date: ${scheduleDate}`, 145, 66);
+    const renderFloorMaterialPage = (pageTitle: string, pageTotals: any) => {
+      const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel, timber, lintelSteel } = pageTotals;
+      
+      const combinedCementBags = totalCementBags + lintel.cementBags;
+      const combinedSandTonnes = totalSandTonnes + lintel.sandTonnes;
+      const combinedBallastTonnes = totalBallastTonnes + lintel.ballastTonnes;
+      const combinedWetVolume = totalConcreteVolume + lintel.wetVolume;
 
-    const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
-    const tableRows = [
-      ['Cement (50kg bags)', combinedCementBags, 'bags', 'Includes slab & lintels, plus 10% wastage'],
-      ['Sand', combinedSandTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
-      ['Ballast / Coarse Aggregate', combinedBallastTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
-      ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total slab area of ${totals.totalArea.toFixed(2)} m²`],
-      ['Total Wet Concrete Volume', combinedWetVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
-      [`D${lintelSteel.longitudinal.diameter} Steel Bars`, lintelSteel.longitudinal.barsToOrder, 'pcs', `12m lengths for lintel longitudinals`],
-      [`D${lintelSteel.stirrups.diameter} Steel Bars`, lintelSteel.stirrups.barsToOrder, 'pcs', `12m lengths for lintel stirrups`],
-      ['3x2 Timber', `${timber.total3x2m.toFixed(2)}m (${timber.total3x2ft.toFixed(2)} ft)`, 'length', `${timber.total3x2pieces} total pieces`],
-      ['6x1 Timber', `${timber.total6x1m.toFixed(2)}m (${timber.total6x1ft.toFixed(2)} ft)`, 'length', 'For slab side shuttering'],
-      ['Props', timber.totalProps, 'pcs', 'For supporting 3x2 timbers'],
-    ];
+      addLogoToPdf(doc, primaryColor);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 60, 22);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('PROJECT DETAILS', 14, 55);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Client: ${clientInfo.clientName}`, 14, 61);
+      doc.text(`Project: ${clientInfo.projectName}`, 14, 66);
+      doc.text(`Location: ${clientInfo.projectLocation}`, 14, 71);
 
-    (doc as any).autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 80,
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10 },
-      columnStyles: {
-        1: { halign: 'right' },
+      doc.text(`Schedule No.: ${scheduleNumber}`, 145, 61);
+      doc.text(`Date: ${scheduleDate}`, 145, 66);
+
+      const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
+      const tableRows = [
+        ['Cement (50kg bags)', combinedCementBags, 'bags', 'Includes slab & lintels, plus 10% wastage'],
+        ['Sand', combinedSandTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
+        ['Ballast / Coarse Aggregate', combinedBallastTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
+        ['BRC Mesh A98', brc.rollsNeeded, 'rolls', `For a total slab area of ${pageTotals.totalArea.toFixed(2)} m²`],
+        ['Total Wet Concrete Volume', combinedWetVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+        [`D${lintelSteel.longitudinal.diameter} Steel Bars`, lintelSteel.longitudinal.barsToOrder, 'pcs', `12m lengths for lintel longitudinals`],
+        [`D${lintelSteel.stirrups.diameter} Steel Bars`, lintelSteel.stirrups.barsToOrder, 'pcs', `12m lengths for lintel stirrups`],
+        ['3x2 Timber', `${timber.total3x2m.toFixed(2)}m (${timber.total3x2ft.toFixed(2)} ft)`, 'length', `${timber.total3x2pieces} total pieces`],
+        ['6x1 Timber', `${timber.total6x1m.toFixed(2)}m (${timber.total6x1ft.toFixed(2)} ft)`, 'length', 'For slab side shuttering'],
+        ['Props', timber.totalProps, 'pcs', 'For supporting 3x2 timbers'],
+      ];
+
+      (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 80,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 10 },
+        columnStyles: {
+          1: { halign: 'right' },
+        }
+      });
+
+      let finalY = (doc as any).lastAutoTable.finalY;
+      
+      finalY += 15;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('NOTES', 14, finalY);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      finalY += 6;
+      doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
+      finalY += 6;
+      doc.text('2. This schedule includes materials for the beam & block slab, wall lintels, and timber formwork.', 14, finalY);
+      finalY += 6;
+      doc.text('3. Steel bar quantities are for lintels only and include 5% wastage. Order standard 12m lengths.', 14, finalY);
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+
+    const uniqueFloors = Array.from(new Set(rooms.map(r => {
+      if (r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
       }
-    });
+      return '';
+    }).filter(Boolean)));
 
-    let finalY = (doc as any).lastAutoTable.finalY;
-    
-    finalY += 15;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(primaryColor);
-    doc.text('NOTES', 14, finalY);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50);
-    finalY += 6;
-    doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
-    finalY += 6;
-    doc.text('2. This schedule includes materials for the beam & block slab, wall lintels, and timber formwork.', 14, finalY);
-    finalY += 6;
-    doc.text('3. Steel bar quantities are for lintels only and include 5% wastage. Order standard 12m lengths.', 14, finalY);
+    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+      uniqueFloors.forEach((floor, idx) => {
+        if (idx > 0) {
+          doc.addPage();
+        }
+        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        renderFloorMaterialPage(`Materials Schedule - ${floor.toUpperCase()}`, floorTotals);
+      });
 
+      // Add combined summary page at the end
+      doc.addPage();
+      renderFloorMaterialPage('Consolidated Materials Schedule (Combined)', totals);
+    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+      // Single specific floor
+      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      renderFloorMaterialPage(`Materials Schedule - ${selectedFloor.toUpperCase()}`, floorTotals);
+    } else {
+      // Combined quote (single page)
+      renderFloorMaterialPage('Consolidated Materials Schedule', totals);
+    }
+
+    addPdfBackground(doc);
     doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
     setScheduleDialogOpen(false);
   };
@@ -589,76 +731,114 @@ export function ActionsCard() {
   const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
     const primaryColor = '#0f172a'; // Slate-900
-    const accentColor = '#0ea5e9'; // Sky Blue
-    
-    addPdfBackground(doc);
-    addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
     
-    const beamAggregates = new Map<number, number>();
-    perRoomCalculations.forEach(p => {
-        const length = p.roomCalcs.individualBeamLength || p.roomCalcs.shorter;
-        const count = p.roomCalcs.actualBeamCount;
-        beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);
-    });
+    const renderFloorPromaxPage = (pageTitle: string, pageRooms: Room[], pageTotals: any) => {
+      addLogoToPdf(doc, primaryColor);
+      
+      const beamAggregates = new Map<number, number>();
+      pageRooms.forEach(r => {
+          const p = perRoomCalculations.find(pr => pr.room.id === r.id);
+          if (p) {
+              const length = p.roomCalcs.individualBeamLength || p.roomCalcs.shorter;
+              const count = p.roomCalcs.actualBeamCount;
+              beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);
+          }
+      });
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(primaryColor);
-    doc.text('PROMAX MANUFACTURING ORDER', 14, 40);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 14, 40);
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Project: ${clientInfo.projectName}`, 14, 50);
-    doc.text(`Location: ${clientInfo.projectLocation}`, 14, 55);
-    doc.text(`Date: ${reportDate}`, 14, 60);
-    doc.text(`Order ID: ${reportNumber}`, 145, 60);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Project: ${clientInfo.projectName}`, 14, 50);
+      doc.text(`Location: ${clientInfo.projectLocation}`, 14, 55);
+      doc.text(`Date: ${reportDate}`, 14, 60);
+      doc.text(`Order ID: ${reportNumber}`, 145, 60);
 
-    // Beams Table
-    const beamColumn = ['DESCRIPTION', 'LENGTH (M)', 'QUANTITY', 'TOTAL LM'];
-    const beamRows = Array.from(beamAggregates.entries())
-        .sort((a, b) => a[0] - b[0])
-        .map(([length, count]) => ([
-            'Prestressed Beam',
-            length.toFixed(2),
-            `${count} pcs`,
-            (length * count).toFixed(2)
-        ]));
+      // Beams Table
+      const beamColumn = ['DESCRIPTION', 'LENGTH (M)', 'QUANTITY', 'TOTAL LM'];
+      const beamRows = Array.from(beamAggregates.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([length, count]) => ([
+              'Prestressed Beam',
+              length.toFixed(2),
+              `${count} pcs`,
+              (length * count).toFixed(2)
+          ]));
 
-    (doc as any).autoTable({
-        head: [beamColumn],
-        body: beamRows,
-        startY: 70,
-        theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255 },
-        styles: { fontSize: 10 },
-        columnStyles: {
-            1: { halign: 'center' },
-            2: { halign: 'center' },
-            3: { halign: 'right' },
+      (doc as any).autoTable({
+          head: [beamColumn],
+          body: beamRows,
+          startY: 70,
+          theme: 'grid',
+          headStyles: { fillColor: primaryColor, textColor: 255 },
+          styles: { fontSize: 10 },
+          columnStyles: {
+              1: { halign: 'center' },
+              2: { halign: 'center' },
+              3: { halign: 'right' },
+          }
+      });
+
+      let finalY = (doc as any).lastAutoTable.finalY + 15;
+
+      // Blocks Section
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor);
+      doc.text('TOTAL BLOCK REQUIREMENTS:', 14, finalY);
+      doc.text(`${pageTotals.totalBlocks.toLocaleString()} pcs`, 196, finalY, { align: 'right' });
+      
+      finalY += 10;
+      doc.setDrawColor(200);
+      doc.line(14, finalY, 196, finalY);
+
+      finalY += 15;
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100);
+      doc.text('Note: Beam quantities are based on actual physical room spans. Block quantities include standard project allowance.', 14, finalY);
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+
+    const uniqueFloors = Array.from(new Set(rooms.map(r => {
+      if (r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
+      }
+      return '';
+    }).filter(Boolean)));
+
+    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+      uniqueFloors.forEach((floor, idx) => {
+        if (idx > 0) {
+          doc.addPage();
         }
-    });
+        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        renderFloorPromaxPage(`PROMAX MFG ORDER - ${floor.toUpperCase()}`, floorRooms, floorTotals);
+      });
 
-    let finalY = (doc as any).lastAutoTable.finalY + 15;
+      // Add combined summary page at the end
+      doc.addPage();
+      renderFloorPromaxPage('PROMAX MFG ORDER - COMBINED SUMMARY', rooms, totals);
+    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+      // Single specific floor
+      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      renderFloorPromaxPage(`PROMAX MFG ORDER - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
+    } else {
+      // Combined (single page)
+      renderFloorPromaxPage('PROMAX MANUFACTURING ORDER', rooms, totals);
+    }
 
-    // Blocks Section
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('TOTAL BLOCK REQUIREMENTS:', 14, finalY);
-    doc.text(`${totals.totalBlocks.toLocaleString()} pcs`, 196, finalY, { align: 'right' });
-    
-    finalY += 10;
-    doc.setDrawColor(200);
-    doc.line(14, finalY, 196, finalY);
-
-    finalY += 15;
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(100);
-    doc.text('Note: Beam quantities are based on actual physical room spans. Block quantities include standard project allowance.', 14, finalY);
-
+    addPdfBackground(doc);
     doc.save(`Promax-Breakdown-${reportNumber}.pdf`);
     setBreakdownDialogOpen(false);
   };
@@ -666,94 +846,133 @@ export function ActionsCard() {
   const handleDownloadAggregatedBreakdown = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
-    addPdfBackground(doc);
-    addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `AGGR-${String(Date.now()).slice(-6)}`;
 
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(primaryColor);
-    doc.text('Aggregated Beams & Blocks Breakdown', 60, 22);
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Project Name: ${clientInfo.projectName}`, 14, 55);
-    doc.text(`Client: ${clientInfo.clientName}`, 14, 60);
-    doc.text(`Date: ${reportDate}`, 14, 65);
+    const renderFloorAggregatedPage = (pageTitle: string, pageRooms: Room[], pageTotals: any) => {
+      addLogoToPdf(doc, primaryColor);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 60, 22);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Project Name: ${clientInfo.projectName}`, 14, 55);
+      doc.text(`Client: ${clientInfo.clientName}`, 14, 60);
+      doc.text(`Date: ${reportDate}`, 14, 65);
 
-    let currentY = 75;
+      let currentY = 75;
+      
+      const pageAggBreakdown = getAggregatedRoomBreakdown(pageRooms, settings);
 
-    aggregatedBreakdown.forEach(group => {
-        if (currentY > 240) {
-            doc.addPage();
-            currentY = 20;
+      pageAggBreakdown.forEach(group => {
+          if (currentY > 240) {
+              doc.addPage();
+              addLogoToPdf(doc, primaryColor);
+              currentY = 35;
+          }
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(primaryColor);
+          doc.text(`Room Size: ${group.shorter.toFixed(2)} m × ${group.longer.toFixed(2)} m — Count: ${group.roomCount} rooms`, 14, currentY);
+          currentY += 6;
+
+          const body = [
+              [`Beams:`, `${group.beamLengthEach.toFixed(2)} m × ${group.beamsPerRoom} beams × ${group.roomCount} rooms`],
+              [`Total beams (group):`, `${group.totalBeams} beams`],
+              [`Total beam length (group):`, `${group.totalBeamLength.toFixed(2)} m`],
+              [],
+              [`Blocks:`, `${group.blocksPerRoom} pcs × ${group.roomCount} rooms`],
+              [`Total blocks (group):`, `${group.totalBlocks} pcs`],
+          ];
+          
+          (doc as any).autoTable({
+              startY: currentY,
+              body: body,
+              theme: 'plain',
+              styles: { fontSize: 9, cellPadding: 1, overflow: 'linebreak' },
+              columnStyles: {
+                  0: { fontStyle: 'bold', cellWidth: 70 },
+                  1: { cellWidth: 'auto' }
+              },
+          });
+          currentY = (doc as any).lastAutoTable.finalY;
+          doc.setDrawColor(220);
+          doc.line(14, currentY + 3, 196, currentY + 3);
+          currentY += 8;
+      });
+
+      if (currentY > 230) {
+        doc.addPage();
+        addLogoToPdf(doc, primaryColor);
+        currentY = 35;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(primaryColor);
+      doc.text('PROJECT TOTALS (ACTUALS)', 14, currentY);
+      currentY += 6;
+
+      const totalBeams = pageAggBreakdown.reduce((sum, g) => sum + g.totalBeams, 0);
+      const totalBeamLength = pageAggBreakdown.reduce((sum, g) => sum + g.totalBeamLength, 0);
+      const totalBlocks = pageAggBreakdown.reduce((sum, g) => sum + g.totalBlocks, 0);
+
+      const totalsBody = [
+          ['Total distinct room sizes:', `${pageAggBreakdown.length}`],
+          ['Total beams (all groups):', `${totalBeams} beams`],
+          ['Total beam length (all):', `${totalBeamLength.toFixed(2)} m`],
+          ['Total blocks (all):', `${totalBlocks} pcs`],
+      ];
+
+      (doc as any).autoTable({
+          startY: currentY,
+          body: totalsBody,
+          theme: 'plain',
+          styles: { fontSize: 10, cellPadding: 1 },
+          columnStyles: {
+              0: { fontStyle: 'bold', cellWidth: 70 },
+              1: { cellWidth: 'auto' }
+          }
+      });
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+
+    const uniqueFloors = Array.from(new Set(rooms.map(r => {
+      if (r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
+      }
+      return '';
+    }).filter(Boolean)));
+
+    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+      uniqueFloors.forEach((floor, idx) => {
+        if (idx > 0) {
+          doc.addPage();
         }
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(primaryColor);
-        doc.text(`Room Size: ${group.shorter.toFixed(2)} m × ${group.longer.toFixed(2)} m — Count: ${group.roomCount} rooms`, 14, currentY);
-        currentY += 8;
+        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        renderFloorAggregatedPage(`Aggregated Breakdown - ${floor.toUpperCase()}`, floorRooms, floorTotals);
+      });
 
-        const body = [
-            [`Beams:`, `${group.beamLengthEach.toFixed(2)} m × ${group.beamsPerRoom} beams × ${group.roomCount} rooms`],
-            [`Total beams (group):`, `${group.totalBeams} beams`],
-            [`Total beam length (group):`, `${group.totalBeamLength.toFixed(2)} m`],
-            [],
-            [`Blocks:`, `${group.blocksPerRoom} pcs × ${group.roomCount} rooms`],
-            [`Total blocks (group):`, `${group.totalBlocks} pcs`],
-        ];
-        
-        (doc as any).autoTable({
-            startY: currentY,
-            body: body,
-            theme: 'plain',
-            styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 80 },
-                1: { cellWidth: 'auto' }
-            },
-        });
-        currentY = (doc as any).lastAutoTable.finalY;
-        doc.setDrawColor(200);
-        doc.line(14, currentY + 5, 196, currentY + 5);
-        currentY += 10;
-    });
-
-    if (currentY > 250) {
+      // Add combined summary page at the end
       doc.addPage();
-      currentY = 20;
+      renderFloorAggregatedPage('Aggregated Breakdown - COMBINED SUMMARY', rooms, totals);
+    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+      // Single specific floor
+      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      renderFloorAggregatedPage(`Aggregated Breakdown - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
+    } else {
+      // Combined (single page)
+      renderFloorAggregatedPage('Aggregated Beams & Blocks Breakdown', rooms, totals);
     }
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(primaryColor);
-    doc.text('PROJECT TOTALS (ACTUALS)', 14, currentY);
-    currentY += 7;
-
-    const totalBeams = aggregatedBreakdown.reduce((sum, g) => sum + g.totalBeams, 0);
-    const totalBeamLength = aggregatedBreakdown.reduce((sum, g) => sum + g.totalBeamLength, 0);
-    const totalBlocks = aggregatedBreakdown.reduce((sum, g) => sum + g.totalBlocks, 0);
-
-    const totalsBody = [
-        ['Total distinct room sizes:', `${aggregatedBreakdown.length}`],
-        ['Total beams (all groups):', `${totalBeams} beams`],
-        ['Total beam length (all):', `${totalBeamLength.toFixed(2)} m`],
-        ['Total blocks (all):', `${totalBlocks} pcs`],
-    ];
-
-    (doc as any).autoTable({
-        startY: currentY,
-        body: totalsBody,
-        theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 1 },
-        columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 80 },
-            1: { cellWidth: 'auto' }
-        }
-    });
-
+    addPdfBackground(doc);
     doc.save(`SI-LATECH-Aggregated-Report-${reportNumber}.pdf`);
     setAggregatedDialogOpen(false);
   };
@@ -761,86 +980,126 @@ export function ActionsCard() {
   const handleDownloadTimberSchedule = (clientInfo: ClientInfo) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
-    addPdfBackground(doc);
-    addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(primaryColor);
-    doc.text('Timber & Props Schedule', 60, 22);
+    const renderFloorTimberPage = (pageTitle: string, pageRooms: Room[], pageTotals: any) => {
+      addLogoToPdf(doc, primaryColor);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 60, 22);
 
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100);
-    doc.text(`Project: ${clientInfo.projectName}`, 14, 55);
-    doc.text(`Date: ${reportDate}`, 14, 60);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Project: ${clientInfo.projectName}`, 14, 55);
+      doc.text(`Date: ${reportDate}`, 14, 60);
 
-    let currentY = 70;
+      let currentY = 70;
 
-    perRoomCalculations.forEach((p) => {
-        if (currentY > 240) { 
-            doc.addPage();
-            currentY = 20;
+      pageRooms.forEach((r) => {
+          const p = perRoomCalculations.find(pr => pr.room.id === r.id);
+          if (!p) return;
+
+          if (currentY > 240) { 
+              doc.addPage();
+              addLogoToPdf(doc, primaryColor);
+              currentY = 35;
+          }
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(primaryColor);
+          doc.text(`${p.room.name} (${p.room.width}m x ${p.room.length}m)`, 14, currentY);
+          currentY += 6;
+
+          const body = [
+              ['3x2 Timbers', `${p.timberCalcs.pieces3x2} pcs × ${p.timberCalcs.lengthEach3x2.toFixed(2)}m = ${p.timberCalcs.total3x2m.toFixed(2)}m (${p.timberCalcs.total3x2ft.toFixed(2)} ft)`],
+              ['6x1 Timbers', `Perimeter ${p.timberCalcs.perimeter.toFixed(2)}m = ${p.timberCalcs.total6x1m.toFixed(2)}m (${p.timberCalcs.total6x1ft.toFixed(2)} ft)`],
+          ];
+
+          (doc as any).autoTable({
+              startY: currentY,
+              body: body,
+              theme: 'plain',
+              styles: { fontSize: 9, cellPadding: 1, overflow: 'linebreak' },
+              columnStyles: {
+                  0: { fontStyle: 'bold', cellWidth: 40 },
+                  1: { cellWidth: 'auto' }
+              },
+          });
+          
+          currentY = (doc as any).lastAutoTable.finalY + 4;
+      });
+
+      if (currentY > 230) { 
+          doc.addPage();
+          addLogoToPdf(doc, primaryColor);
+          currentY = 35;
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(primaryColor);
+      doc.text('PROJECT TOTALS', 14, currentY);
+      currentY += 8;
+
+      const totalsBody = [
+          ['Total 3x2 Pieces', `${pageTotals.timber.total3x2pieces} pcs`],
+          ['Total 3x2 Length', `${pageTotals.timber.total3x2m.toFixed(2)}m (${pageTotals.timber.total3x2ft.toFixed(2)} ft)`],
+          [],
+          ['Total 6x1 Length', `${pageTotals.timber.total6x1m.toFixed(2)}m (${pageTotals.timber.total6x1ft.toFixed(2)} ft)`],
+          [],
+          ['Total Props Required', `${pageTotals.timber.totalProps} pcs`],
+      ];
+
+       (doc as any).autoTable({
+          startY: currentY,
+          body: totalsBody,
+          theme: 'plain',
+          styles: { fontSize: 9, cellPadding: 1 },
+          columnStyles: {
+              0: { fontStyle: 'bold', cellWidth: 60 },
+              1: { cellWidth: 'auto', halign: 'right' }
+          },
+      });
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+
+    const uniqueFloors = Array.from(new Set(rooms.map(r => {
+      if (r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
+      }
+      return '';
+    }).filter(Boolean)));
+
+    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+      uniqueFloors.forEach((floor, idx) => {
+        if (idx > 0) {
+          doc.addPage();
         }
+        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        renderFloorTimberPage(`Timber Schedule - ${floor.toUpperCase()}`, floorRooms, floorTotals);
+      });
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(primaryColor);
-        doc.text(`${p.room.name} (${p.room.width}m x ${p.room.length}m)`, 14, currentY);
-        currentY += 8;
-
-        const body = [
-            ['3x2 Timbers', `${p.timberCalcs.pieces3x2} pcs × ${p.timberCalcs.lengthEach3x2.toFixed(2)}m = ${p.timberCalcs.total3x2m.toFixed(2)}m (${p.timberCalcs.total3x2ft.toFixed(2)} ft)`],
-            ['6x1 Timbers', `Perimeter ${p.timberCalcs.perimeter.toFixed(2)}m = ${p.timberCalcs.total6x1m.toFixed(2)}m (${p.timberCalcs.total6x1ft.toFixed(2)} ft)`],
-        ];
-
-        (doc as any).autoTable({
-            startY: currentY,
-            body: body,
-            theme: 'plain',
-            styles: { fontSize: 10, cellPadding: 1, overflow: 'linebreak' },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 40 },
-                1: { cellWidth: 'auto' }
-            },
-        });
-        
-        currentY = (doc as any).lastAutoTable.finalY + 5;
-    });
-
-    if (currentY > 230) { 
-        doc.addPage();
-        currentY = 20;
+      // Add combined summary page at the end
+      doc.addPage();
+      renderFloorTimberPage('Timber Schedule - COMBINED SUMMARY', rooms, totals);
+    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+      // Single specific floor
+      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      renderFloorTimberPage(`Timber Schedule - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
+    } else {
+      // Combined (single page)
+      renderFloorTimberPage('Timber & Props Schedule', rooms, totals);
     }
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(primaryColor);
-    doc.text('PROJECT TOTALS', 14, currentY);
-    currentY += 10;
-
-    const totalsBody = [
-        ['Total 3x2 Pieces', `${totals.timber.total3x2pieces} pcs`],
-        ['Total 3x2 Length', `${totals.timber.total3x2m.toFixed(2)}m (${totals.timber.total3x2ft.toFixed(2)} ft)`],
-        [],
-        ['Total 6x1 Length', `${totals.timber.total6x1m.toFixed(2)}m (${totals.timber.total6x1ft.toFixed(2)} ft)`],
-        [],
-        ['Total Props Required', `${totals.timber.totalProps} pcs`],
-    ];
-
-     (doc as any).autoTable({
-        startY: currentY,
-        body: totalsBody,
-        theme: 'plain',
-        styles: { fontSize: 10, cellPadding: 1 },
-        columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 60 },
-            1: { cellWidth: 'auto', halign: 'right' }
-        },
-    });
-
+    addPdfBackground(doc);
     doc.save(`Timber-Props-Schedule-${reportNumber}.pdf`);
     setTimberScheduleOpen(false);
   };
@@ -863,28 +1122,12 @@ export function ActionsCard() {
   const handleDocumentDownload = (
     docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber'
   ) => {
-    // If there is a loaded project, we can use its name directly
-    if (loadedProjectId && projectName) {
-      const info = {
-        projectName: projectName,
-        clientName: clientName || '', 
-        projectLocation: projectLocation || '',
-        clientContact: clientContact || '',
-        contactPerson: contactPerson || '',
-      };
-      if (docType === 'invoice') handleDownloadInvoice(info);
-      else if (docType === 'material') handleDownloadMaterialSchedule(info);
-      else if (docType === 'promax') handleDownloadPromaxBreakdown(info);
-      else if (docType === 'aggregated') handleDownloadAggregatedBreakdown(info);
-      else if (docType === 'timber') handleDownloadTimberSchedule(info);
-    } else {
-      // Otherwise, we need to ask for project info
-      if (docType === 'invoice') setInvoiceDialogOpen(true);
-      else if (docType === 'material') setScheduleDialogOpen(true);
-      else if (docType === 'promax') setBreakdownDialogOpen(true);
-      else if (docType === 'aggregated') setAggregatedDialogOpen(true);
-      else if (docType === 'timber') setTimberScheduleOpen(true);
-    }
+    // We always open the dialogs so that the user can confirm client details AND choose the floor scope!
+    if (docType === 'invoice') setInvoiceDialogOpen(true);
+    else if (docType === 'material') setScheduleDialogOpen(true);
+    else if (docType === 'promax') setBreakdownDialogOpen(true);
+    else if (docType === 'aggregated') setAggregatedDialogOpen(true);
+    else if (docType === 'timber') setTimberScheduleOpen(true);
   };
 
 
@@ -930,12 +1173,29 @@ export function ActionsCard() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="my-4">
+                    {uniqueFloors.length > 0 && (
+                      <div className="mb-4">
+                        <Label htmlFor="aiQuoteFloor" className="text-slate-900 font-bold">Select Floor Scope</Label>
+                        <select
+                          id="aiQuoteFloor"
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mt-1"
+                          value={aiQuoteFloor}
+                          onChange={(e) => setAiQuoteFloor(e.target.value)}
+                        >
+                          <option value="all">All Floors (Combined)</option>
+                          {uniqueFloors.map(floor => (
+                            <option key={floor} value={floor}>{floor} Only</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     <Label htmlFor="region" className="text-slate-900 font-bold">Region</Label>
                     <Input id="region" name="region" placeholder="e.g., Nairobi, Kenya" required/>
                     {quoteState?.error && <p className="text-sm text-destructive mt-1">{quoteState.error}</p>}
                   </div>
-                  <input type="hidden" name="blocks" value={totals.totalBlocks} />
-                  <input type="hidden" name="beamLength" value={totals.totalInvoiceBeamLength} />
+                  <input type="hidden" name="blocks" value={activeQuoteTotals.totalBlocks} />
+                  <input type="hidden" name="beamLength" value={activeQuoteTotals.totalInvoiceBeamLength} />
+                  <input type="hidden" name="brcRolls" value={activeQuoteTotals.brc.rollsNeeded} />
                   <DialogFooter>
                      <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                      <SubmitButton className="bg-primary hover:bg-primary/90 text-white"><Wand2/> Generate</SubmitButton>

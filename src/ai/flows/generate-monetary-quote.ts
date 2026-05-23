@@ -14,7 +14,6 @@ import {z} from 'genkit';
 const GenerateMonetaryQuoteInputSchema = z.object({
   blocks: z.number().describe('The quantity of blocks required.'),
   beamLength: z.number().describe('The total length of beams required in meters.'),
-  concreteVolume: z.number().describe('The volume of concrete required in cubic meters.'),
   brcRolls: z.number().describe('The number of BRC rolls required.'),
   region: z.string().describe('The region for which the quote is being generated.'),
 });
@@ -40,7 +39,6 @@ const generateMonetaryQuoteFlow = ai.defineFlow(
 Material Quantities:
 - Blocks: ${input.blocks}
 - Beam Length: ${input.beamLength} meters
-- Concrete Volume: ${input.concreteVolume} cubic meters
 - BRC Rolls: ${input.brcRolls}
 
 Region: ${input.region}
