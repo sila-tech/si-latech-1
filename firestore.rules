@@ -24,6 +24,16 @@ service cloud.firestore {
     match /invoices/{document=**} {
       allow read, write: if true;
     }
+
+    // Staff collection
+    match /staff/{staffId} {
+      allow read, write: if true;
+    }
+
+    // Finances collection
+    match /finances/{financeId} {
+      allow read, write: if true;
+    }
     
     // Deny all other access
     match /{document=**} {
