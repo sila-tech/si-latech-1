@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
             
             // If the project is moved to running, record the profit as income
             if (status === 'running') {
-                const project = projectsData.find((p: any) => p.id === projectId);
+                const project = projects?.find((p: any) => p.id === projectId);
                 if (project && project.profit) {
                     await addDoc(collection(firestore, 'finances'), {
                         type: 'income',
@@ -180,6 +180,7 @@ export default function AdminDashboardPage() {
 
             toast({ title: 'Success', description: `Project marked as ${status}.` });
         } catch (error) {
+            console.error("Error updating project status:", error);
             toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
         }
     };
