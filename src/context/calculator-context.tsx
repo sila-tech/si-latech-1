@@ -246,6 +246,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         rooms,
         settings,
         lintelLength,
+        profit: calculateProjectTotals(rooms, settings, lintelLength).totalProjectProfit,
     };
     
     if (loadedProjectId) {
