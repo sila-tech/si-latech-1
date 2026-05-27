@@ -29,9 +29,15 @@ service cloud.firestore {
     match /staff/{staffId} {
       allow read, write: if true;
     }
+    match /staff/{document=**} {
+      allow read, write: if true;
+    }
 
     // Finances collection
     match /finances/{financeId} {
+      allow read, write: if true;
+    }
+    match /finances/{document=**} {
       allow read, write: if true;
     }
     
