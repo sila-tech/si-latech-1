@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -31,8 +31,12 @@ import { useCalculator } from '@/context/calculator-context';
 import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf, generateMaterialSchedulePdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import Link from 'next/link';
-import { MapPin, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Image as ImageIcon, UserCheck } from 'lucide-react';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
+import { StaffManagement } from '@/components/admin/staff-management';
+import { FinanceManagement } from '@/components/admin/finance-management';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -40,8 +44,15 @@ export default function AdminDashboardPage() {
     const [isLayoutViewOpen, setIsLayoutViewOpen] = useState(false);
     const router = useRouter();
     const { totals: currentTotals } = useCalculator();
+    const { toast } = useToast();
 
     const firestore = useFirestore();
+
+    const staffQuery = useMemoFirebase(
+        () => query(collection(firestore, 'staff'), orderBy('createdAt', 'desc')),
+        [firestore]
+    );
+    const { data: staffList } = useCollection<any>(staffQuery);
 
     const projectsQuery = useMemoFirebase(
         () => query(collection(firestore, 'projects'), orderBy('createdAt', 'desc')),
@@ -109,6 +120,15 @@ export default function AdminDashboardPage() {
         (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.clientName || '').toLowerCase().includes(searchQuery.toLowerCase())
     ).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    const handleAssignStaff = async (projectId: string, staffUsername: string) => {
+        try {
+            await updateDoc(doc(firestore, 'projects', projectId), { assignedTo: staffUsername });
+            toast({ title: 'Success', description: 'Project assigned to staff.' });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not assign staff.', variant: 'destructive' });
+        }
+    };
 
     if (projectsLoading || invoicesLoading) {
         return (
@@ -185,14 +205,28 @@ export default function AdminDashboardPage() {
             </div>
 
             <Tabs defaultValue="projects" className="w-full">
-                <TabsList className="bg-slate-100 p-1 h-12 w-auto inline-flex rounded-lg mb-8">
+                <TabsList className="bg-slate-100 p-1 h-12 w-auto inline-flex rounded-lg mb-8 flex-wrap overflow-x-auto justify-start">
                     <TabsTrigger value="projects" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Project Management
                     </TabsTrigger>
                     <TabsTrigger value="invoices" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Quote History
                     </TabsTrigger>
+                    <TabsTrigger value="finances" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                        Finances
+                    </TabsTrigger>
+                    <TabsTrigger value="staff" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                        Staff
+                    </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="finances">
+                    <FinanceManagement />
+                </TabsContent>
+
+                <TabsContent value="staff">
+                    <StaffManagement />
+                </TabsContent>
 
                 <TabsContent value="projects" className="space-y-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -256,6 +290,20 @@ export default function AdminDashboardPage() {
                                                     <div className="flex items-center gap-2 text-xs text-slate-600">
                                                         <Layers size={14} className="text-primary" />
                                                         {proj.rooms?.length || 0} Rooms / Project Areas
+                                                    </div>
+                                                    <div className="flex items-center gap-2 pt-2 border-t mt-2">
+                                                        <UserCheck size={14} className="text-slate-400" />
+                                                        <Select value={proj.assignedTo || "unassigned"} onValueChange={(val) => handleAssignStaff(proj.id, val === "unassigned" ? "" : val)}>
+                                                            <SelectTrigger className="h-7 text-xs flex-1">
+                                                                <SelectValue placeholder="Assign Staff" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="unassigned" className="text-xs text-slate-500 italic">Unassigned</SelectItem>
+                                                                {staffList?.map((s: any) => (
+                                                                    <SelectItem key={s.id} value={s.username} className="text-xs">{s.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                 </CardContent>
                                                 <CardFooter className="bg-slate-50 border-t p-3 grid grid-cols-2 gap-2">
