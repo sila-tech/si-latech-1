@@ -1,6 +1,7 @@
 
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { calculateProjectTotals } from './calculator';
 
 export const addLogoToPdf = (doc: jsPDF, color: string) => {
     try {
@@ -371,5 +372,134 @@ export const generateProfitRequestPdf = (data: {
     doc.text('Please process the payment as per the agreed terms.', 14, footerY + 5);
 
     doc.save(`Commission-Request-${clientInfo.projectName}-${invoiceNumber}.pdf`);
+    return true;
+};
+
+export const generateMaterialSchedulePdf = (data: {
+    clientInfo: {
+        clientName: string;
+        projectName: string;
+        projectLocation: string;
+        selectedFloor?: string;
+    };
+    rooms: any[];
+    settings: any;
+}) => {
+    const { clientInfo, rooms, settings } = data;
+    const doc = new jsPDF();
+    const primaryColor = '#095388';
+    const scheduleDate = new Date().toLocaleDateString('en-GB');
+    const scheduleNumber = `MAT-${String(Date.now()).slice(-6)}`;
+
+    const renderFloorMaterialPage = (pageTitle: string, pageTotals: any) => {
+      const { totalConcreteVolume, totalCementBags, totalSandTonnes, totalBallastTonnes, brc, lintel, timber, lintelSteel } = pageTotals;
+      
+      const combinedCementBags = totalCementBags + lintel.cementBags;
+      const combinedSandTonnes = totalSandTonnes + lintel.sandTonnes;
+      const combinedBallastTonnes = totalBallastTonnes + lintel.ballastTonnes;
+      const combinedWetVolume = totalConcreteVolume + lintel.wetVolume;
+
+      addLogoToPdf(doc, primaryColor);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 60, 22);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('PROJECT DETAILS', 14, 55);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Client: ${clientInfo.clientName || 'N/A'}`, 14, 61);
+      doc.text(`Project: ${clientInfo.projectName || 'N/A'}`, 14, 66);
+      doc.text(`Location: ${clientInfo.projectLocation || 'N/A'}`, 14, 71);
+
+      doc.text(`Schedule No.: ${scheduleNumber}`, 145, 61);
+      doc.text(`Date: ${scheduleDate}`, 145, 66);
+
+      const tableColumn = ['MATERIAL', 'QUANTITY', 'UNIT', 'NOTES'];
+      const tableRows = [
+        ['Cement (50kg bags)', combinedCementBags, 'bags', 'Includes slab & lintels, plus 10% wastage'],
+        ['Sand', combinedSandTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
+        ['Ballast / Coarse Aggregate', combinedBallastTonnes.toFixed(2), 'tonnes', 'Includes slab & lintels, plus 10% wastage'],
+        ['BRC Mesh A98', brc?.rollsNeeded || 0, 'rolls', `For a total slab area of ${(pageTotals.totalArea || 0).toFixed(2)} m²`],
+        ['Total Wet Concrete Volume', combinedWetVolume.toFixed(3), 'm³', 'Excludes wastage, for mixing reference'],
+        [`D${lintelSteel?.longitudinal?.diameter || 12} Steel Bars`, lintelSteel?.longitudinal?.barsToOrder || 0, 'pcs', `12m lengths for lintel longitudinals`],
+        [`D${lintelSteel?.stirrups?.diameter || 8} Steel Bars`, lintelSteel?.stirrups?.barsToOrder || 0, 'pcs', `12m lengths for lintel stirrups`],
+        ['3x2 Timber', `${(timber?.total3x2m || 0).toFixed(2)}m (${(timber?.total3x2ft || 0).toFixed(2)} ft)`, 'length', `${timber?.total3x2pieces || 0} total pieces`],
+        ['6x1 Timber', `${(timber?.total6x1m || 0).toFixed(2)}m (${(timber?.total6x1ft || 0).toFixed(2)} ft)`, 'length', 'For slab side shuttering'],
+        ['Props', timber?.totalProps || 0, 'pcs', 'For supporting 3x2 timbers'],
+      ];
+
+      (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 80,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 10 },
+        columnStyles: {
+          1: { halign: 'right' },
+        }
+      });
+
+      let finalY = (doc as any).lastAutoTable.finalY;
+      
+      finalY += 15;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('NOTES', 14, finalY);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      finalY += 6;
+      doc.text('1. All quantities are estimates. Verify with site measurements before ordering.', 14, finalY);
+      finalY += 6;
+      doc.text('2. This schedule includes materials for the beam & block slab, wall lintels, and timber formwork.', 14, finalY);
+      finalY += 6;
+      doc.text('3. Steel bar quantities are for lintels only and include 5% wastage. Order standard 12m lengths.', 14, finalY);
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+    
+    // Fallback totals calculation if rooms/settings are valid
+    let totals = { totalArea: 0, totalConcreteVolume: 0, totalCementBags: 0, totalSandTonnes: 0, totalBallastTonnes: 0, brc: { rollsNeeded: 0 }, lintel: { cementBags: 0, sandTonnes: 0, ballastTonnes: 0, wetVolume: 0 }, timber: { total3x2m: 0, total3x2ft: 0, total3x2pieces: 0, total6x1m: 0, total6x1ft: 0, totalProps: 0 }, lintelSteel: { longitudinal: { diameter: 12, barsToOrder: 0 }, stirrups: { diameter: 8, barsToOrder: 0 } } };
+    
+    if (rooms && rooms.length > 0 && settings) {
+        totals = calculateProjectTotals(rooms, settings, 0);
+    }
+
+    const uniqueFloors = Array.from(new Set((rooms || []).map(r => {
+      if (r.name && r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
+      }
+      return '';
+    }).filter(Boolean)));
+
+    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+      uniqueFloors.forEach((floor, idx) => {
+        if (idx > 0) {
+          doc.addPage();
+        }
+        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        renderFloorMaterialPage(`Materials Schedule - ${floor.toUpperCase()}`, floorTotals);
+      });
+
+      // Add combined summary page at the end
+      doc.addPage();
+      renderFloorMaterialPage('Consolidated Materials Schedule (Combined)', totals);
+    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+      // Single specific floor
+      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      renderFloorMaterialPage(`Materials Schedule - ${selectedFloor.toUpperCase()}`, floorTotals);
+    } else {
+      // Combined quote (single page)
+      renderFloorMaterialPage('Consolidated Materials Schedule', totals);
+    }
+
+    addPdfBackground(doc);
+    doc.save(`SI-LATECH-Material-Schedule-${scheduleNumber}.pdf`);
     return true;
 };

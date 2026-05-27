@@ -28,7 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { format, isToday, isYesterday } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
-import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf } from '@/lib/pdf-utils';
+import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf, generateMaterialSchedulePdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import Link from 'next/link';
 import { MapPin, Image as ImageIcon } from 'lucide-react';
@@ -439,20 +439,35 @@ export default function AdminDashboardPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-                                    <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold flex-1 h-12" onClick={() => handleDownloadPromax(selectedProject)}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+                                    <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold h-12" onClick={() => handleDownloadPromax(selectedProject)}>
                                         <Download className="mr-2 h-5 w-5" /> Manufacturing Order
                                     </Button>
                                     <Button 
                                         variant="outline" 
-                                        className="border-primary text-primary hover:bg-primary/5 font-bold flex-1 h-12"
+                                        className="border-primary text-primary hover:bg-primary/5 font-bold h-12"
+                                        onClick={() => generateMaterialSchedulePdf({
+                                            clientInfo: {
+                                                projectName: selectedProject.name,
+                                                projectLocation: selectedProject.projectLocation || 'N/A',
+                                                clientName: selectedProject.clientName || 'N/A'
+                                            },
+                                            rooms: selectedProject.rooms || [],
+                                            settings: selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }
+                                        })}
+                                    >
+                                        <Download className="mr-2 h-5 w-5" /> Material Breakdown
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        className="border-primary text-primary hover:bg-primary/5 font-bold h-12"
                                         onClick={() => setIsLayoutViewOpen(true)}
                                     >
                                         <ImageIcon className="mr-2 h-5 w-5" /> View Layout Diagrams
                                     </Button>
                                     <Button 
                                         variant="outline" 
-                                        className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold flex-1 h-12"
+                                        className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold h-12"
                                         onClick={() => generateProfitRequestPdf({
                                             clientInfo: {
                                                 projectName: selectedProject.name,
