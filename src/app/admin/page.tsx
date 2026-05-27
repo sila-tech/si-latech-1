@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, addDoc, serverTimestamp, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -163,18 +163,40 @@ export default function AdminDashboardPage() {
         try {
             await updateDoc(doc(firestore, 'projects', projectId), { status });
             
+            const project = projects?.find((p: any) => p.id === projectId);
+            
             // If the project is moved to running, record the profit as income
             if (status === 'running') {
-                const project = projects?.find((p: any) => p.id === projectId);
                 if (project && project.profit) {
                     await addDoc(collection(firestore, 'finances'), {
                         type: 'income',
                         amount: project.profit,
                         reason: `Project Income: ${project.clientName || 'Unnamed Project'}`,
+                        projectId: projectId,
                         requestedBy: 'System',
                         status: 'approved',
                         createdAt: serverTimestamp()
                     });
+                }
+            } else if (status === 'pending') {
+                // If moved back to pending, remove the income record from finances
+                if (project) {
+                    // We check for both projectId (new way) or matching reason (for older backfilled ones)
+                    let finQuery = query(collection(firestore, 'finances'), where('projectId', '==', projectId));
+                    let snapshot = await getDocs(finQuery);
+                    
+                    if (snapshot.empty) {
+                        finQuery = query(
+                            collection(firestore, 'finances'), 
+                            where('reason', '==', `Project Income: ${project.clientName || 'Unnamed Project'}`),
+                            where('type', '==', 'income')
+                        );
+                        snapshot = await getDocs(finQuery);
+                    }
+
+                    for (const d of snapshot.docs) {
+                        await deleteDoc(doc(firestore, 'finances', d.id));
+                    }
                 }
             }
 
