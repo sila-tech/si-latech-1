@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -162,6 +162,22 @@ export default function AdminDashboardPage() {
     const handleUpdateProjectStatus = async (projectId: string, status: string) => {
         try {
             await updateDoc(doc(firestore, 'projects', projectId), { status });
+            
+            // If the project is moved to running, record the profit as income
+            if (status === 'running') {
+                const project = projectsData.find((p: any) => p.id === projectId);
+                if (project && project.profit) {
+                    await addDoc(collection(firestore, 'finances'), {
+                        type: 'income',
+                        amount: project.profit,
+                        reason: `Project Income: ${project.clientName || 'Unnamed Project'}`,
+                        requestedBy: 'System',
+                        status: 'approved',
+                        createdAt: serverTimestamp()
+                    });
+                }
+            }
+
             toast({ title: 'Success', description: `Project marked as ${status}.` });
         } catch (error) {
             toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
