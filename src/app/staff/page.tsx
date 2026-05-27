@@ -49,10 +49,16 @@ export default function StaffDashboardPage() {
     const { data: projects, isLoading: projectsLoading } = useCollection<any>(projectsQuery);
 
     const myFinancesQuery = useMemoFirebase(
-        () => user?.username ? query(collection(firestore, 'finances'), where('requestedBy', '==', user.username), orderBy('createdAt', 'desc')) : null,
+        () => user?.username ? query(collection(firestore, 'finances'), where('requestedBy', '==', user.username)) : null,
         [firestore, user?.username]
     );
-    const { data: myRequests, isLoading: requestsLoading } = useCollection<any>(myFinancesQuery);
+    const { data: rawRequests, isLoading: requestsLoading } = useCollection<any>(myFinancesQuery);
+    
+    // Sort client-side to avoid needing a Firestore composite index
+    const myRequests = React.useMemo(() => {
+        if (!rawRequests) return [];
+        return [...rawRequests].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    }, [rawRequests]);
 
     const handleLogout = () => {
         sessionStorage.removeItem(STAFF_SESSION_KEY);
