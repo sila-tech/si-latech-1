@@ -290,37 +290,39 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead>Description</TableHead>
-                                                <TableHead className="text-right text-red-600">Debit</TableHead>
-                                                <TableHead className="text-right text-green-600">Credit</TableHead>
-                                                <TableHead className="text-right font-bold">Balance</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {displayLedger.length === 0 ? (
-                                                <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-8">No ledger records found.</TableCell></TableRow>
-                                            ) : (
-                                                displayLedger.map((entry: any) => (
-                                                    <TableRow key={entry.id}>
-                                                        <TableCell className="text-xs text-slate-500">
-                                                            {entry.createdAt?.seconds ? format(new Date(entry.createdAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell className="font-medium text-sm">
-                                                            {entry.reason}
-                                                            <div className="text-[10px] text-slate-400">By: {entry.requestedBy}</div>
-                                                        </TableCell>
-                                                        <TableCell className="text-right text-red-600">{entry.debit > 0 ? `-${entry.debit.toLocaleString()}` : '-'}</TableCell>
-                                                        <TableCell className="text-right text-green-600">{entry.credit > 0 ? `+${entry.credit.toLocaleString()}` : '-'}</TableCell>
-                                                        <TableCell className="text-right font-bold">KSh {entry.balance.toLocaleString()}</TableCell>
-                                                    </TableRow>
-                                                ))
-                                            )}
-                                        </TableBody>
-                                    </Table>
+                                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded-md">
+                                        <Table>
+                                            <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
+                                                <TableRow>
+                                                    <TableHead>Date</TableHead>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead className="text-right text-red-600">Debit</TableHead>
+                                                    <TableHead className="text-right text-green-600">Credit</TableHead>
+                                                    <TableHead className="text-right font-bold">Balance</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {displayLedger.length === 0 ? (
+                                                    <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-8">No ledger records found.</TableCell></TableRow>
+                                                ) : (
+                                                    displayLedger.map((entry: any) => (
+                                                        <TableRow key={entry.id}>
+                                                            <TableCell className="text-xs text-slate-500">
+                                                                {entry.createdAt?.seconds ? format(new Date(entry.createdAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell className="font-medium text-sm">
+                                                                {entry.reason}
+                                                                <div className="text-[10px] text-slate-400">By: {entry.requestedBy}</div>
+                                                            </TableCell>
+                                                            <TableCell className="text-right text-red-600">{entry.debit > 0 ? `-${entry.debit.toLocaleString()}` : '-'}</TableCell>
+                                                            <TableCell className="text-right text-green-600">{entry.credit > 0 ? `+${entry.credit.toLocaleString()}` : '-'}</TableCell>
+                                                            <TableCell className="text-right font-bold">KSh {entry.balance.toLocaleString()}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
                             </TabsContent>
 
@@ -328,62 +330,59 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead>Type</TableHead>
-                                                <TableHead>Description</TableHead>
-                                                <TableHead>User</TableHead>
-                                                <TableHead className="text-right">Amount</TableHead>
-                                                <TableHead className="text-center">Status / Action</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {finances?.length === 0 ? (
-                                                <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">No records found.</TableCell></TableRow>
-                                            ) : (
-                                                finances?.map(f => (
-                                                    <TableRow key={f.id}>
-                                                        <TableCell className="text-xs text-slate-500">
-                                                            {f.createdAt?.seconds ? format(new Date(f.createdAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                                                                f.type === 'income' ? 'bg-green-100 text-green-700' : 
-                                                                f.type === 'facilitation_request' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                                                            }`}>
-                                                                {f.type.replace('_', ' ').toUpperCase()}
-                                                            </span>
-                                                        </TableCell>
-                                                        <TableCell className="font-medium text-sm">{f.reason}</TableCell>
-                                                        <TableCell className="text-sm">{f.requestedBy}</TableCell>
-                                                        <TableCell className="text-right font-bold">KSh {f.amount?.toLocaleString()}</TableCell>
-                                                        <TableCell className="text-center">
-                                                            {f.status === 'pending' ? (
-                                                                isSuperAdmin ? (
-                                                                    <div className="flex items-center justify-center gap-2">
-                                                                        <Button size="sm" variant="outline" className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200" onClick={() => handleUpdateStatus(f.id, 'approved')}>
-                                                                            <CheckCircle2 size={16} />
-                                                                        </Button>
-                                                                        <Button size="sm" variant="outline" className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200" onClick={() => handleUpdateStatus(f.id, 'rejected')}>
-                                                                            <XCircle size={16} />
-                                                                        </Button>
-                                                                    </div>
+                                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded-md">
+                                        <Table>
+                                            <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
+                                                <TableRow>
+                                                    <TableHead>Date</TableHead>
+                                                    <TableHead>Type</TableHead>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead>User</TableHead>
+                                                    <TableHead className="text-right">Amount</TableHead>
+                                                    <TableHead className="text-center">Status / Action</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {finances?.length === 0 ? (
+                                                    <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">No records found.</TableCell></TableRow>
+                                                ) : (
+                                                    finances?.map(f => (
+                                                        <TableRow key={f.id}>
+                                                            <TableCell className="text-xs text-slate-500">
+                                                                {f.createdAt?.seconds ? format(new Date(f.createdAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className={f.type === 'income' ? 'text-green-600 border-green-200 bg-green-50' : 'text-red-600 border-red-200 bg-red-50'}>
+                                                                    {f.type === 'income' ? 'Income' : 'Expense'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="font-medium text-sm max-w-[200px] truncate" title={f.reason}>{f.reason}</TableCell>
+                                                            <TableCell className="text-xs text-slate-500">{f.requestedBy}</TableCell>
+                                                            <TableCell className="text-right font-bold">
+                                                                KSh {f.amount?.toLocaleString() || '0'}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                {f.status === 'pending' ? (
+                                                                    isSuperAdmin ? (
+                                                                        <div className="flex gap-2 justify-center">
+                                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => handleUpdateStatus(f.id, 'approved')}>Approve</Button>
+                                                                            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleUpdateStatus(f.id, 'rejected')}>Reject</Button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">Pending</Badge>
+                                                                    )
                                                                 ) : (
-                                                                    <span className="text-xs font-bold text-amber-600">PENDING</span>
-                                                                )
-                                                            ) : (
-                                                                <span className={`text-xs font-bold ${f.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
-                                                                    {f.status.toUpperCase()}
-                                                                </span>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                            )}
-                                        </TableBody>
-                                    </Table>
+                                                                    <Badge variant="outline" className={f.status === 'approved' ? 'text-green-600 border-green-200' : 'text-slate-500'}>
+                                                                        {f.status.charAt(0).toUpperCase() + f.status.slice(1)}
+                                                                    </Badge>
+                                                                )}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
                             </TabsContent>
                         </Tabs>

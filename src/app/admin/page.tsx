@@ -440,8 +440,9 @@ export default function AdminDashboardPage() {
                         <h2 className="text-2xl font-bold font-headline text-slate-900">Recent Quotes</h2>
                     </div>
                     <Card className="border border-slate-200 shadow-md overflow-hidden bg-white">
-                        <Table>
-                            <TableHeader className="bg-slate-50 border-b">
+                        <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                            <Table>
+                                <TableHeader className="bg-slate-50 border-b sticky top-0 z-10">
                                 <TableRow>
                                     <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Date</TableHead>
                                     <TableHead className="uppercase text-[10px] font-bold tracking-wider text-slate-500">Quote #</TableHead>
@@ -491,6 +492,7 @@ export default function AdminDashboardPage() {
                                 )}
                             </TableBody>
                         </Table>
+                        </div>
                     </Card>
                 </TabsContent>
             </Tabs>
