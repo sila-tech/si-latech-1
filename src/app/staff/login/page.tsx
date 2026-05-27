@@ -44,10 +44,17 @@ export default function StaffLoginPage() {
                 const sessionData = {
                     id: snapshot.docs[0].id,
                     username: userData.username,
-                    name: userData.name
+                    name: userData.name,
+                    role: userData.role || 'staff'
                 };
-                sessionStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(sessionData));
-                router.push('/staff');
+                
+                if (sessionData.role === 'admin') {
+                    sessionStorage.setItem('sila-admin-auth', JSON.stringify(sessionData));
+                    router.push('/admin');
+                } else {
+                    sessionStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(sessionData));
+                    router.push('/staff');
+                }
             } else {
                 setError('Invalid username or PIN.');
             }
@@ -70,9 +77,9 @@ export default function StaffLoginPage() {
                                 <HardHat size={32} />
                             </div>
                         </div>
-                        <CardTitle className="text-2xl font-bold font-headline">Staff Portal</CardTitle>
+                        <CardTitle className="text-2xl font-bold font-headline">Portal Access</CardTitle>
                         <CardDescription>
-                            Access your assigned projects and manage site operations.
+                            Login to access your dashboard and manage operations.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -103,7 +110,7 @@ export default function StaffLoginPage() {
                         </div>
                         <Button onClick={handleLogin} className="w-full h-11 bg-slate-900 hover:bg-slate-800" disabled={isLoading || !username || !pin}>
                             {isLoading ? <Loader2 className="animate-spin" /> : <Shield className="mr-2" />}
-                            {isLoading ? 'Verifying...' : 'Login to Staff Portal'}
+                            {isLoading ? 'Verifying...' : 'Secure Login'}
                         </Button>
                     </CardContent>
                 </Card>

@@ -16,11 +16,12 @@ import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export function FinanceManagement() {
+export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: boolean }) {
     const [amount, setAmount] = useState('');
     const [reason, setReason] = useState('');
-    const [type, setType] = useState('income');
+    const [type, setType] = useState(isSuperAdmin ? 'income' : 'facilitation_request');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [statementPeriod, setStatementPeriod] = useState('all');
 
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -40,12 +41,23 @@ export function FinanceManagement() {
 
         setIsSubmitting(true);
         try {
+            // Get admin name from session storage
+            let adminName = 'Admin';
+            try {
+                const stored = sessionStorage.getItem('sila-admin-auth');
+                if (stored && stored !== btoa('Sila4927')) {
+                    adminName = JSON.parse(stored).name || 'Admin';
+                } else if (stored === btoa('Sila4927')) {
+                    adminName = 'Super Admin';
+                }
+            } catch (e) {}
+
             await addDoc(collection(firestore, 'finances'), {
                 type,
                 amount: parseFloat(amount),
                 reason,
-                requestedBy: 'Admin',
-                status: 'approved', // Admin records are auto-approved
+                requestedBy: adminName,
+                status: isSuperAdmin ? 'approved' : 'pending',
                 createdAt: serverTimestamp()
             });
             toast({ title: 'Success', description: 'Financial record added.' });
@@ -96,10 +108,28 @@ export function FinanceManagement() {
     });
     const displayLedger = [...ledgerEntries].reverse();
 
+    const filterLedgerByPeriod = (entries: any[]) => {
+        if (statementPeriod === 'all') return entries;
+        const now = new Date();
+        return entries.filter(entry => {
+            if (!entry.createdAt?.seconds) return false;
+            const entryDate = new Date(entry.createdAt.seconds * 1000);
+            if (statementPeriod === 'this_month') {
+                return entryDate.getMonth() === now.getMonth() && entryDate.getFullYear() === now.getFullYear();
+            }
+            if (statementPeriod === 'last_month') {
+                const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                return entryDate.getMonth() === lastMonth.getMonth() && entryDate.getFullYear() === lastMonth.getFullYear();
+            }
+            return true;
+        });
+    };
+
     const downloadCSV = () => {
         const headers = ['Date', 'Description', 'User', 'Debit (KSh)', 'Credit (KSh)', 'Running Balance (KSh)'];
-        const rows = displayLedger.map(entry => {
-            const dateStr = entry.createdAt?.seconds ? format(new Date(entry.createdAt.seconds * 1000), 'dd MMM yyyy, h:mm a') : 'N/A';
+        const filteredForDownload = filterLedgerByPeriod(displayLedger);
+        const rows = filteredForDownload.map(entry => {
+            const dateStr = entry.createdAt?.seconds ? format(new Date(entry.createdAt.seconds * 1000), 'dd/MM/yyyy') : 'N/A';
             return [
                 `"${dateStr}"`,
                 `"${entry.reason.replace(/"/g, '""')}"`,
@@ -113,7 +143,7 @@ export function FinanceManagement() {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `bank_statement_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`);
+        link.setAttribute("download", `bank_statement_${format(new Date(), 'yyyyMMdd')}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -124,11 +154,12 @@ export function FinanceManagement() {
         doc.setFontSize(18);
         doc.text('SI-LATECH Bank Statement', 14, 22);
         doc.setFontSize(11);
-        doc.text(`Generated on: ${format(new Date(), 'dd MMM yyyy, h:mm a')}`, 14, 30);
+        doc.text(`Generated on: ${format(new Date(), 'dd/MM/yyyy')}`, 14, 30);
         
         const tableColumn = ["Date", "Description", "User", "Debit (KSh)", "Credit (KSh)", "Balance (KSh)"];
-        const tableRows = displayLedger.map(entry => {
-            const dateStr = entry.createdAt?.seconds ? format(new Date(entry.createdAt.seconds * 1000), 'dd MMM yyyy HH:mm') : 'N/A';
+        const filteredForDownload = filterLedgerByPeriod(displayLedger);
+        const tableRows = filteredForDownload.map(entry => {
+            const dateStr = entry.createdAt?.seconds ? format(new Date(entry.createdAt.seconds * 1000), 'dd/MM/yyyy') : 'N/A';
             return [
                 dateStr,
                 entry.reason,
@@ -187,33 +218,35 @@ export function FinanceManagement() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-1 border-slate-200">
                     <CardHeader>
-                        <CardTitle className="text-lg">Log Transaction</CardTitle>
-                        <CardDescription>Manually record income or expense.</CardDescription>
+                        <CardTitle className="text-lg">{isSuperAdmin ? 'Log Transaction' : 'Request Facilitation'}</CardTitle>
+                        <CardDescription>{isSuperAdmin ? 'Manually record income or expense.' : 'Submit a request for facilitation funds.'}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleAddRecord} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Type</Label>
-                                <Select value={type} onValueChange={setType}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="income">Income (Money Received)</SelectItem>
-                                        <SelectItem value="advertisement">Advertisement Expense</SelectItem>
-                                        <SelectItem value="other_expense">Other Expense</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            {isSuperAdmin && (
+                                <div className="space-y-2">
+                                    <Label>Type</Label>
+                                    <Select value={type} onValueChange={setType}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="income">Income (Money Received)</SelectItem>
+                                            <SelectItem value="advertisement">Advertisement Expense</SelectItem>
+                                            <SelectItem value="other_expense">Other Expense</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <Label>Amount (KSh)</Label>
                                 <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Description / Reason</Label>
-                                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Facebook Ads" />
+                                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={isSuperAdmin ? "e.g. Facebook Ads" : "e.g. Transport to site"} />
                             </div>
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-                                Save Record
+                                {isSuperAdmin ? 'Save Record' : 'Submit Request'}
                             </Button>
                         </form>
                     </CardContent>
@@ -231,13 +264,28 @@ export function FinanceManagement() {
                             </TabsList>
                             
                             <TabsContent value="bank" className="space-y-4">
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="outline" size="sm" onClick={downloadCSV}>
-                                        <Download size={16} className="mr-2"/> Excel (CSV)
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={downloadPDF}>
-                                        <FileText size={16} className="mr-2"/> PDF
-                                    </Button>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Label className="whitespace-nowrap text-xs text-slate-500">Period:</Label>
+                                        <Select value={statementPeriod} onValueChange={setStatementPeriod}>
+                                            <SelectTrigger className="h-8 w-32 text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all" className="text-xs">All Time</SelectItem>
+                                                <SelectItem value="this_month" className="text-xs">This Month</SelectItem>
+                                                <SelectItem value="last_month" className="text-xs">Last Month</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                        <Button variant="outline" size="sm" onClick={downloadCSV}>
+                                            <Download size={16} className="mr-2"/> Excel (CSV)
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={downloadPDF}>
+                                            <FileText size={16} className="mr-2"/> PDF
+                                        </Button>
+                                    </div>
                                 </div>
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
@@ -313,14 +361,18 @@ export function FinanceManagement() {
                                                         <TableCell className="text-right font-bold">KSh {f.amount?.toLocaleString()}</TableCell>
                                                         <TableCell className="text-center">
                                                             {f.status === 'pending' ? (
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    <Button size="sm" variant="outline" className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200" onClick={() => handleUpdateStatus(f.id, 'approved')}>
-                                                                        <CheckCircle2 size={16} />
-                                                                    </Button>
-                                                                    <Button size="sm" variant="outline" className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200" onClick={() => handleUpdateStatus(f.id, 'rejected')}>
-                                                                        <XCircle size={16} />
-                                                                    </Button>
-                                                                </div>
+                                                                isSuperAdmin ? (
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        <Button size="sm" variant="outline" className="bg-green-50 hover:bg-green-100 text-green-600 border-green-200" onClick={() => handleUpdateStatus(f.id, 'approved')}>
+                                                                            <CheckCircle2 size={16} />
+                                                                        </Button>
+                                                                        <Button size="sm" variant="outline" className="bg-red-50 hover:bg-red-100 text-red-600 border-red-200" onClick={() => handleUpdateStatus(f.id, 'rejected')}>
+                                                                            <XCircle size={16} />
+                                                                        </Button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs font-bold text-amber-600">PENDING</span>
+                                                                )
                                                             ) : (
                                                                 <span className={`text-xs font-bold ${f.status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>
                                                                     {f.status.toUpperCase()}

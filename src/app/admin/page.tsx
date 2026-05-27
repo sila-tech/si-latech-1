@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
@@ -23,7 +23,8 @@ import {
     Layers, 
     History,
     ArrowRight,
-    Download
+    Download,
+    Activity
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -40,11 +41,33 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [projectTab, setProjectTab] = useState('running');
     const [selectedProject, setSelectedProject] = useState<any>(null);
     const [isLayoutViewOpen, setIsLayoutViewOpen] = useState(false);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const router = useRouter();
     const { totals: currentTotals } = useCalculator();
     const { toast } = useToast();
+
+    useEffect(() => {
+        const storedAuth = sessionStorage.getItem('sila-admin-auth');
+        if (storedAuth === btoa('Sila4927')) {
+            setIsSuperAdmin(true);
+        } else if (storedAuth) {
+            try {
+                const parsed = JSON.parse(storedAuth);
+                if (parsed.role === 'admin') {
+                    setIsSuperAdmin(false);
+                } else {
+                    router.push('/admin/login');
+                }
+            } catch {
+                router.push('/admin/login');
+            }
+        } else {
+            router.push('/admin/login');
+        }
+    }, [router]);
 
     const firestore = useFirestore();
 
@@ -116,10 +139,16 @@ export default function AdminDashboardPage() {
         });
     };
 
-    const filteredProjects = projects?.filter(p => 
-        (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.clientName || '').toLowerCase().includes(searchQuery.toLowerCase())
-    ).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    const filteredProjects = projects?.filter(p => {
+        const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (p.clientName || '').toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (!matchesSearch) return false;
+        
+        const pStatus = p.status || 'pending';
+        if (projectTab === 'all') return true;
+        return pStatus === projectTab;
+    }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
     const handleAssignStaff = async (projectId: string, staffUsername: string) => {
         try {
@@ -127,6 +156,15 @@ export default function AdminDashboardPage() {
             toast({ title: 'Success', description: 'Project assigned to staff.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Could not assign staff.', variant: 'destructive' });
+        }
+    };
+
+    const handleUpdateProjectStatus = async (projectId: string, status: string) => {
+        try {
+            await updateDoc(doc(firestore, 'projects', projectId), { status });
+            toast({ title: 'Success', description: `Project marked as ${status}.` });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
         }
     };
 
@@ -215,21 +253,25 @@ export default function AdminDashboardPage() {
                     <TabsTrigger value="finances" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Finances
                     </TabsTrigger>
-                    <TabsTrigger value="staff" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                        Staff
-                    </TabsTrigger>
+                    {isSuperAdmin && (
+                        <TabsTrigger value="staff" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                            Team Management
+                        </TabsTrigger>
+                    )}
                 </TabsList>
 
                 <TabsContent value="finances">
-                    <FinanceManagement />
+                    <FinanceManagement isSuperAdmin={isSuperAdmin} />
                 </TabsContent>
 
-                <TabsContent value="staff">
-                    <StaffManagement />
-                </TabsContent>
+                {isSuperAdmin && (
+                    <TabsContent value="staff">
+                        <StaffManagement />
+                    </TabsContent>
+                )}
 
                 <TabsContent value="projects" className="space-y-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <h2 className="text-2xl font-bold font-headline text-slate-900">Saved Projects</h2>
                         <div className="relative w-full md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -242,7 +284,15 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
                     
-                    <div className="space-y-12">
+                    <Tabs value={projectTab} onValueChange={setProjectTab} className="w-full">
+                        <TabsList className="bg-slate-100 p-1 mb-6">
+                            <TabsTrigger value="running" className="px-4 data-[state=active]:bg-white">Running</TabsTrigger>
+                            <TabsTrigger value="pending" className="px-4 data-[state=active]:bg-white">Pending</TabsTrigger>
+                            <TabsTrigger value="finished" className="px-4 data-[state=active]:bg-white">Finished</TabsTrigger>
+                            <TabsTrigger value="all" className="px-4 data-[state=active]:bg-white">All Projects</TabsTrigger>
+                        </TabsList>
+                        
+                        <div className="space-y-12">
                         {(() => {
                             const groups: Record<string, any[]> = {};
                             
@@ -274,7 +324,16 @@ export default function AdminDashboardPage() {
                                                 <CardHeader className="bg-slate-50 border-b pb-4">
                                                     <div className="flex justify-between items-start">
                                                         <div>
-                                                            <CardTitle className="text-lg font-bold text-slate-900">{proj.name}</CardTitle>
+                                                            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                                                {proj.name}
+                                                                <Badge variant="outline" className={
+                                                                    (proj.status || 'pending') === 'running' ? 'bg-sky-50 text-sky-600 border-sky-200' :
+                                                                    (proj.status || 'pending') === 'finished' ? 'bg-green-50 text-green-600 border-green-200' :
+                                                                    'bg-amber-50 text-amber-600 border-amber-200'
+                                                                }>
+                                                                    {(proj.status || 'pending').toUpperCase()}
+                                                                </Badge>
+                                                            </CardTitle>
                                                             <CardDescription className="text-xs">{proj.clientName || 'No Client Name'}</CardDescription>
                                                         </div>
                                                         <div className="bg-white px-2 py-1 rounded border border-slate-200 text-[10px] font-bold text-slate-500">
@@ -305,6 +364,19 @@ export default function AdminDashboardPage() {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
+                                                    <div className="flex items-center gap-2 pt-2 border-t">
+                                                        <Activity size={14} className="text-slate-400" />
+                                                        <Select value={proj.status || "pending"} onValueChange={(val) => handleUpdateProjectStatus(proj.id, val)}>
+                                                            <SelectTrigger className="h-7 text-xs flex-1">
+                                                                <SelectValue placeholder="Status" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="pending" className="text-xs text-amber-600">Pending</SelectItem>
+                                                                <SelectItem value="running" className="text-xs text-sky-600">Running</SelectItem>
+                                                                <SelectItem value="finished" className="text-xs text-green-600">Finished</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
                                                 </CardContent>
                                                 <CardFooter className="bg-slate-50 border-t p-3 grid grid-cols-2 gap-2">
                                                     <Button variant="outline" size="sm" className="bg-white font-bold text-xs" onClick={() => setSelectedProject(proj)}>
@@ -320,7 +392,8 @@ export default function AdminDashboardPage() {
                                 </div>
                             ));
                         })()}
-                    </div>
+                        </div>
+                    </Tabs>
                 </TabsContent>
 
                 <TabsContent value="invoices" className="space-y-6">

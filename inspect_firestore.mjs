@@ -15,11 +15,14 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function inspect() {
-    const collections = ['projects', 'admins', 'settings', 'investors', 'loans', 'deposits'];
+    const collections = ['finances', 'staff'];
     for (const colName of collections) {
         console.log(`\n--- Inspecting collection: ${colName} ---`);
         try {
-            const q = query(collection(db, colName), limit(5));
+            const { orderBy, where } = await import('firebase/firestore');
+            const q = query(collection(db, colName), where('requestedBy', '==', 'test'), orderBy('createdAt', 'desc'), limit(5));
+            console.log('Query structure:', Object.keys(q));
+            console.log('_query:', q._query);
             const snapshot = await getDocs(q);
             if (snapshot.empty) {
                 console.log(`No documents found in ${colName}.`);
