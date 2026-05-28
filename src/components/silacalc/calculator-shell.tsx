@@ -151,15 +151,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                     )}
                   </div>
                   <div className="space-y-1.5 text-xs text-slate-600">
-                    <p className="flex justify-between border-b pb-1">
-                      <span>Beam Cost:</span>
-                      <strong className="text-slate-900">KSh 545 / meter</strong>
-                    </p>
-                    <p className="flex justify-between pb-1">
-                      <span>Block Cost:</span>
-                      <strong className="text-slate-900">KSh 85 / block</strong>
-                    </p>
-                    <p className="text-[10px] text-slate-400 italic pt-1.5 border-t">Best for regular spans and cost-efficient residential floor systems.</p>
+                    <p className="text-[11px] text-slate-500 italic leading-relaxed">Best for regular spans and cost-efficient residential floor systems.</p>
                   </div>
                 </div>
 
@@ -182,15 +174,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                     )}
                   </div>
                   <div className="space-y-1.5 text-xs text-slate-600">
-                    <p className="flex justify-between border-b pb-1">
-                      <span>Beam Cost:</span>
-                      <strong className="text-slate-900">KSh 1,250 / meter</strong>
-                    </p>
-                    <p className="flex justify-between pb-1">
-                      <span>Block Cost:</span>
-                      <strong className="text-slate-900">KSh 110 / block</strong>
-                    </p>
-                    <p className="text-[10px] text-slate-400 italic pt-1.5 border-t">Ideal for heavy loads, commercial spans, and industrial floor systems.</p>
+                    <p className="text-[11px] text-slate-500 italic leading-relaxed">Ideal for heavy loads, commercial spans, and industrial floor systems.</p>
                   </div>
                 </div>
               </div>

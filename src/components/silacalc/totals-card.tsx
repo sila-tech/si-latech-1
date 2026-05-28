@@ -15,10 +15,8 @@ import {
   ShoppingBag, 
   Calculator, 
   TrendingUp, 
-  Coins, 
   FolderSync, 
-  Info,
-  Calendar
+  Info
 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
@@ -36,20 +34,13 @@ export function TotalsCard() {
     timber,
   } = totals;
 
-  const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 1250 : 545;
-  const BLOCK_PRICE = settings.beamType === 'tbeam' ? 110 : 85;
-
-  const beamsCost = totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
-  const blocksCost = totalBlocks * BLOCK_PRICE;
-  const grandTotalCost = beamsCost + blocksCost;
-
   return (
     <Card className="sticky top-24 border border-slate-200 bg-white shadow-md overflow-hidden flex flex-col rounded-xl">
       <CardHeader className="bg-slate-900 text-white pb-6">
         <div className="flex justify-between items-center mb-2">
           <CardTitle className="font-headline text-xl font-bold flex items-center gap-2">
             <Calculator size={20} className="text-sky-400" />
-            Live Quotation Estimator
+            Project Totals
           </CardTitle>
           <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${
             settings.beamType === 'tbeam' 
@@ -60,97 +51,62 @@ export function TotalsCard() {
           </span>
         </div>
         <CardDescription className="text-slate-400 text-xs">
-          Real-time billing and structural material assessment.
+          Summary of all required structural material quantities.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
         
-        {/* Estimated Price Section */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-              <Coins size={14} className="text-slate-400" /> Estimated Materials Cost
-            </span>
-            <span className="text-[10px] bg-sky-50 text-sky-600 font-bold px-2 py-0.5 rounded border border-sky-100">
-              VAT Inclusive
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black text-slate-900 tracking-tight">KSh {grandTotalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          
-          <Separator className="bg-slate-200/50" />
-
-          {/* Itemized pricing breakdown */}
-          <div className="space-y-2 pt-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-500 flex items-center gap-1">
-                <Ruler size={12} className="text-slate-400" />
-                Beams ({totalInvoiceBeamLength.toFixed(1)}m @ KSh {BEAM_PRICE_PER_METER})
-              </span>
-              <strong className="text-slate-900 font-semibold">KSh {beamsCost.toLocaleString()}</strong>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-500 flex items-center gap-1">
-                <BrickWall size={12} className="text-slate-400" />
-                Blocks ({totalBlocks.toLocaleString()} pcs @ KSh {BLOCK_PRICE})
-              </span>
-              <strong className="text-slate-900 font-semibold">KSh {blocksCost.toLocaleString()}</strong>
-            </div>
-          </div>
-        </div>
-
         {/* Live Material Quantities */}
         <div className="space-y-3">
-          <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <ShoppingBag size={13} /> Required Quantities Breakdown
+          <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5 font-headline">
+            Required Quantities Breakdown
           </h4>
           
           <div className="grid grid-cols-1 gap-2.5">
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
                 <Layers size={16} className="text-sky-500" /> Total Slab Area
               </span>
               <strong className="text-slate-900 font-bold">{totalArea.toFixed(2)} m²</strong>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
                 <BrickWall size={16} className="text-emerald-500" /> Standard Blocks (Invoice)
               </span>
               <strong className="text-slate-900 font-bold">{totalBlocks.toLocaleString()} pcs</strong>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
                 <Ruler size={16} className="text-indigo-500" /> Invoiced Beams Length
               </span>
               <strong className="text-slate-900 font-bold">{totalInvoiceBeamLength.toFixed(1)} m</strong>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
-                <Coins size={16} className="text-amber-500" /> Cement (50kg Bags)
+                <CoinsIcon size={16} className="text-amber-500" /> Cement (50kg Bags)
               </span>
               <strong className="text-slate-900 font-bold">{totalCementBags} bags</strong>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
                 <FolderSync size={16} className="text-rose-500" /> Sand & Ballast
               </span>
               <strong className="text-slate-900 font-bold">{totalSandTonnes.toFixed(1)}t / {totalBallastTonnes.toFixed(1)}t</strong>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
                 <ShoppingBag size={16} className="text-cyan-500" /> BRC Mesh rolls
               </span>
               <strong className="text-slate-900 font-bold">{brc?.rollsNeeded || 0} rolls</strong>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
+            <div className="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-sm hover:border-slate-200 transition-colors">
               <span className="text-slate-600 flex items-center gap-2">
                 <TrendingUp size={16} className="text-slate-600" /> Support Props Required
               </span>
@@ -164,11 +120,33 @@ export function TotalsCard() {
         <div className="flex gap-2.5 text-[11px] text-slate-500 items-start bg-slate-50/50 p-3 rounded-lg border border-slate-100">
           <Info size={16} className="text-sky-500 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            Live prices dynamically update as you switch beam configurations or add room measurements. Export a PDF to see full material schedules.
+            Technical specifications automatically update in real-time as you switch beam configurations or add room measurements. Pricing details are fully visible in the generated PDF invoice.
           </p>
         </div>
 
       </CardContent>
     </Card>
+  );
+}
+
+// Custom simple helper for the Coins icon to match our requirements perfectly
+function CoinsIcon({ size, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size || 24}
+      height={size || 24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <circle cx="8" cy="8" r="6" />
+      <circle cx="18" cy="18" r="4" />
+      <path d="M12 18a6 6 0 0 0-6-6" />
+    </svg>
   );
 }
