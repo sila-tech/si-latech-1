@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -291,7 +292,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
-                                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded-md">
+                                    <ScrollArea className="max-h-[500px] w-full rounded-md border">
                                         <Table>
                                             <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
                                                 <TableRow>
@@ -323,7 +324,8 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                 )}
                                             </TableBody>
                                         </Table>
-                                    </div>
+                                        <ScrollBar orientation="horizontal" />
+                                    </ScrollArea>
                                 )}
                             </TabsContent>
 
@@ -331,7 +333,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
-                                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded-md">
+                                    <ScrollArea className="max-h-[500px] w-full rounded-md border">
                                         <Table>
                                             <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
                                                 <TableRow>
@@ -383,7 +385,8 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                 )}
                                             </TableBody>
                                         </Table>
-                                    </div>
+                                        <ScrollBar orientation="horizontal" />
+                                    </ScrollArea>
                                 )}
                             </TabsContent>
                         </Tabs>
