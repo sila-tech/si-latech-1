@@ -292,7 +292,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
-                                    <ScrollArea className="max-h-[500px] w-full rounded-md border">
+                                    <div className="h-[320px] overflow-y-auto overflow-x-auto border rounded-md">
                                         <Table>
                                             <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
                                                 <TableRow>
@@ -324,8 +324,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                 )}
                                             </TableBody>
                                         </Table>
-                                        <ScrollBar orientation="horizontal" />
-                                    </ScrollArea>
+                                    </div>
                                 )}
                             </TabsContent>
 
@@ -333,7 +332,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 {isLoading ? (
                                     <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
                                 ) : (
-                                    <ScrollArea className="max-h-[500px] w-full rounded-md border">
+                                    <div className="h-[320px] overflow-y-auto overflow-x-auto border rounded-md">
                                         <Table>
                                             <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
                                                 <TableRow>
@@ -385,8 +384,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                 )}
                                             </TableBody>
                                         </Table>
-                                        <ScrollBar orientation="horizontal" />
-                                    </ScrollArea>
+                                    </div>
                                 )}
                             </TabsContent>
                         </Tabs>
