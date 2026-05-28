@@ -45,6 +45,7 @@ export interface CalculationDefaults {
   hook_length: number;
   steel_wastage_pct: number;
   standard_bar_length: number;
+  beamType?: 'flat' | 'tbeam';
 }
 
 export interface RoomCalculation {
@@ -198,6 +199,7 @@ export const DEFAULTS: CalculationDefaults = {
   hook_length: 0.10,
   steel_wastage_pct: 5,
   standard_bar_length: 12.0,
+  beamType: 'flat',
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -212,6 +214,7 @@ export function calcRoomBlocksAndBeams(
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
+  const beamPrice = C.beamType === 'tbeam' ? 1250 : (beamPricePerMeter === 545 ? 545 : beamPricePerMeter);
 
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
@@ -296,7 +299,7 @@ export function calcRoomBlocksAndBeams(
 
   // --- 3. PROFIT CALCULATION ---
   const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
-  const beamProfitValue = profitBeamLength * beamPricePerMeter;
+  const beamProfitValue = profitBeamLength * beamPrice;
   const blockCommission = totalBlocks * C.blockCommissionRate;
   const totalRoomProfit = beamProfitValue + blockCommission;
   
@@ -440,7 +443,7 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
   rooms.forEach(room => {
-      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, 545, room.name);
+      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, room.name);
       const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
       if (!roomGroups.has(sizeKey)) roomGroups.set(sizeKey, { rooms: [], calcs });
       roomGroups.get(sizeKey)!.rooms.push(room);
@@ -471,6 +474,7 @@ export function calculateProjectTotals(
     totalSandTonnes: 0,
     totalBallastTonnes: 0,
     wastagePercentage: settings.wastagePercentage || 0,
+    beamType: settings.beamType || 'flat',
     timber: {
       total3x2pieces: 0,
       total3x2m: 0,
@@ -482,7 +486,7 @@ export function calculateProjectTotals(
   };
 
   const perRoomCalculations = rooms.map((r) => {
-    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, 545, r.name);
+    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name);
     const concreteCalcs = calcConcrete(roomCalcs, settings);
     const brcCalcs = calcBRC(concreteCalcs.area, settings);
     const timberCalcs = calcTimberAndProps(r, settings);

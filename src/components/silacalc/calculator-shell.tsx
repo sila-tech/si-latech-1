@@ -15,6 +15,7 @@ import { ProcessGuide, TechnicalGuide } from './installation-guide';
 import type { ProjectData } from '@/context/calculator-context';
 import Image from 'next/image';
 import { CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 function TechAdvantages() {
   const advantages = [
@@ -108,7 +109,7 @@ function TechAdvantages() {
 }
 
 export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
-  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData } = useCalculator();
+  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings } = useCalculator();
 
   // Load initial data when the component mounts or when initialProjectData changes
   useEffect(() => {
@@ -122,6 +123,80 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
       <ProcessGuide />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
+          
+          {/* Beam Type Selector Card */}
+          <Card className="border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
+            <CardHeader className="bg-slate-50/50 border-b pb-4">
+              <CardTitle className="text-lg font-bold text-slate-900 font-headline">Select Concrete Beam System</CardTitle>
+              <CardDescription className="text-xs">Choose the structural beam system before inputting measurements.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Flat Beam Option */}
+                <div 
+                  onClick={() => setSettings(prev => ({ ...prev, beamType: 'flat' }))}
+                  className={`cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 relative select-none ${
+                    settings.beamType !== 'tbeam' 
+                      ? 'border-primary bg-sky-50/10 shadow-sm ring-1 ring-primary/10' 
+                      : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-xs'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-slate-900">Flat Beam System</h3>
+                      <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Standard Residential</p>
+                    </div>
+                    {settings.beamType !== 'tbeam' && (
+                      <span className="bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider">ACTIVE</span>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 text-xs text-slate-600">
+                    <p className="flex justify-between border-b pb-1">
+                      <span>Beam Cost:</span>
+                      <strong className="text-slate-900">KSh 545 / meter</strong>
+                    </p>
+                    <p className="flex justify-between pb-1">
+                      <span>Block Cost:</span>
+                      <strong className="text-slate-900">KSh 85 / block</strong>
+                    </p>
+                    <p className="text-[10px] text-slate-400 italic pt-1.5 border-t">Best for regular spans and cost-efficient residential floor systems.</p>
+                  </div>
+                </div>
+
+                {/* T-Beam Option */}
+                <div 
+                  onClick={() => setSettings(prev => ({ ...prev, beamType: 'tbeam' }))}
+                  className={`cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 relative select-none ${
+                    settings.beamType === 'tbeam' 
+                      ? 'border-primary bg-sky-50/10 shadow-sm ring-1 ring-primary/10' 
+                      : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-xs'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-slate-900">T-Beam System</h3>
+                      <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider mt-0.5">Heavy Duty Span</p>
+                    </div>
+                    {settings.beamType === 'tbeam' && (
+                      <span className="bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider">ACTIVE</span>
+                    )}
+                  </div>
+                  <div className="space-y-1.5 text-xs text-slate-600">
+                    <p className="flex justify-between border-b pb-1">
+                      <span>Beam Cost:</span>
+                      <strong className="text-slate-900">KSh 1,250 / meter</strong>
+                    </p>
+                    <p className="flex justify-between pb-1">
+                      <span>Block Cost:</span>
+                      <strong className="text-slate-900">KSh 110 / block</strong>
+                    </p>
+                    <p className="text-[10px] text-slate-400 italic pt-1.5 border-t">Ideal for heavy loads, commercial spans, and industrial floor systems.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
             {rooms.map((room, i) => (

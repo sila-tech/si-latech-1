@@ -137,11 +137,15 @@ export const generateQuotePdf = (data: {
     doc.setTextColor(50);
     doc.text(invoiceDate, 145, 56);
 
+    const isTBeam = safeTotals.beamType === 'tbeam';
+    const BEAM_PRICE = isTBeam ? 1250 : 545;
+    const BLOCK_PRICE = isTBeam ? 110 : 85;
+
     // Table
     const tableColumn = ['DESCRIPTION', 'QTY', 'UNIT', 'RATE', 'AMOUNT'];
     const tableRows = [
-        ['Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', '545.00', ((safeTotals.totalInvoiceBeamLength || 0) * 545).toLocaleString()],
-        ['Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', '85.00', ((safeTotals.totalBlocks || 0) * 85).toLocaleString()],
+        [isTBeam ? 'Prestressed Concrete T-Beams' : 'Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', BEAM_PRICE.toFixed(2), ((safeTotals.totalInvoiceBeamLength || 0) * BEAM_PRICE).toLocaleString()],
+        [isTBeam ? 'Concrete Hollow Blocks for T-Beams (4x8x16)' : 'Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', BLOCK_PRICE.toFixed(2), ((safeTotals.totalBlocks || 0) * BLOCK_PRICE).toLocaleString()],
     ];
 
     (doc as any).autoTable({
@@ -160,7 +164,7 @@ export const generateQuotePdf = (data: {
     });
 
     let finalY = (doc as any).lastAutoTable.finalY + 10;
-    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * 545) + ((safeTotals.totalBlocks || 0) * 85);
+    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * BEAM_PRICE) + ((safeTotals.totalBlocks || 0) * BLOCK_PRICE);
 
     // Totals Section
     const totalsX = 145;

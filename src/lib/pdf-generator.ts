@@ -8,10 +8,12 @@ export async function generateQuotePdfBuffer(clientInfo: any, rooms: any[]): Pro
   const invoiceDate = new Date().toLocaleDateString('en-GB');
   const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
   
-  const BLOCK_PRICE = 85;
-  const BEAM_PRICE_PER_METER = 545;
+  const isTBeam = clientInfo?.beamType === 'tbeam';
+  const BLOCK_PRICE = isTBeam ? 110 : 85;
+  const BEAM_PRICE_PER_METER = isTBeam ? 1250 : 545;
 
-  const totals = calculateProjectTotals(rooms, DEFAULTS);
+  const defaultsWithBeamType = { ...DEFAULTS, beamType: clientInfo?.beamType || 'flat' };
+  const totals = calculateProjectTotals(rooms, defaultsWithBeamType);
   
   const blocksTotal = totals.totalBlocks * BLOCK_PRICE;
   const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
@@ -50,8 +52,8 @@ export async function generateQuotePdfBuffer(clientInfo: any, rooms: any[]): Pro
     startY: currentY,
     head: [['Description', 'Quantity', 'Unit Price (KES)', 'Total (KES)']],
     body: [
-      ['Precast Concrete Flat Beams (Linear Meters)', totals.totalInvoiceBeamLength.toFixed(2) + 'm', BEAM_PRICE_PER_METER.toString(), beamsTotal.toLocaleString()],
-      ['Hollow Concrete Blocks (Pieces)', totals.totalBlocks.toString(), BLOCK_PRICE.toString(), blocksTotal.toLocaleString()]
+      [isTBeam ? 'Precast Concrete T-Beams (Linear Meters)' : 'Precast Concrete Flat Beams (Linear Meters)', totals.totalInvoiceBeamLength.toFixed(2) + 'm', BEAM_PRICE_PER_METER.toString(), beamsTotal.toLocaleString()],
+      [isTBeam ? 'Concrete Hollow Blocks for T-Beams (Pieces)' : 'Hollow Concrete Blocks (Pieces)', totals.totalBlocks.toString(), BLOCK_PRICE.toString(), blocksTotal.toLocaleString()]
     ],
     theme: 'grid',
     headStyles: { fillColor: [9, 83, 136], textColor: 255, fontStyle: 'bold' },

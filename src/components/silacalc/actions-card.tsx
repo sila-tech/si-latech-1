@@ -403,8 +403,8 @@ export function ActionsCard() {
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
     
-    const BLOCK_PRICE = 85;
-    const BEAM_PRICE_PER_METER = 545;
+    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 110 : 85;
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 1250 : 545;
 
     const renderFloorQuotePage = (pageTitle: string, pageTotals: any) => {
       addLogoToPdf(doc, primaryColor);
@@ -464,13 +464,13 @@ export function ActionsCard() {
 
       const tableRows = [
         [
-          'Total Invoiced Beams (m)',
+          settings.beamType === 'tbeam' ? 'Total Invoiced T-Beams (m)' : 'Total Invoiced Beams (m)',
           pageTotals.totalInvoiceBeamLength.toFixed(2),
           BEAM_PRICE_PER_METER.toFixed(2),
           beamsTotal.toFixed(2)
         ],
         [
-          'Total Blocks (pcs)',
+          settings.beamType === 'tbeam' ? 'Total Blocks for T-Beams (pcs)' : 'Total Blocks (pcs)',
           pageTotals.totalBlocks.toString(),
           BLOCK_PRICE.toFixed(2),
           blocksTotal.toFixed(2)

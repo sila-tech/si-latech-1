@@ -313,7 +313,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
-    const BEAM_PRICE_PER_METER = 545; 
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 1250 : 545; 
     return rooms.map((r) => {
       const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
