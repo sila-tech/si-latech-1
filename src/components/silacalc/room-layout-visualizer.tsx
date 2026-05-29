@@ -69,14 +69,31 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
             // Beams start at 0.00m (at the wall) and then offset by unitSpan
             const pos = (i * layout.unitSpan) * scale;
             const bWidth = layout.beamWidth * scale;
+            const isExcess = calc.excessBeamCount > 0 && i >= calc.physicalBeamCount;
             
             return (
               <g key={i}>
                 {/* Beam */}
                 {beamsParallelToLength ? (
-                   <rect x={20 + pos} y="20" width={bWidth} height={svgHeight} fill="#475569" rx="1" />
+                   <rect 
+                     x={20 + pos} y="20" 
+                     width={bWidth} height={svgHeight} 
+                     fill={isExcess ? "#fee2e2" : "#475569"} 
+                     stroke={isExcess ? "#ef4444" : "none"}
+                     strokeWidth={isExcess ? 1.5 : 0}
+                     strokeDasharray={isExcess ? "3 3" : "none"}
+                     rx="1" 
+                   />
                 ) : (
-                   <rect x="20" y={20 + pos} width={svgWidth} height={bWidth} fill="#475569" rx="1" />
+                   <rect 
+                     x="20" y={20 + pos} 
+                     width={svgWidth} height={bWidth} 
+                     fill={isExcess ? "#fee2e2" : "#475569"} 
+                     stroke={isExcess ? "#ef4444" : "none"}
+                     strokeWidth={isExcess ? 1.5 : 0}
+                     strokeDasharray={isExcess ? "3 3" : "none"}
+                     rx="1" 
+                   />
                 )}
               </g>
             );
@@ -89,6 +106,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
             const rowCenterPos = layout.beamCount === 0
               ? (spanLength / 2) * scale
               : (i * layout.unitSpan + layout.beamWidth + layout.beamSpacing / 2) * scale;
+            const isExcessRow = calc.excessBeamCount > 0 && i >= calc.physicalBeamCount;
             
             return (
               <g key={`row-${i}`}>
@@ -101,8 +119,11 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
                       x={beamsParallelToLength ? 20 + rowCenterPos - 8 : 20 + blockPos - 8}
                       y={beamsParallelToLength ? 20 + blockPos - 8 : 20 + rowCenterPos - 8}
                       width="16" height="16"
-                      fill="#f59e0b" fillOpacity="0.2"
-                      stroke="#f59e0b" strokeWidth="1" strokeDasharray="2 2"
+                      fill={isExcessRow ? "#ef4444" : "#f59e0b"} 
+                      fillOpacity={isExcessRow ? "0.05" : "0.2"}
+                      stroke={isExcessRow ? "#ef4444" : "#f59e0b"} 
+                      strokeWidth="1" 
+                      strokeDasharray={isExcessRow ? "1 3" : "2 2"}
                       rx="2"
                     />
                   );
@@ -146,8 +167,14 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
       </div>
 
       {/* Spacing & Safety Validation Checklist */}
-      <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100/60 mt-2 print:hidden">
-        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2 print:text-slate-500 flex items-center gap-1">
+      <div className={`p-4 rounded-xl border mt-2 print:hidden ${
+        calc.excessBeamCount > 0 
+          ? "bg-amber-50/50 border-amber-200/60" 
+          : "bg-emerald-50/40 border-emerald-100/60"
+      }`}>
+        <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 print:text-slate-500 flex items-center gap-1 ${
+          calc.excessBeamCount > 0 ? "text-amber-600" : "text-emerald-600"
+        }`}>
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
@@ -163,13 +190,39 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
             <span>Row Spans: <strong className="text-slate-900 font-semibold">Closed</strong> (Standard 400mm)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-emerald-500 font-bold">✓</span>
-            <span>End Support: <strong className="text-slate-900 font-semibold">Closed</strong> ({(layout.gapAtEnd * 1000).toFixed(0)}mm gap infill)</span>
+            {calc.excessBeamCount > 0 ? (
+              <>
+                <span className="text-amber-500 font-bold">⚠️</span>
+                <span>End Support: <strong className="text-amber-700 font-bold">Overflow</strong> ({calc.remainingVoidSpaceMm}mm void)</span>
+              </>
+            ) : (
+              <>
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span>End Support: <strong className="text-slate-900 font-semibold">Closed</strong> ({(layout.gapAtEnd * 1000).toFixed(0)}mm gap infill)</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-emerald-500 font-bold">✓</span>
-            <span>Total Coverage: <strong className="text-slate-900 font-semibold">100% Secure</strong> ({longer.toFixed(2)}m span)</span>
+            {calc.excessBeamCount > 0 ? (
+              <>
+                <span className="text-amber-500 font-bold">⚠️</span>
+                <span>Coverage: <strong className="text-amber-700 font-bold">{calc.excessBeamCount} Excess Beam(s)</strong></span>
+              </>
+            ) : (
+              <>
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span>Total Coverage: <strong className="text-slate-900 font-semibold">100% Secure</strong> ({longer.toFixed(2)}m span)</span>
+              </>
+            )}
           </div>
+          {calc.excessBeamCount > 0 && (
+            <div className="flex items-start gap-1.5 col-span-2 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-1">
+              <span className="text-amber-500 font-bold shrink-0 mt-0.5">⚠️</span>
+              <span className="text-amber-800 text-[11px] leading-relaxed">
+                <strong>Boundary Warning:</strong> {calc.structuralWarning || `${calc.excessBeamCount} beam(s) exceed the wall by ${calc.remainingVoidSpaceMm}mm.`}
+              </span>
+            </div>
+          )}
         </div>
       </div>
       

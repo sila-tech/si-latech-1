@@ -76,6 +76,13 @@ export interface RoomCalculation {
     beamCount: number;
     blocksPerRow: number;
   };
+  // Validation and Physical Layout fields
+  physicalBeamCount: number;
+  excessBeamCount: number;
+  excessBlockCount: number;
+  physicalEndGap: number;
+  remainingVoidSpaceMm: number;
+  structuralWarning?: string;
 }
 
 export interface ConcreteCalculation {
@@ -210,7 +217,8 @@ export function calcRoomBlocksAndBeams(
   widthMeters: number,
   opts: Partial<CalculationDefaults> = {},
   beamPricePerMeter: number = 545,
-  roomName: string = ''
+  roomName: string = '',
+  optimizeExcess: boolean = false
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
@@ -259,17 +267,44 @@ export function calcRoomBlocksAndBeams(
 
   actualBeamCount = Math.max(0, actualBeamCount);
 
+  // --- Layout Validation and Physical Checks ---
+  const spanLength = isBalcony ? shorter : longer;
+  const physicalBeamCount = spanLength > 0 ? Math.max(0, Math.floor(((spanLength - 0.15) / 0.55) + 1e-9) + 1) : 0;
+
+  const excessBeamCount = Math.max(0, actualBeamCount - physicalBeamCount);
+  const clearBeamLength = isBalcony ? longer : shorter;
+  const blocksPerBeamRow = clearBeamLength > 0 ? clearBeamLength * 4 : 0;
+  const excessBlockCount = excessBeamCount * blocksPerBeamRow;
+
+  const lastPhysicalBeamEnd = physicalBeamCount > 0 ? (physicalBeamCount - 1) * 0.55 + 0.15 : 0;
+  const physicalEndGap = spanLength > 0 ? Math.max(0, spanLength - lastPhysicalBeamEnd) : 0;
+
+  let remainingVoidSpaceMm = 0;
+  let structuralWarning = "";
+
+  if (physicalEndGap >= 0.40) {
+    remainingVoidSpaceMm = Math.round((physicalEndGap - 0.40) * 1000);
+  } else if (physicalEndGap >= 0.20) {
+    remainingVoidSpaceMm = Math.round((physicalEndGap - 0.20) * 1000);
+  } else {
+    remainingVoidSpaceMm = Math.round(physicalEndGap * 1000);
+  }
+
+  if (excessBeamCount > 0) {
+    const overflow = (actualBeamCount - 1) * 0.55 + 0.15 - spanLength;
+    structuralWarning = `This room has ${excessBeamCount} excess beam(s) and ${excessBlockCount} excess block(s) that extend beyond the room boundary by ${(overflow * 1000).toFixed(0)}mm.`;
+  }
+
+  // Determine whether to use optimized physical counts or standard counts for calculations
+  const effectiveBeamCount = optimizeExcess ? physicalBeamCount : actualBeamCount;
+
   // Owner's master formula for blocks: total blocks = total beam metres * 4
   // For Balcony, beam length is `longer`. For Standard, beam length is `shorter`.
-  const clearBeamLength = isBalcony ? longer : shorter;
   const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
 
   // Blocks are laid between the walls (clear span)
-  const blocksPerBeamRow = clearBeamLength > 0 ? clearBeamLength * 4 : 0;
-  const numberOfSpaces = actualBeamCount;
-
-  const actualTotalBlocks = actualBeamCount * blocksPerBeamRow;
-  const actualTotalBeamLength = actualBeamCount * individualBeamLength;
+  const actualTotalBlocks = effectiveBeamCount * blocksPerBeamRow;
+  const actualTotalBeamLength = effectiveBeamCount * individualBeamLength;
 
   // --- 2. HARDCODED CONDITIONAL BILLING ---
   let invoiceTotalBeamLength: number;
@@ -285,12 +320,12 @@ export function calcRoomBlocksAndBeams(
   } else if (isBalcony) {
     // BALCONY / VERANDAH MODE: Add 1 profit beam
     const profitBeamsPerBalcony = 1;
-    invoiceBeamCount = actualBeamCount + profitBeamsPerBalcony;
+    invoiceBeamCount = effectiveBeamCount + profitBeamsPerBalcony;
     invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
   } else {
     // ROOM MODE: Actual Beams + 2 Beams
     const profitBeamsPerRoom = 2;
-    invoiceBeamCount = actualBeamCount + profitBeamsPerRoom;
+    invoiceBeamCount = effectiveBeamCount + profitBeamsPerRoom;
     invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
   }
 
@@ -309,10 +344,10 @@ export function calcRoomBlocksAndBeams(
     shorter,
     longer,
     individualBeamLength,
-    actualBeamCount,
-    profitBeams: invoiceBeamCount - actualBeamCount,
+    actualBeamCount: effectiveBeamCount, // Report optimized count if optimized
+    profitBeams: invoiceBeamCount - effectiveBeamCount,
     invoiceBeamCount,
-    beamSpaces: actualBeamCount > 0 ? actualBeamCount - 1 : 0,
+    beamSpaces: effectiveBeamCount > 0 ? effectiveBeamCount - 1 : 0,
     blocksPerBeamRow,
     totalBlocks,
     actualTotalBeamLength,
@@ -322,15 +357,21 @@ export function calcRoomBlocksAndBeams(
     blockCommission,
     totalRoomProfit,
     layout: {
-      gapAtEnd: endGap,
-      needsExtraBeam: endGap > clearGap,
-      needsHalfBlock: endGap > 0 && endGap <= clearGap,
+      gapAtEnd: optimizeExcess ? physicalEndGap : endGap,
+      needsExtraBeam: (optimizeExcess ? physicalEndGap : endGap) > clearGap,
+      needsHalfBlock: (optimizeExcess ? physicalEndGap : endGap) > 0 && (optimizeExcess ? physicalEndGap : endGap) <= clearGap,
       beamSpacing: clearGap,
       beamWidth: beamWidth,
       unitSpan: unitSpan,
-      beamCount: actualBeamCount,
+      beamCount: effectiveBeamCount,
       blocksPerRow: blocksPerBeamRow,
-    }
+    },
+    physicalBeamCount,
+    excessBeamCount,
+    excessBlockCount,
+    physicalEndGap,
+    remainingVoidSpaceMm,
+    structuralWarning
   };
 }
 
@@ -440,10 +481,10 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
   };
 }
 
-export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults): AggregatedRoomGroup[] {
+export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults, optimizeExcess: boolean = false): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
   rooms.forEach(room => {
-      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, room.name);
+      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, room.name, optimizeExcess);
       const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
       if (!roomGroups.has(sizeKey)) roomGroups.set(sizeKey, { rooms: [], calcs });
       roomGroups.get(sizeKey)!.rooms.push(room);
@@ -458,7 +499,8 @@ export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationD
 export function calculateProjectTotals(
   rooms: Room[],
   settings: CalculationDefaults,
-  lintelLength: number = 0
+  lintelLength: number = 0,
+  optimizeExcess: boolean = false
 ): any {
   const initialTotals = {
     totalArea: 0,
@@ -486,7 +528,7 @@ export function calculateProjectTotals(
   };
 
   const perRoomCalculations = rooms.map((r) => {
-    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name);
+    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name, optimizeExcess);
     const concreteCalcs = calcConcrete(roomCalcs, settings);
     const brcCalcs = calcBRC(concreteCalcs.area, settings);
     const timberCalcs = calcTimberAndProps(r, settings);

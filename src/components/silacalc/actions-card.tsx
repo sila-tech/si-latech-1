@@ -360,6 +360,42 @@ export function ActionsCard() {
     return calculateProjectTotals(floorRooms, settings, 0);
   }, [aiQuoteFloor, rooms, totals, settings]);
 
+  const [optimizeQuote, setOptimizeQuote] = useState<boolean>(false);
+  const [isValidationDialogOpen, setValidationDialogOpen] = useState<boolean>(false);
+  const [pendingClientInfo, setPendingClientInfo] = useState<ClientInfo | null>(null);
+  const [pendingActionType, setPendingActionType] = useState<'invoice' | 'schedule' | 'breakdown' | 'aggregated' | 'timber' | null>(null);
+
+  const excessRoomsSummary = useMemo(() => {
+    return perRoomCalculations.filter(p => p.roomCalcs.excessBeamCount > 0);
+  }, [perRoomCalculations]);
+
+  const projectHasExcess = excessRoomsSummary.length > 0;
+
+  const handleTriggerValidationCheck = (clientInfo: ClientInfo, actionType: 'invoice' | 'schedule' | 'breakdown' | 'aggregated' | 'timber') => {
+    setPendingClientInfo(clientInfo);
+    setPendingActionType(actionType);
+    if (projectHasExcess) {
+      setValidationDialogOpen(true);
+    } else {
+      setOptimizeQuote(false);
+      executeDownload(clientInfo, actionType, false);
+    }
+  };
+
+  const executeDownload = (clientInfo: ClientInfo, actionType: 'invoice' | 'schedule' | 'breakdown' | 'aggregated' | 'timber', opt: boolean) => {
+    if (actionType === 'invoice') {
+      handleDownloadInvoice(clientInfo, opt);
+    } else if (actionType === 'schedule') {
+      handleDownloadMaterialSchedule(clientInfo, opt);
+    } else if (actionType === 'breakdown') {
+      handleDownloadPromaxBreakdown(clientInfo, opt);
+    } else if (actionType === 'aggregated') {
+      handleDownloadAggregatedBreakdown(clientInfo, opt);
+    } else if (actionType === 'timber') {
+      handleDownloadTimberSchedule(clientInfo, opt);
+    }
+  };
+
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
@@ -397,7 +433,7 @@ export function ActionsCard() {
     clearCalculator();
   }
 
-  const handleDownloadInvoice = (clientInfo: ClientInfo) => {
+  const handleDownloadInvoice = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
     const invoiceDate = new Date().toLocaleDateString('en-GB');
@@ -539,7 +575,7 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
-    let activeTotals = totals;
+    let activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
     let activeRooms = rooms;
 
     if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
@@ -548,26 +584,28 @@ export function ActionsCard() {
           doc.addPage();
         }
         const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
         renderFloorQuotePage(`OFFICIAL QUOTE - ${floor.toUpperCase()}`, floorTotals);
       });
 
       // Add combined summary page at the end
       doc.addPage();
-      renderFloorQuotePage('OFFICIAL QUOTE - COMBINED SUMMARY', totals);
-      activeTotals = totals;
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorQuotePage('OFFICIAL QUOTE - COMBINED SUMMARY', combinedTotals);
+      activeTotals = combinedTotals;
       activeRooms = rooms;
     } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
       // Single specific floor
       const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
       renderFloorQuotePage(`OFFICIAL QUOTE - ${selectedFloor.toUpperCase()}`, floorTotals);
       activeTotals = floorTotals;
       activeRooms = floorRooms;
     } else {
       // Combined quote (single page)
-      renderFloorQuotePage('OFFICIAL QUOTE', totals);
-      activeTotals = totals;
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorQuotePage('OFFICIAL QUOTE', combinedTotals);
+      activeTotals = combinedTotals;
       activeRooms = rooms;
     }
 
@@ -616,7 +654,7 @@ export function ActionsCard() {
     });
   };
 
-  const handleDownloadMaterialSchedule = (clientInfo: ClientInfo) => {
+  const handleDownloadMaterialSchedule = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
     const scheduleDate = new Date().toLocaleDateString('en-GB');
@@ -700,27 +738,31 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
+    const activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+
     if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
       uniqueFloors.forEach((floor, idx) => {
         if (idx > 0) {
           doc.addPage();
         }
         const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
         renderFloorMaterialPage(`Materials Schedule - ${floor.toUpperCase()}`, floorTotals);
       });
 
       // Add combined summary page at the end
       doc.addPage();
-      renderFloorMaterialPage('Consolidated Materials Schedule (Combined)', totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorMaterialPage('Consolidated Materials Schedule (Combined)', combinedTotals);
     } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
       // Single specific floor
       const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
       renderFloorMaterialPage(`Materials Schedule - ${selectedFloor.toUpperCase()}`, floorTotals);
     } else {
       // Combined quote (single page)
-      renderFloorMaterialPage('Consolidated Materials Schedule', totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorMaterialPage('Consolidated Materials Schedule', combinedTotals);
     }
 
     addPdfBackground(doc);
@@ -728,7 +770,7 @@ export function ActionsCard() {
     setScheduleDialogOpen(false);
   };
 
-  const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo) => {
+  const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     const doc = new jsPDF();
     const primaryColor = '#0f172a'; // Slate-900
     const reportDate = new Date().toLocaleDateString('en-GB');
@@ -737,9 +779,14 @@ export function ActionsCard() {
     const renderFloorPromaxPage = (pageTitle: string, pageRooms: Room[], pageTotals: any) => {
       addLogoToPdf(doc, primaryColor);
       
+      const activePerRoomCalcs = pageRooms.map((r) => {
+        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name, isOptimized);
+        return { room: r, roomCalcs };
+      });
+
       const beamAggregates = new Map<number, number>();
       pageRooms.forEach(r => {
-          const p = perRoomCalculations.find(pr => pr.room.id === r.id);
+          const p = activePerRoomCalcs.find(pr => pr.room.id === r.id);
           if (p) {
               const length = p.roomCalcs.individualBeamLength || p.roomCalcs.shorter;
               const count = p.roomCalcs.actualBeamCount;
@@ -815,27 +862,31 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
+    const activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+
     if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
       uniqueFloors.forEach((floor, idx) => {
         if (idx > 0) {
           doc.addPage();
         }
         const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
         renderFloorPromaxPage(`PROMAX MFG ORDER - ${floor.toUpperCase()}`, floorRooms, floorTotals);
       });
 
       // Add combined summary page at the end
       doc.addPage();
-      renderFloorPromaxPage('PROMAX MFG ORDER - COMBINED SUMMARY', rooms, totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorPromaxPage('PROMAX MFG ORDER - COMBINED SUMMARY', rooms, combinedTotals);
     } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
       // Single specific floor
       const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
       renderFloorPromaxPage(`PROMAX MFG ORDER - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
     } else {
       // Combined (single page)
-      renderFloorPromaxPage('PROMAX MANUFACTURING ORDER', rooms, totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorPromaxPage('PROMAX MANUFACTURING ORDER', rooms, combinedTotals);
     }
 
     addPdfBackground(doc);
@@ -843,7 +894,7 @@ export function ActionsCard() {
     setBreakdownDialogOpen(false);
   };
   
-  const handleDownloadAggregatedBreakdown = (clientInfo: ClientInfo) => {
+  const handleDownloadAggregatedBreakdown = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
     const reportDate = new Date().toLocaleDateString('en-GB');
@@ -866,7 +917,7 @@ export function ActionsCard() {
 
       let currentY = 75;
       
-      const pageAggBreakdown = getAggregatedRoomBreakdown(pageRooms, settings);
+      const pageAggBreakdown = getAggregatedRoomBreakdown(pageRooms, settings, isOptimized);
 
       pageAggBreakdown.forEach(group => {
           if (currentY > 240) {
@@ -949,27 +1000,31 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
+    const activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+
     if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
       uniqueFloors.forEach((floor, idx) => {
         if (idx > 0) {
           doc.addPage();
         }
         const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
         renderFloorAggregatedPage(`Aggregated Breakdown - ${floor.toUpperCase()}`, floorRooms, floorTotals);
       });
 
       // Add combined summary page at the end
       doc.addPage();
-      renderFloorAggregatedPage('Aggregated Breakdown - COMBINED SUMMARY', rooms, totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorAggregatedPage('Aggregated Breakdown - COMBINED SUMMARY', rooms, combinedTotals);
     } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
       // Single specific floor
       const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
       renderFloorAggregatedPage(`Aggregated Breakdown - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
     } else {
       // Combined (single page)
-      renderFloorAggregatedPage('Aggregated Beams & Blocks Breakdown', rooms, totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorAggregatedPage('Aggregated Beams & Blocks Breakdown', rooms, combinedTotals);
     }
 
     addPdfBackground(doc);
@@ -977,12 +1032,20 @@ export function ActionsCard() {
     setAggregatedDialogOpen(false);
   };
     
-  const handleDownloadTimberSchedule = (clientInfo: ClientInfo) => {
+  const handleDownloadTimberSchedule = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     
+    const activePerRoomCalcs = rooms.map((r) => {
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name, isOptimized);
+      const concreteCalcs = calcConcrete(roomCalcs, settings);
+      const brcCalcs = calcBRC(concreteCalcs.area, settings);
+      const timberCalcs = calcTimberAndProps(r, settings);
+      return { room: r, roomCalcs, concreteCalcs, brcCalcs, timberCalcs };
+    });
+
     const renderFloorTimberPage = (pageTitle: string, pageRooms: Room[], pageTotals: any) => {
       addLogoToPdf(doc, primaryColor);
       
@@ -1000,7 +1063,7 @@ export function ActionsCard() {
       let currentY = 70;
 
       pageRooms.forEach((r) => {
-          const p = perRoomCalculations.find(pr => pr.room.id === r.id);
+          const p = activePerRoomCalcs.find(pr => pr.room.id === r.id);
           if (!p) return;
 
           if (currentY > 240) { 
@@ -1076,27 +1139,31 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
+    const activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+
     if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
       uniqueFloors.forEach((floor, idx) => {
         if (idx > 0) {
           doc.addPage();
         }
         const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
         renderFloorTimberPage(`Timber Schedule - ${floor.toUpperCase()}`, floorRooms, floorTotals);
       });
 
       // Add combined summary page at the end
       doc.addPage();
-      renderFloorTimberPage('Timber Schedule - COMBINED SUMMARY', rooms, totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorTimberPage('Timber Schedule - COMBINED SUMMARY', rooms, combinedTotals);
     } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
       // Single specific floor
       const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0);
+      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
       renderFloorTimberPage(`Timber Schedule - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
     } else {
       // Combined (single page)
-      renderFloorTimberPage('Timber & Props Schedule', rooms, totals);
+      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      renderFloorTimberPage('Timber & Props Schedule', rooms, combinedTotals);
     }
 
     addPdfBackground(doc);
@@ -1230,38 +1297,107 @@ export function ActionsCard() {
       <ClientInfoDialog
         open={isInvoiceDialogOpen}
         onOpenChange={setInvoiceDialogOpen}
-        onGenerateClick={handleDownloadInvoice}
+        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'invoice')}
         title="Download Customer Quote"
         description="Please confirm or update the client details for the quote."
       />
       <ClientInfoDialog
         open={isScheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
-        onGenerateClick={handleDownloadMaterialSchedule}
+        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'schedule')}
         title="Download Material Schedule"
         description="Please confirm or update the client details for the schedule."
       />
       <ClientInfoDialog
         open={isBreakdownDialogOpen}
         onOpenChange={setBreakdownDialogOpen}
-        onGenerateClick={handleDownloadPromaxBreakdown}
+        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'breakdown')}
         title="Download Promax Breakdown Report"
         description="Please confirm or update the project details for the manufacturing report."
       />
        <ClientInfoDialog
         open={isAggregatedDialogOpen}
         onOpenChange={setAggregatedDialogOpen}
-        onGenerateClick={handleDownloadAggregatedBreakdown}
+        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'aggregated')}
         title="Download Aggregated Report"
         description="Please confirm or update the client details for the report."
       />
       <ClientInfoDialog
         open={isTimberScheduleOpen}
         onOpenChange={setTimberScheduleOpen}
-        onGenerateClick={handleDownloadTimberSchedule}
+        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'timber')}
         title="Download Timber & Props Schedule"
         description="Please confirm or update the project details for the timber report."
       />
+
+      {/* Structural Optimization Alert Modal */}
+      <Dialog open={isValidationDialogOpen} onOpenChange={setValidationDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600 font-headline font-bold text-xl">
+              <span className="text-2xl animate-pulse">⚠️</span> Layout Boundary Warning
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 pt-1">
+              Our plan analysis system has detected that some rooms contain beams and blocks that extend beyond the physical walls of the house.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4 max-h-[300px] overflow-y-auto">
+            <p className="text-sm font-semibold text-slate-800">
+              The following room(s) have elements calculated past the physical boundaries:
+            </p>
+            {excessRoomsSummary.map((p, idx) => (
+              <div key={p.room.id || idx} className="p-4 bg-amber-50 rounded-xl border border-amber-200/70 shadow-xs flex flex-col gap-2">
+                <div className="flex justify-between items-start border-b border-amber-200/50 pb-1.5">
+                  <h4 className="font-bold text-slate-900 text-sm">{p.room.name}</h4>
+                  <span className="text-[10px] bg-amber-600 text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    {p.room.width.toFixed(2)}m × {p.room.length.toFixed(2)}m
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-700 font-medium">
+                  <div>• Excess Beams: <strong className="text-red-600 font-bold">{p.roomCalcs.excessBeamCount} pcs</strong></div>
+                  <div>• Excess Blocks: <strong className="text-red-600 font-bold">{p.roomCalcs.excessBlockCount} pcs</strong></div>
+                  <div className="col-span-2">• Remaining Void: <strong className="text-slate-950 font-bold">{p.roomCalcs.remainingVoidSpaceMm}mm space left</strong> (perfectly suited for direct concrete infill during casting)</div>
+                </div>
+              </div>
+            ))}
+            <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-start gap-2.5">
+              <span className="text-sky-500 text-lg">💡</span>
+              <p className="text-xs text-sky-800 leading-relaxed font-medium">
+                <strong>Optimization Recommendation</strong>: By selecting "Optimize Quote", we will deduct these excess materials from your bill, saving money and matching the exact physical layout.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 border-slate-200 hover:bg-slate-50 text-slate-700 h-11"
+              onClick={() => {
+                setOptimizeQuote(false);
+                setValidationDialogOpen(false);
+                if (pendingClientInfo && pendingActionType) {
+                  executeDownload(pendingClientInfo, pendingActionType, false);
+                }
+              }}
+            >
+              Keep Standard Formula
+            </Button>
+            <Button
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-sm flex items-center gap-1.5"
+              onClick={() => {
+                setOptimizeQuote(true);
+                setValidationDialogOpen(false);
+                if (pendingClientInfo && pendingActionType) {
+                  executeDownload(pendingClientInfo, pendingActionType, true);
+                }
+              }}
+            >
+              Optimize Quote (Deduct Excess)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isSaveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
