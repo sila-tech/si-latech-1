@@ -67,7 +67,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
           {/* Beams and Blocks */}
           {Array.from({ length: layout.beamCount }).map((_, i) => {
             // Beams start at 0.00m (at the wall) and then offset by unitSpan
-            const pos = (i * layout.unitSpan) * scale;
+            const pos = (layout.startWithBlock ? (0.40 + i * layout.unitSpan) : (i * layout.unitSpan)) * scale;
             const bWidth = layout.beamWidth * scale;
             const isExcess = calc.excessBeamCount > 0 && i >= calc.physicalBeamCount;
             
@@ -105,7 +105,10 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
             // Otherwise, place inside the gaps after each beam.
             const rowCenterPos = layout.beamCount === 0
               ? (spanLength / 2) * scale
-              : (i * layout.unitSpan + layout.beamWidth + layout.beamSpacing / 2) * scale;
+              : (layout.startWithBlock
+                  ? (0.20 + i * layout.unitSpan) * scale
+                  : (i * layout.unitSpan + layout.beamWidth + layout.beamSpacing / 2) * scale
+                );
             const isExcessRow = calc.excessBeamCount > 0 && i >= calc.physicalBeamCount;
             
             return (
@@ -183,7 +186,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600 print:text-slate-800">
           <div className="flex items-center gap-1.5">
             <span className="text-emerald-500 font-bold">✓</span>
-            <span>Start Support: <strong className="text-slate-900 font-semibold">Closed</strong> (Beam at 0.00m)</span>
+            <span>Start Support: <strong className="text-slate-900 font-semibold">Closed</strong> ({layout.startWithBlock ? "Block on Wall then Beam at 0.40m" : "Beam at 0.00m"})</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-emerald-500 font-bold">✓</span>

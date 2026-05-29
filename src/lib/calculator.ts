@@ -75,6 +75,7 @@ export interface RoomCalculation {
     unitSpan: number;
     beamCount: number;
     blocksPerRow: number;
+    startWithBlock?: boolean;
   };
   // Validation and Physical Layout fields
   physicalBeamCount: number;
@@ -338,6 +339,8 @@ export function calcRoomBlocksAndBeams(
   const blockCommission = totalBlocks * C.blockCommissionRate;
   const totalRoomProfit = beamProfitValue + blockCommission;
   
+  const startWithBlock = optimizeExcess && physicalEndGap >= 0.40;
+
   return {
     length: lengthMeters,
     width: widthMeters,
@@ -357,14 +360,21 @@ export function calcRoomBlocksAndBeams(
     blockCommission,
     totalRoomProfit,
     layout: {
-      gapAtEnd: optimizeExcess ? physicalEndGap : endGap,
-      needsExtraBeam: (optimizeExcess ? physicalEndGap : endGap) > clearGap,
-      needsHalfBlock: (optimizeExcess ? physicalEndGap : endGap) > 0 && (optimizeExcess ? physicalEndGap : endGap) <= clearGap,
+      gapAtEnd: startWithBlock
+        ? Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15))
+        : (optimizeExcess ? physicalEndGap : endGap),
+      needsExtraBeam: startWithBlock
+        ? Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15)) > clearGap
+        : (optimizeExcess ? physicalEndGap : endGap) > clearGap,
+      needsHalfBlock: startWithBlock
+        ? Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15)) > 0 && Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15)) <= clearGap
+        : (optimizeExcess ? physicalEndGap : endGap) > 0 && (optimizeExcess ? physicalEndGap : endGap) <= clearGap,
       beamSpacing: clearGap,
       beamWidth: beamWidth,
       unitSpan: unitSpan,
       beamCount: effectiveBeamCount,
       blocksPerRow: blocksPerBeamRow,
+      startWithBlock: startWithBlock
     },
     physicalBeamCount,
     excessBeamCount,
