@@ -273,7 +273,7 @@ export function calcRoomBlocksAndBeams(
 
   const excessBeamCount = optimizeExcess ? 0 : Math.max(0, actualBeamCount - physicalBeamCount);
   const clearBeamLength = isBalcony ? longer : shorter;
-  const blocksPerBeamRow = clearBeamLength > 0 ? Math.ceil(clearBeamLength / 0.20) : 0;
+  const blocksPerBeamRow = clearBeamLength > 0 ? clearBeamLength * 4 : 0;
   const excessBlockCount = optimizeExcess ? 0 : excessBeamCount * blocksPerBeamRow;
 
   const lastPhysicalBeamEnd = physicalBeamCount > 0 ? (physicalBeamCount - 1) * 0.55 + 0.15 : 0;
@@ -298,8 +298,7 @@ export function calcRoomBlocksAndBeams(
   // Determine whether to use optimized physical counts or standard counts for calculations
   const effectiveBeamCount = optimizeExcess ? physicalBeamCount : actualBeamCount;
 
-  // Physical block formula: blocks are 200mm wide along the beam length. 
-  // We use Math.ceil(clearBeamLength / 0.20) per row to ensure no gaps at all.
+  // Owner's master formula for blocks: total blocks = total beam metres * 4
   // For Balcony, beam length is `longer`. For Standard, beam length is `shorter`.
   const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
 
