@@ -155,7 +155,7 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
           {layout.beamCount > 0 ? (
             <>
               This room requires <strong className="text-slate-950 font-black">{layout.beamCount} beams</strong> of <strong className="text-slate-950 font-black">{physicalBeamLength.toFixed(2)} metres</strong>. 
-              The concrete blocks are laid alongside the beams with <strong className="text-slate-950 font-black">{layout.blocksPerRow} pieces</strong> per row, totaling <strong className="text-slate-950 font-black">{calc.totalBlocks} blocks</strong> (calculated at exactly 4 blocks per beam-meter).
+              The concrete blocks are laid alongside the beams with <strong className="text-slate-950 font-black">{layout.blocksPerRow} pieces</strong> per row, totaling <strong className="text-slate-950 font-black">{calc.totalBlocks} blocks</strong> (calculated dynamically based on 200mm block width to avoid gaps).
             </>
           ) : (
             <>
