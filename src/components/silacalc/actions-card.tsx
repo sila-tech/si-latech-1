@@ -339,6 +339,7 @@ export function ActionsCard() {
     contactPerson,
     clearCalculator,
     saveProject,
+    lintelLength,
   } = useCalculator();
   const { toast } = useToast();
 
