@@ -218,7 +218,7 @@ export function calcRoomBlocksAndBeams(
   opts: Partial<CalculationDefaults> = {},
   beamPricePerMeter: number = 545,
   roomName: string = '',
-  optimizeExcess: boolean = false
+  optimizeExcess: boolean = true
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
@@ -271,10 +271,10 @@ export function calcRoomBlocksAndBeams(
   const spanLength = isBalcony ? shorter : longer;
   const physicalBeamCount = spanLength > 0 ? Math.max(0, Math.floor(((spanLength - 0.15) / 0.55) + 1e-9) + 1) : 0;
 
-  const excessBeamCount = Math.max(0, actualBeamCount - physicalBeamCount);
+  const excessBeamCount = optimizeExcess ? 0 : Math.max(0, actualBeamCount - physicalBeamCount);
   const clearBeamLength = isBalcony ? longer : shorter;
   const blocksPerBeamRow = clearBeamLength > 0 ? clearBeamLength * 4 : 0;
-  const excessBlockCount = excessBeamCount * blocksPerBeamRow;
+  const excessBlockCount = optimizeExcess ? 0 : excessBeamCount * blocksPerBeamRow;
 
   const lastPhysicalBeamEnd = physicalBeamCount > 0 ? (physicalBeamCount - 1) * 0.55 + 0.15 : 0;
   const physicalEndGap = spanLength > 0 ? Math.max(0, spanLength - lastPhysicalBeamEnd) : 0;
@@ -481,7 +481,7 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
   };
 }
 
-export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults, optimizeExcess: boolean = false): AggregatedRoomGroup[] {
+export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults, optimizeExcess: boolean = true): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
   rooms.forEach(room => {
       const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, room.name, optimizeExcess);
@@ -500,7 +500,7 @@ export function calculateProjectTotals(
   rooms: Room[],
   settings: CalculationDefaults,
   lintelLength: number = 0,
-  optimizeExcess: boolean = false
+  optimizeExcess: boolean = true
 ): any {
   const initialTotals = {
     totalArea: 0,

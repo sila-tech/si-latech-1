@@ -360,41 +360,7 @@ export function ActionsCard() {
     return calculateProjectTotals(floorRooms, settings, 0);
   }, [aiQuoteFloor, rooms, totals, settings]);
 
-  const [optimizeQuote, setOptimizeQuote] = useState<boolean>(false);
-  const [isValidationDialogOpen, setValidationDialogOpen] = useState<boolean>(false);
-  const [pendingClientInfo, setPendingClientInfo] = useState<ClientInfo | null>(null);
-  const [pendingActionType, setPendingActionType] = useState<'invoice' | 'schedule' | 'breakdown' | 'aggregated' | 'timber' | null>(null);
 
-  const excessRoomsSummary = useMemo(() => {
-    return perRoomCalculations.filter(p => p.roomCalcs.excessBeamCount > 0);
-  }, [perRoomCalculations]);
-
-  const projectHasExcess = excessRoomsSummary.length > 0;
-
-  const handleTriggerValidationCheck = (clientInfo: ClientInfo, actionType: 'invoice' | 'schedule' | 'breakdown' | 'aggregated' | 'timber') => {
-    setPendingClientInfo(clientInfo);
-    setPendingActionType(actionType);
-    if (projectHasExcess) {
-      setValidationDialogOpen(true);
-    } else {
-      setOptimizeQuote(false);
-      executeDownload(clientInfo, actionType, false);
-    }
-  };
-
-  const executeDownload = (clientInfo: ClientInfo, actionType: 'invoice' | 'schedule' | 'breakdown' | 'aggregated' | 'timber', opt: boolean) => {
-    if (actionType === 'invoice') {
-      handleDownloadInvoice(clientInfo, opt);
-    } else if (actionType === 'schedule') {
-      handleDownloadMaterialSchedule(clientInfo, opt);
-    } else if (actionType === 'breakdown') {
-      handleDownloadPromaxBreakdown(clientInfo, opt);
-    } else if (actionType === 'aggregated') {
-      handleDownloadAggregatedBreakdown(clientInfo, opt);
-    } else if (actionType === 'timber') {
-      handleDownloadTimberSchedule(clientInfo, opt);
-    }
-  };
 
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -1297,107 +1263,38 @@ export function ActionsCard() {
       <ClientInfoDialog
         open={isInvoiceDialogOpen}
         onOpenChange={setInvoiceDialogOpen}
-        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'invoice')}
+        onGenerateClick={(clientInfo) => handleDownloadInvoice(clientInfo, true)}
         title="Download Customer Quote"
         description="Please confirm or update the client details for the quote."
       />
       <ClientInfoDialog
         open={isScheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
-        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'schedule')}
+        onGenerateClick={(clientInfo) => handleDownloadMaterialSchedule(clientInfo, true)}
         title="Download Material Schedule"
         description="Please confirm or update the client details for the schedule."
       />
       <ClientInfoDialog
         open={isBreakdownDialogOpen}
         onOpenChange={setBreakdownDialogOpen}
-        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'breakdown')}
+        onGenerateClick={(clientInfo) => handleDownloadPromaxBreakdown(clientInfo, true)}
         title="Download Promax Breakdown Report"
         description="Please confirm or update the project details for the manufacturing report."
       />
        <ClientInfoDialog
         open={isAggregatedDialogOpen}
         onOpenChange={setAggregatedDialogOpen}
-        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'aggregated')}
+        onGenerateClick={(clientInfo) => handleDownloadAggregatedBreakdown(clientInfo, true)}
         title="Download Aggregated Report"
         description="Please confirm or update the client details for the report."
       />
       <ClientInfoDialog
         open={isTimberScheduleOpen}
         onOpenChange={setTimberScheduleOpen}
-        onGenerateClick={(clientInfo) => handleTriggerValidationCheck(clientInfo, 'timber')}
+        onGenerateClick={(clientInfo) => handleDownloadTimberSchedule(clientInfo, true)}
         title="Download Timber & Props Schedule"
         description="Please confirm or update the project details for the timber report."
       />
-
-      {/* Structural Optimization Alert Modal */}
-      <Dialog open={isValidationDialogOpen} onOpenChange={setValidationDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600 font-headline font-bold text-xl">
-              <span className="text-2xl animate-pulse">⚠️</span> Layout Boundary Warning
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 pt-1">
-              Our plan analysis system has detected that some rooms contain beams and blocks that extend beyond the physical walls of the house.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4 max-h-[300px] overflow-y-auto">
-            <p className="text-sm font-semibold text-slate-800">
-              The following room(s) have elements calculated past the physical boundaries:
-            </p>
-            {excessRoomsSummary.map((p, idx) => (
-              <div key={p.room.id || idx} className="p-4 bg-amber-50 rounded-xl border border-amber-200/70 shadow-xs flex flex-col gap-2">
-                <div className="flex justify-between items-start border-b border-amber-200/50 pb-1.5">
-                  <h4 className="font-bold text-slate-900 text-sm">{p.room.name}</h4>
-                  <span className="text-[10px] bg-amber-600 text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    {p.room.width.toFixed(2)}m × {p.room.length.toFixed(2)}m
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-700 font-medium">
-                  <div>• Excess Beams: <strong className="text-red-600 font-bold">{p.roomCalcs.excessBeamCount} pcs</strong></div>
-                  <div>• Excess Blocks: <strong className="text-red-600 font-bold">{p.roomCalcs.excessBlockCount} pcs</strong></div>
-                  <div className="col-span-2">• Remaining Void: <strong className="text-slate-950 font-bold">{p.roomCalcs.remainingVoidSpaceMm}mm space left</strong> (perfectly suited for direct concrete infill during casting)</div>
-                </div>
-              </div>
-            ))}
-            <div className="p-3 bg-sky-50 rounded-xl border border-sky-100 flex items-start gap-2.5">
-              <span className="text-sky-500 text-lg">💡</span>
-              <p className="text-xs text-sky-800 leading-relaxed font-medium">
-                <strong>Optimization Recommendation</strong>: By selecting "Optimize Quote", we will deduct these excess materials from your bill, saving money and matching the exact physical layout.
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 border-slate-200 hover:bg-slate-50 text-slate-700 h-11"
-              onClick={() => {
-                setOptimizeQuote(false);
-                setValidationDialogOpen(false);
-                if (pendingClientInfo && pendingActionType) {
-                  executeDownload(pendingClientInfo, pendingActionType, false);
-                }
-              }}
-            >
-              Keep Standard Formula
-            </Button>
-            <Button
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 shadow-sm flex items-center gap-1.5"
-              onClick={() => {
-                setOptimizeQuote(true);
-                setValidationDialogOpen(false);
-                if (pendingClientInfo && pendingActionType) {
-                  executeDownload(pendingClientInfo, pendingActionType, true);
-                }
-              }}
-            >
-              Optimize Quote (Deduct Excess)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={isSaveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>

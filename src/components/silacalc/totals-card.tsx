@@ -121,17 +121,6 @@ export function TotalsCard() {
 
         <Separator className="bg-slate-100" />
 
-        {excessRooms.length > 0 && (
-          <div className="flex gap-2.5 text-[11px] text-amber-800 items-start bg-amber-50/50 p-3 rounded-lg border border-amber-200/50 my-1">
-            <span className="text-amber-500 font-bold shrink-0 mt-0.5 text-sm">⚠️</span>
-            <div className="leading-relaxed">
-              <strong className="text-amber-900 block font-bold mb-0.5">Layout Boundary Warning</strong>
-              We detected that {excessRooms.length} room(s) contain a total of <strong className="font-bold text-red-700">{totalExcessBeams} excess beam(s)</strong> and <strong className="font-bold text-red-700">{totalExcessBlocks} excess block(s)</strong> extending beyond boundaries.
-              <p className="mt-1 text-[10px] text-slate-500 font-medium">Click "Download Quote" to optimize and deduct these materials.</p>
-            </div>
-          </div>
-        )}
-
         <div className="flex gap-2.5 text-[11px] text-slate-500 items-start bg-slate-50/50 p-3 rounded-lg border border-slate-100">
           <Info size={16} className="text-sky-500 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
