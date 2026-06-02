@@ -31,8 +31,37 @@ const AnalyzePlanOutputSchema = z.object({
 });
 export type AnalyzePlanOutput = z.infer<typeof AnalyzePlanOutputSchema>;
 
-export async function analyzePlan(input: AnalyzePlanInput): Promise<AnalyzePlanOutput> {
-  return analyzePlanFlow(input);
+export interface AnalyzePlanResult {
+  success: boolean;
+  rooms?: Array<{ name: string; length: number; width: number }>;
+  error?: string;
+}
+
+export async function analyzePlan(input: AnalyzePlanInput): Promise<AnalyzePlanResult> {
+  try {
+    const result = await analyzePlanFlow(input);
+    return {
+      success: true,
+      rooms: result.rooms,
+    };
+  } catch (err: any) {
+    console.error('Plan analysis failed in Server Action:', err);
+    let errMsg = 'AI Blueprint analysis service is temporarily unavailable.';
+    const errorStr = String(err.message || err);
+    if (errorStr.includes('API key was reported as leaked') || errorStr.includes('leaked')) {
+      errMsg = 'The Gemini API Key configured in your environment has been revoked by Google because it was reported as leaked. Please update the GEMINI_API_KEY environment variable in your production secrets (Firebase App Hosting) and local .env.local file with a newly generated key from Google AI Studio.';
+    } else if (errorStr.includes('API key') || errorStr.includes('API_KEY')) {
+      errMsg = 'Invalid or missing Gemini API Key. Please verify your configuration.';
+    } else if (errorStr.includes('Quota exceeded') || errorStr.includes('429')) {
+      errMsg = 'The Gemini API quota has been exceeded. Please check your billing plan or retry in a few moments.';
+    } else if (err.message) {
+      errMsg = err.message;
+    }
+    return {
+      success: false,
+      error: errMsg,
+    };
+  }
 }
 
 const analyzePlanFlow = ai.defineFlow(

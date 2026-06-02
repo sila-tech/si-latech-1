@@ -59,7 +59,7 @@ export function PlanReaderCard() {
           const base64Data = reader.result as string;
           const result = await analyzePlan({ photoDataUri: base64Data });
 
-          if (result && result.rooms.length > 0) {
+          if (result.success && result.rooms && result.rooms.length > 0) {
             const newRooms = result.rooms.map(room => ({
               id: crypto.randomUUID(),
               name: room.name,
@@ -72,7 +72,7 @@ export function PlanReaderCard() {
               description: `Extracted ${newRooms.length} rooms and populated the calculator.`,
             });
           } else {
-            throw new Error('No rooms were detected in the floor plan. Please ensure dimensions are visible.');
+            throw new Error(result.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
           }
         } catch (err) {
           console.error('Plan analysis failed:', err);
