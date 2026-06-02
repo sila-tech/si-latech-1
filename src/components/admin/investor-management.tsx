@@ -38,6 +38,30 @@ export function InvestorManagement() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
+    // Crash-proof date formatter
+    const safeFormatDate = (timestamp: any, formatStr: string): string => {
+        if (!timestamp) return 'N/A';
+        try {
+            // Handle Firestore Timestamp
+            if (timestamp.seconds !== undefined && typeof timestamp.seconds === 'number') {
+                const date = new Date(timestamp.seconds * 1000);
+                if (!isNaN(date.getTime())) return format(date, formatStr);
+            }
+            // Handle Javascript Date
+            if (timestamp instanceof Date && !isNaN(timestamp.getTime())) {
+                return format(timestamp, formatStr);
+            }
+            // Handle Milliseconds or ISO strings
+            if (typeof timestamp === 'number' || typeof timestamp === 'string') {
+                const date = new Date(timestamp);
+                if (!isNaN(date.getTime())) return format(date, formatStr);
+            }
+        } catch (e) {
+            console.error('Error formatting date:', e);
+        }
+        return 'N/A';
+    };
+
     // Fetch Customers
     const customersQuery = useMemoFirebase(
         () => query(collection(firestore, 'customers')),
@@ -231,12 +255,15 @@ export function InvestorManagement() {
     };
 
     const filteredInvestors = investors?.filter(i => {
-        const matchesSearch = (i.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              (i.phone || '').includes(searchQuery);
+        if (!i) return false;
+        const nameStr = typeof i.name === 'string' ? i.name : '';
+        const phoneStr = typeof i.phone === 'string' ? i.phone : (typeof i.phone === 'number' ? String(i.phone) : '');
+        const matchesSearch = nameStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              phoneStr.includes(searchQuery);
         return matchesSearch;
     });
 
-    const pendingApplications = applications?.filter(app => app.status === 'pending');
+    const pendingApplications = applications?.filter(app => app && app.status === 'pending');
 
     return (
         <div className="space-y-6">
@@ -392,7 +419,7 @@ export function InvestorManagement() {
                                                                 KSh {inv.totalInvestment?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="text-center text-xs text-slate-500">
-                                                                {inv.updatedAt?.seconds ? format(new Date(inv.updatedAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
+                                                                {safeFormatDate(inv.updatedAt, 'dd MMM, h:mm a')}
                                                             </TableCell>
                                                         </TableRow>
                                                     ))
@@ -442,7 +469,7 @@ export function InvestorManagement() {
                                                                 KSh {app.amount?.toLocaleString()}
                                                             </TableCell>
                                                             <TableCell className="text-center text-xs text-slate-500">
-                                                                {app.createdAt?.seconds ? format(new Date(app.createdAt.seconds * 1000), 'dd MMM yyyy') : 'N/A'}
+                                                                {safeFormatDate(app.createdAt, 'dd MMM yyyy')}
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <div className="flex gap-2 justify-center">
