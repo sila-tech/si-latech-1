@@ -49,6 +49,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+    match /users/{document=**} {
+      allow read, write: if true;
+    }
+
     // Investors collection
     match /investors/{investorId} {
       allow read, write: if true;
