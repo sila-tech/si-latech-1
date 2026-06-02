@@ -41,6 +41,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Finance Entries collection (Android app)
+    match /financeEntries/{entryId} {
+      allow read, write: if true;
+    }
+    match /financeEntries/{document=**} {
+      allow read, write: if true;
+    }
+
     // Customers collection
     match /customers/{customerId} {
       allow read, write: if true;
