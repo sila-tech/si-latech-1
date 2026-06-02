@@ -40,6 +40,46 @@ service cloud.firestore {
     match /finances/{document=**} {
       allow read, write: if true;
     }
+
+    // Customers collection
+    match /customers/{customerId} {
+      allow read, write: if true;
+    }
+    match /customers/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Investors collection
+    match /investors/{investorId} {
+      allow read, write: if true;
+    }
+    match /investors/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Investment Applications
+    match /investmentApplications/{applicationId} {
+      allow read, write: if true;
+    }
+    match /investmentApplications/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Loans collection
+    match /loans/{loanId} {
+      allow read, write: if true;
+    }
+    match /loans/{document=**} {
+      allow read, write: if true;
+    }
+
+    // KYC Documents
+    match /kyc_documents/{kycId} {
+      allow read, write: if true;
+    }
+    match /kyc_documents/{document=**} {
+      allow read, write: if true;
+    }
     
     // Deny all other access
     match /{document=**} {

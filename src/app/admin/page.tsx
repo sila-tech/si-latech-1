@@ -36,6 +36,7 @@ import { MapPin, Image as ImageIcon, UserCheck } from 'lucide-react';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 import { StaffManagement } from '@/components/admin/staff-management';
 import { FinanceManagement } from '@/components/admin/finance-management';
+import { InvestorManagement } from '@/components/admin/investor-management';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
@@ -292,6 +293,9 @@ export default function AdminDashboardPage() {
                     <TabsTrigger value="finances" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Finances
                     </TabsTrigger>
+                    <TabsTrigger value="investors" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                        Investments
+                    </TabsTrigger>
                     {isSuperAdmin && (
                         <TabsTrigger value="staff" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                             Team Management
@@ -301,6 +305,10 @@ export default function AdminDashboardPage() {
 
                 <TabsContent value="finances">
                     <FinanceManagement isSuperAdmin={isSuperAdmin} />
+                </TabsContent>
+
+                <TabsContent value="investors">
+                    <InvestorManagement />
                 </TabsContent>
 
                 {isSuperAdmin && (
