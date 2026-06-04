@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
-import { Download, Construction, Ruler, Layers, Scale, Sparkles, Phone, Mail, MapPin } from 'lucide-react';
+import { Download, Construction, Ruler, Layers, Scale, Sparkles, Box, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -58,11 +58,30 @@ if (typeof window !== 'undefined') {
 export function ConcreteCalculator() {
   const { toast } = useToast();
 
-  // Inputs state
+  // Structure Type Selection
+  const [structureType, setStructureType] = useState<'slab' | 'beam' | 'column' | 'general'>('slab');
+
+  // Slab inputs
   const [length, setLength] = useState<number>(10);
   const [width, setWidth] = useState<number>(10);
-  const [thickness, setThickness] = useState<number>(150); // in mm
-  const [wastage, setWastage] = useState<number>(10); // in %
+  const [thickness, setThickness] = useState<number>(150); // mm
+
+  // Beam / Lintel inputs
+  const [beamLength, setBeamLength] = useState<number>(20);
+  const [beamWidth, setBeamWidth] = useState<number>(200);   // mm
+  const [beamHeight, setBeamHeight] = useState<number>(300); // mm
+
+  // Column / Pillar inputs
+  const [columnQty, setColumnQty] = useState<number>(10);
+  const [columnWidth, setColumnWidth] = useState<number>(200);  // mm
+  const [columnDepth, setColumnDepth] = useState<number>(200);  // mm
+  const [columnHeight, setColumnHeight] = useState<number>(3.0); // m
+
+  // General Volume inputs
+  const [generalVolume, setGeneralVolume] = useState<number>(5.0); // m³
+
+  // Shared settings
+  const [wastage, setWastage] = useState<number>(10); // %
   const [mixPreset, setMixPreset] = useState<string>('class20');
   
   // Custom Mix Ratio parts
@@ -70,7 +89,7 @@ export function ConcreteCalculator() {
   const [customSand, setCustomSand] = useState<number>(2);
   const [customBallast, setCustomBallast] = useState<number>(4);
 
-  // Client info state for PDF download
+  // Client info for quote download
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: '',
     projectName: '',
@@ -99,13 +118,33 @@ export function ConcreteCalculator() {
 
   // Calculations
   const calculations = useMemo(() => {
-    const L = Math.max(0, length);
-    const W = Math.max(0, width);
-    const H = Math.max(0, thickness / 1000); // convert mm to m
-    const W_factor = 1 + (Math.max(0, wastage) / 100);
+    let wetVolume = 0;
+    let area = 0;
 
-    const area = L * W;
-    const wetVolume = area * H;
+    if (structureType === 'slab') {
+      const L = Math.max(0, length);
+      const W = Math.max(0, width);
+      const T = Math.max(0, thickness / 1000);
+      area = L * W;
+      wetVolume = area * T;
+    } else if (structureType === 'beam') {
+      const L = Math.max(0, beamLength);
+      const W = Math.max(0, beamWidth / 1000);
+      const H = Math.max(0, beamHeight / 1000);
+      area = L * W;
+      wetVolume = L * W * H;
+    } else if (structureType === 'column') {
+      const qty = Math.max(0, columnQty);
+      const W = Math.max(0, columnWidth / 1000);
+      const D = Math.max(0, columnDepth / 1000);
+      const H = Math.max(0, columnHeight);
+      area = W * D * qty;
+      wetVolume = qty * W * D * H;
+    } else if (structureType === 'general') {
+      wetVolume = Math.max(0, generalVolume);
+    }
+
+    const W_factor = 1 + (Math.max(0, wastage) / 100);
     const dryVolume = wetVolume * DENSITIES.dryVolumeFactor;
 
     const cRatio = Math.max(0, customCement);
@@ -113,7 +152,7 @@ export function ConcreteCalculator() {
     const bRatio = Math.max(0, customBallast);
     const totalParts = cRatio + sRatio + bRatio;
 
-    if (totalParts === 0 || area === 0 || H === 0) {
+    if (totalParts === 0 || wetVolume === 0) {
       return {
         area,
         wetVolume,
@@ -145,9 +184,12 @@ export function ConcreteCalculator() {
     const sandWheelbarrows = Math.ceil(sandTonnes * DENSITIES.wheelbarrowsPerTonne);
     const ballastWheelbarrows = Math.ceil(ballastTonnes * DENSITIES.wheelbarrowsPerTonne);
 
-    // BRC Mesh rolls (2.4m * 48m = 115.2 m² per roll)
-    const brcAreaPerRoll = DENSITIES.brcRollWidth * DENSITIES.brcRollLength;
-    const brcRolls = Math.ceil(area / brcAreaPerRoll);
+    // BRC Mesh rolls (only for Slabs)
+    let brcRolls = 0;
+    if (structureType === 'slab') {
+      const brcAreaPerRoll = DENSITIES.brcRollWidth * DENSITIES.brcRollLength;
+      brcRolls = Math.ceil(area / brcAreaPerRoll);
+    }
 
     return {
       area,
@@ -160,20 +202,14 @@ export function ConcreteCalculator() {
       ballastWheelbarrows,
       brcRolls,
     };
-  }, [length, width, thickness, wastage, customCement, customSand, customBallast]);
-
-  // Scaled dimensions for the SVG 3D visualizer
-  const svgVisuals = useMemo(() => {
-    const maxVal = Math.max(length, width);
-    if (maxVal === 0) return { lScale: 0, wScale: 0, tScale: 0 };
-    
-    // Scale inputs to fit comfortably inside a 400x220 container
-    const lScale = Math.min(130, Math.max(30, (length / maxVal) * 110));
-    const wScale = Math.min(130, Math.max(30, (width / maxVal) * 110));
-    const tScale = Math.min(30, Math.max(4, (thickness / 300) * 20));
-
-    return { lScale, wScale, tScale };
-  }, [length, width, thickness]);
+  }, [
+    structureType,
+    length, width, thickness,
+    beamLength, beamWidth, beamHeight,
+    columnQty, columnWidth, columnDepth, columnHeight,
+    generalVolume,
+    wastage, customCement, customSand, customBallast
+  ]);
 
   // PDF download generation
   const handleDownload = () => {
@@ -209,7 +245,7 @@ export function ConcreteCalculator() {
       doc.text('SI-LATECH', 14, 22);
     }
 
-    // Contacts (right aligned)
+    // Contacts
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
@@ -250,23 +286,41 @@ export function ConcreteCalculator() {
 
     currentY += 12;
 
-    // Slab Dimensions Sub-header
+    // Structure info sub-header
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
-    doc.text(`SLAB DIMENSIONS:`, 14, currentY);
+    
+    let structureLabel = 'GENERAL CONCRETE ESTIMATE';
+    let dimensionsText = '';
+    
+    if (structureType === 'slab') {
+      structureLabel = 'STRUCTURE TYPE: CONCRETE SLAB / FLOOR';
+      dimensionsText = `Length: ${length.toFixed(2)} m | Width: ${width.toFixed(2)} m | Thickness: ${thickness} mm | Area: ${calculations.area.toFixed(2)} sq.m`;
+    } else if (structureType === 'beam') {
+      structureLabel = 'STRUCTURE TYPE: RING BEAM / LINTEL';
+      dimensionsText = `Total Length: ${beamLength.toFixed(2)} m | Width: ${beamWidth} mm | Height: ${beamHeight} mm`;
+    } else if (structureType === 'column') {
+      structureLabel = 'STRUCTURE TYPE: COLUMNS / PILLARS';
+      dimensionsText = `Quantity: ${columnQty} pcs | Section: ${columnWidth}x${columnDepth} mm | Height: ${columnHeight.toFixed(2)} m`;
+    } else if (structureType === 'general') {
+      structureLabel = 'STRUCTURE TYPE: GENERAL VOLUME';
+      dimensionsText = `Direct Concrete Input Volume: ${generalVolume.toFixed(2)} cu.m`;
+    }
+
+    doc.text(structureLabel, 14, currentY);
     currentY += 5;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
-    doc.text(`Length: ${length.toFixed(2)} m  |  Width: ${width.toFixed(2)} m  |  Thickness: ${thickness} mm`, 14, currentY);
+    doc.text(dimensionsText, 14, currentY);
     currentY += 5;
-    doc.text(`Total Area: ${calculations.area.toFixed(2)} sq.m  |  Wet Concrete Volume: ${calculations.wetVolume.toFixed(3)} cu.m`, 14, currentY);
+    doc.text(`Wet Concrete Volume: ${calculations.wetVolume.toFixed(3)} cu.m  |  Dry Volume (1.54 Factor): ${calculations.dryVolume.toFixed(3)} cu.m`, 14, currentY);
     currentY += 8;
 
     // Mix Proportions Sub-header
     const mixText = mixPreset === 'class20' ? 'Class 20 (1:2:4)' : 
                     mixPreset === 'class25' ? 'Class 25 (1:1.5:3)' : 
                     mixPreset === 'class30' ? 'Class 30 (1:1:2)' : 'Custom Mix';
-    doc.text(`Mix Design: ${mixText}  |  Dry Volume Factor: 1.54  |  Wastage Allowance: ${wastage}%`, 14, currentY);
+    doc.text(`Mix Design: ${mixText} | Wastage Allowance: ${wastage}%`, 14, currentY);
     currentY += 8;
 
     // Table rows setup
@@ -275,27 +329,30 @@ export function ConcreteCalculator() {
         'Cement (50kg bags)', 
         calculations.cementBags.toString(), 
         'Bags', 
-        `Standard 50kg bags. Mix ratio: ${customCement} parts.`
+        `Standard 50kg bags. Mix ratio parts: ${customCement}.`
       ],
       [
         'Sand', 
         calculations.sandTonnes.toFixed(2), 
         'Tonnes', 
-        `River sand. Approx. ${calculations.sandWheelbarrows} wheelbarrows. Mix ratio: ${customSand} parts.`
+        `River sand. Approx. ${calculations.sandWheelbarrows} wheelbarrows. Mix ratio parts: ${customSand}.`
       ],
       [
         'Ballast / Coarse Aggregate', 
         calculations.ballastTonnes.toFixed(2), 
         'Tonnes', 
-        `Crushed stones. Approx. ${calculations.ballastWheelbarrows} wheelbarrows. Mix ratio: ${customBallast} parts.`
-      ],
-      [
-        'BRC Mesh A98', 
-        calculations.brcRolls.toString(), 
-        'Rolls', 
-        `2.4m x 48m reinforcement fabric rolls for structural integrity.`
+        `Crushed stones. Approx. ${calculations.ballastWheelbarrows} wheelbarrows. Mix ratio parts: ${customBallast}.`
       ]
     ];
+
+    if (structureType === 'slab') {
+      tableRows.push([
+        'BRC Mesh A98',
+        calculations.brcRolls.toString(),
+        'Rolls',
+        '2.4m x 48m reinforcement fabric rolls for slab reinforcement.'
+      ]);
+    }
 
     (doc as any).autoTable({
       head: [['MATERIAL DESCRIPTION', 'QUANTITY', 'UNIT', 'APPLICATION NOTES']],
@@ -339,21 +396,139 @@ export function ConcreteCalculator() {
     setClientInfo(prev => ({ ...prev, [id]: value }));
   };
 
-  // 3D Isometric View points calculation based on scaled coordinates
-  const { lScale, wScale, tScale } = svgVisuals;
-  const x0 = 200, y0 = 150; // Center origin of drawing area
+  // Adaptive 3D Visualizer coordinates
+  const renderVisualizer = () => {
+    const x0 = 200, y0 = 130; // Center coordinate origin
 
-  // Vertices calculation
-  const p0 = { x: x0, y: y0 }; // Bottom-center (Front edge bottom)
-  const p1 = { x: x0 + lScale * 0.866, y: y0 + lScale * 0.5 }; // Bottom-right
-  const p2 = { x: x0 - wScale * 0.866, y: y0 + wScale * 0.5 }; // Bottom-left
-  const p3 = { x: x0 + (lScale - wScale) * 0.866, y: y0 + (lScale + wScale) * 0.5 }; // Bottom-back
+    if (structureType === 'slab') {
+      const maxVal = Math.max(length, width);
+      const lScale = maxVal > 0 ? Math.min(130, Math.max(40, (length / maxVal) * 110)) : 80;
+      const wScale = maxVal > 0 ? Math.min(130, Math.max(40, (width / maxVal) * 110)) : 80;
+      const tScale = Math.min(25, Math.max(4, (thickness / 300) * 18));
 
-  // Top layer vertices (shifted straight up by thickness)
-  const t0 = { x: p0.x, y: p0.y - tScale };
-  const t1 = { x: p1.x, y: p1.y - tScale };
-  const t2 = { x: p2.x, y: p2.y - tScale };
-  const t3 = { x: p3.x, y: p3.y - tScale };
+      const p0 = { x: x0, y: y0 + 30 };
+      const p1 = { x: x0 + lScale * 0.866, y: y0 + 30 + lScale * 0.5 };
+      const p2 = { x: x0 - wScale * 0.866, y: y0 + 30 + wScale * 0.5 };
+      const p3 = { x: x0 + (lScale - wScale) * 0.866, y: y0 + 30 + (lScale + wScale) * 0.5 };
+
+      const t0 = { x: p0.x, y: p0.y - tScale };
+      const t1 = { x: p1.x, y: p1.y - tScale };
+      const t2 = { x: p2.x, y: p2.y - tScale };
+      const t3 = { x: p3.x, y: p3.y - tScale };
+
+      return (
+        <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
+          {/* Back hidden outline */}
+          <path d={`M ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p1.x} ${p1.y}`} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+          <line x1={p3.x} y1={p3.y} x2={t3.x} y2={t3.y} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+
+          {/* Left Wall */}
+          <polygon points={`${p2.x},${p2.y} ${t2.x},${t2.y} ${t0.x},${t0.y} ${p0.x},${p0.y}`} fill="#64748b" stroke="#475569" strokeWidth="1.5" />
+          {/* Right Wall */}
+          <polygon points={`${p0.x},${p0.y} ${t0.x},${t0.y} ${t1.x},${t1.y} ${p1.x},${p1.y}`} fill="#475569" stroke="#334155" strokeWidth="1.5" />
+          {/* Top Wall */}
+          <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
+
+          {/* Labels */}
+          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 15} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Length: {length}m</text>
+          <text x={(p0.x + p2.x) / 2 - 10} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Width: {width}m</text>
+          <text x={p0.x - 22} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">{thickness}mm</text>
+          <line x1={p0.x - 15} y1={p0.y} x2={p0.x - 15} y2={t0.y} stroke="#ef4444" strokeWidth="1.5" />
+        </svg>
+      );
+    } else if (structureType === 'beam') {
+      const maxL = Math.max(beamLength, 1);
+      const lScale = Math.min(160, Math.max(60, (beamLength / maxL) * 140));
+      const wScale = Math.min(30, Math.max(12, (beamWidth / 400) * 20));
+      const hScale = Math.min(35, Math.max(12, (beamHeight / 400) * 25));
+
+      const p0 = { x: x0 - 40, y: y0 + 30 };
+      const p1 = { x: p0.x + lScale * 0.866, y: p0.y + lScale * 0.5 };
+      const p2 = { x: p0.x - wScale * 0.866, y: p0.y + wScale * 0.5 };
+      const p3 = { x: p0.x + (lScale - wScale) * 0.866, y: p0.y + (lScale + wScale) * 0.5 };
+
+      const t0 = { x: p0.x, y: p0.y - hScale };
+      const t1 = { x: p1.x, y: p1.y - hScale };
+      const t2 = { x: p2.x, y: p2.y - hScale };
+      const t3 = { x: p3.x, y: p3.y - hScale };
+
+      return (
+        <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
+          <path d={`M ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p1.x} ${p1.y}`} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+          <line x1={p3.x} y1={p3.y} x2={t3.x} y2={t3.y} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+
+          {/* Left/Front-width face */}
+          <polygon points={`${p2.x},${p2.y} ${t2.x},${t2.y} ${t0.x},${t0.y} ${p0.x},${p0.y}`} fill="#64748b" stroke="#475569" strokeWidth="1.5" />
+          {/* Right/Longitudinal face */}
+          <polygon points={`${p0.x},${p0.y} ${t0.x},${t0.y} ${t1.x},${t1.y} ${p1.x},${p1.y}`} fill="#475569" stroke="#334155" strokeWidth="1.5" />
+          {/* Top surface */}
+          <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
+
+          {/* Labels */}
+          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 18} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Length: {beamLength}m</text>
+          <text x={(p0.x + p2.x) / 2 - 15} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="10" fontWeight="bold" textAnchor="middle">W: {beamWidth}mm</text>
+          <text x={p0.x - 12} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">{beamHeight}mm</text>
+          <line x1={p0.x - 5} y1={p0.y} x2={p0.x - 5} y2={t0.y} stroke="#ef4444" strokeWidth="1.5" />
+        </svg>
+      );
+    } else if (structureType === 'column') {
+      const wScale = Math.min(45, Math.max(15, (columnWidth / 400) * 35));
+      const dScale = Math.min(45, Math.max(15, (columnDepth / 400) * 35));
+      const hScale = Math.min(140, Math.max(60, (columnHeight / 6) * 110));
+
+      const p0 = { x: x0, y: y0 + 60 };
+      const p1 = { x: p0.x + dScale * 0.866, y: p0.y + dScale * 0.5 };
+      const p2 = { x: p0.x - wScale * 0.866, y: p0.y + wScale * 0.5 };
+      const p3 = { x: p0.x + (dScale - wScale) * 0.866, y: p0.y + (dScale + wScale) * 0.5 };
+
+      const t0 = { x: p0.x, y: p0.y - hScale };
+      const t1 = { x: p1.x, y: p1.y - hScale };
+      const t2 = { x: p2.x, y: p2.y - hScale };
+      const t3 = { x: p3.x, y: p3.y - hScale };
+
+      return (
+        <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
+          <path d={`M ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p1.x} ${p1.y}`} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+          <line x1={p3.x} y1={p3.y} x2={t3.x} y2={t3.y} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
+
+          {/* Left front pillar side */}
+          <polygon points={`${p2.x},${p2.y} ${t2.x},${t2.y} ${t0.x},${t0.y} ${p0.x},${p0.y}`} fill="#64748b" stroke="#475569" strokeWidth="1.5" />
+          {/* Right front pillar side */}
+          <polygon points={`${p0.x},${p0.y} ${t0.x},${t0.y} ${t1.x},${t1.y} ${p1.x},${p1.y}`} fill="#475569" stroke="#334155" strokeWidth="1.5" />
+          {/* Top pillar cap */}
+          <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
+
+          {/* Labels */}
+          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 15} fill="#334155" fontSize="9" fontWeight="bold" textAnchor="middle">D: {columnDepth}mm</text>
+          <text x={(p0.x + p2.x) / 2 - 10} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="9" fontWeight="bold" textAnchor="middle">W: {columnWidth}mm</text>
+          <text x={p0.x - 15} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">H: {columnHeight}m</text>
+          <line x1={p0.x - 7} y1={p0.y} x2={p0.x - 7} y2={t0.y} stroke="#ef4444" strokeWidth="1.5" />
+          <text x={x0} y={230} fill="#64748b" fontSize="11" fontWeight="black" textAnchor="middle">Quantity: {columnQty} Columns</text>
+        </svg>
+      );
+    } else {
+      // General Cube Visualizer
+      const size = 70;
+      const p0 = { x: x0, y: y0 + 35 };
+      const p1 = { x: p0.x + size * 0.866, y: p0.y + size * 0.5 };
+      const p2 = { x: p0.x - size * 0.866, y: p0.y + size * 0.5 };
+      const p3 = { x: p0.x, y: p0.y + size };
+
+      const t0 = { x: p0.x, y: p0.y - size };
+      const t1 = { x: p1.x, y: p1.y - size };
+      const t2 = { x: p2.x, y: p2.y - size };
+      const t3 = { x: p3.x, y: p3.y - size };
+
+      return (
+        <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
+          <polygon points={`${p2.x},${p2.y} ${t2.x},${t2.y} ${t0.x},${t0.y} ${p0.x},${p0.y}`} fill="#64748b" stroke="#475569" strokeWidth="1.5" />
+          <polygon points={`${p0.x},${p0.y} ${t0.x},${t0.y} ${t1.x},${t1.y} ${p1.x},${p1.y}`} fill="#475569" stroke="#334155" strokeWidth="1.5" />
+          <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
+          <text x={x0} y={y0 + 20} fill="#1e293b" fontSize="12" fontWeight="black" textAnchor="middle">Volume: {generalVolume.toFixed(2)}m³</text>
+        </svg>
+      );
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -365,91 +540,279 @@ export function ConcreteCalculator() {
               <div className="bg-sky-500 text-white p-2 rounded-lg">
                 <Construction className="h-6 w-6" />
               </div>
-              <div>
-                <CardTitle className="text-xl font-bold text-slate-900 font-headline">Slab Dimensions</CardTitle>
-                <CardDescription className="text-xs">Specify the length, width, and concrete depth of the area.</CardDescription>
+              <div className="flex-1">
+                <CardTitle className="text-xl font-bold text-slate-900 font-headline">Concrete Structure Type</CardTitle>
+                <CardDescription className="text-xs">Select what you are concreting to adjust calculations.</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
-            {/* Dimensions Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="length" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                  <Ruler className="h-4 w-4 text-sky-500" /> Length (meters)
-                </Label>
-                <Input
-                  id="length"
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={length}
-                  onChange={(e) => setLength(parseFloat(e.target.value) || 0)}
-                  className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-medium"
-                />
-                <span className="text-[11px] text-slate-500 font-medium block">
-                  ≈ {(length * 3.28084).toFixed(1)} feet
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="width" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                  <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width (meters)
-                </Label>
-                <Input
-                  id="width"
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={width}
-                  onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
-                  className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-medium"
-                />
-                <span className="text-[11px] text-slate-500 font-medium block">
-                  ≈ {(width * 3.28084).toFixed(1)} feet
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="thickness" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                  <Layers className="h-4 w-4 text-sky-500" /> Thickness (mm)
-                </Label>
-                <Input
-                  id="thickness"
-                  type="number"
-                  min="10"
-                  step="5"
-                  value={thickness}
-                  onChange={(e) => setThickness(parseFloat(e.target.value) || 0)}
-                  className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-medium"
-                />
-                <span className="text-[11px] text-slate-500 font-medium block">
-                  = {(thickness / 1000).toFixed(3)} meters
-                </span>
-              </div>
-            </div>
-
-            {/* Thickness presets */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              {[100, 150, 200, 250].map((t) => (
+            
+            {/* Structure Switcher Selector */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { type: 'slab', label: 'Slab / Floor' },
+                { type: 'beam', label: 'Ring Beam / Lintel' },
+                { type: 'column', label: 'Column / Pillar' },
+                { type: 'general', label: 'Custom Volume' },
+              ].map((item) => (
                 <button
-                  key={t}
+                  key={item.type}
                   type="button"
-                  onClick={() => setThickness(t)}
-                  className={`px-3 py-1 text-xs font-bold rounded-full transition-all border ${
-                    thickness === t 
-                      ? 'bg-sky-500 text-white border-sky-500 shadow-sm' 
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  onClick={() => setStructureType(item.type as any)}
+                  className={`py-3 px-2 text-xs font-black rounded-xl border-2 transition-all text-center flex flex-col items-center justify-center gap-1.5 ${
+                    structureType === item.type
+                      ? 'border-sky-500 bg-sky-50/30 text-sky-700 shadow-xs'
+                      : 'border-slate-100 hover:border-slate-200 text-slate-600 bg-white'
                   }`}
                 >
-                  {t} mm
+                  <Box className={`h-4.5 w-4.5 ${structureType === item.type ? 'text-sky-500' : 'text-slate-400'}`} />
+                  {item.label}
                 </button>
               ))}
             </div>
 
             <Separator />
 
-            {/* Mix design section */}
+            {/* Dynamic Dimension Fields depending on structure type */}
+            {structureType === 'slab' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Slab Dimensions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="length" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Ruler className="h-4 w-4 text-sky-500" /> Length (meters)
+                    </Label>
+                    <Input
+                      id="length"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={length}
+                      onChange={(e) => setLength(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(length * 3.28084).toFixed(1)} feet</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="width" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width (meters)
+                    </Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={width}
+                      onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(width * 3.28084).toFixed(1)} feet</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="thickness" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Layers className="h-4 w-4 text-sky-500" /> Thickness (mm)
+                    </Label>
+                    <Input
+                      id="thickness"
+                      type="number"
+                      min="10"
+                      step="5"
+                      value={thickness}
+                      onChange={(e) => setThickness(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">= {(thickness / 1000).toFixed(3)} meters</span>
+                  </div>
+                </div>
+                
+                {/* Presets */}
+                <div className="flex gap-2">
+                  {[100, 150, 200, 250].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setThickness(t)}
+                      className={`px-3 py-1 text-xs font-bold rounded-full border ${
+                        thickness === t 
+                          ? 'bg-sky-500 text-white border-sky-500' 
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      {t} mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {structureType === 'beam' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Ring Beam / Lintel Dimensions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="beamLength" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Ruler className="h-4 w-4 text-sky-500" /> Total Length (m)
+                    </Label>
+                    <Input
+                      id="beamLength"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={beamLength}
+                      onChange={(e) => setBeamLength(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(beamLength * 3.28084).toFixed(1)} feet</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="beamWidth" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width (mm)
+                    </Label>
+                    <Input
+                      id="beamWidth"
+                      type="number"
+                      min="50"
+                      step="10"
+                      value={beamWidth}
+                      onChange={(e) => setBeamWidth(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">= {(beamWidth / 1000).toFixed(3)} m</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="beamHeight" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                      <Layers className="h-4 w-4 text-sky-500" /> Height (mm)
+                    </Label>
+                    <Input
+                      id="beamHeight"
+                      type="number"
+                      min="50"
+                      step="10"
+                      value={beamHeight}
+                      onChange={(e) => setBeamHeight(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">= {(beamHeight / 1000).toFixed(3)} m</span>
+                  </div>
+                </div>
+                {/* Presets */}
+                <div className="flex gap-2">
+                  {['200x200', '200x300', '150x225', '150x300'].map((dim) => {
+                    const [w, h] = dim.split('x').map(Number);
+                    return (
+                      <button
+                        key={dim}
+                        type="button"
+                        onClick={() => {
+                          setBeamWidth(w);
+                          setBeamHeight(h);
+                        }}
+                        className={`px-3 py-1 text-xs font-bold rounded-full border ${
+                          beamWidth === w && beamHeight === h
+                            ? 'bg-sky-500 text-white border-sky-500'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {w}x{h} mm
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {structureType === 'column' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Column / Pillar Dimensions</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="columnQty" className="text-sm font-bold text-slate-700">Quantity (pcs)</Label>
+                    <Input
+                      id="columnQty"
+                      type="number"
+                      min="1"
+                      value={columnQty}
+                      onChange={(e) => setColumnQty(parseInt(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="columnWidth" className="text-sm font-bold text-slate-700">Width (mm)</Label>
+                    <Input
+                      id="columnWidth"
+                      type="number"
+                      min="50"
+                      step="10"
+                      value={columnWidth}
+                      onChange={(e) => setColumnWidth(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">= {(columnWidth / 1000).toFixed(3)} m</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="columnDepth" className="text-sm font-bold text-slate-700">Depth (mm)</Label>
+                    <Input
+                      id="columnDepth"
+                      type="number"
+                      min="50"
+                      step="10"
+                      value={columnDepth}
+                      onChange={(e) => setColumnDepth(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">= {(columnDepth / 1000).toFixed(3)} m</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="columnHeight" className="text-sm font-bold text-slate-700">Height (meters)</Label>
+                    <Input
+                      id="columnHeight"
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={columnHeight}
+                      onChange={(e) => setColumnHeight(parseFloat(e.target.value) || 0)}
+                      className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
+                    />
+                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(columnHeight * 3.28084).toFixed(1)} feet</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {structureType === 'general' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Direct Volume Input</h3>
+                <div className="space-y-2 max-w-xs">
+                  <Label htmlFor="generalVolume" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                    <Box className="h-4 w-4 text-sky-500" /> Concrete Volume (m³)
+                  </Label>
+                  <Input
+                    id="generalVolume"
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={generalVolume}
+                    onChange={(e) => setGeneralVolume(parseFloat(e.target.value) || 0)}
+                    className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold text-lg"
+                  />
+                  <span className="text-[11px] text-slate-400 font-medium block">
+                    Direct volumetric input. Ratios will apply directly to this amount.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Mix Design & Wastage section */}
             <div className="space-y-4">
               <Label className="text-base font-black text-slate-900 flex items-center gap-1.5">
                 <Scale className="h-5 w-5 text-sky-500" /> Concrete Mix Design & Wastage
@@ -463,11 +826,11 @@ export function ConcreteCalculator() {
                     id="mixPreset"
                     value={mixPreset}
                     onChange={(e) => setMixPreset(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 text-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-sky-500 font-medium"
                   >
-                    <option value="class20">Class 20 (1:2:4) - Standard Slab</option>
-                    <option value="class25">Class 25 (1:1.5:3) - Structural</option>
-                    <option value="class30">Class 30 (1:1:2) - Heavy Load</option>
+                    <option value="class20">Class 20 (1:2:4) - Standard Slab/Beams</option>
+                    <option value="class25">Class 25 (1:1.5:3) - Structural Columns</option>
+                    <option value="class30">Class 30 (1:1:2) - Heavy Load Foundations</option>
                     <option value="custom">Custom Mix Proportions</option>
                   </select>
                 </div>
@@ -482,7 +845,7 @@ export function ConcreteCalculator() {
                     max="50"
                     value={wastage}
                     onChange={(e) => setWastage(parseFloat(e.target.value) || 0)}
-                    className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-medium"
+                    className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                   />
                 </div>
               </div>
@@ -532,102 +895,12 @@ export function ConcreteCalculator() {
         {/* 3D Visualizer Card */}
         <Card className="border border-slate-200 bg-white shadow-sm overflow-hidden">
           <CardHeader className="bg-slate-50/50 border-b py-3">
-            <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-sky-500" /> Slab 3D Visualizer
+            <CardTitle className="text-xs font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-wider">
+              <Sparkles className="h-4 w-4 text-sky-500" /> Structure 3D Preview
             </CardTitle>
           </CardHeader>
           <CardContent className="flex justify-center items-center py-6 bg-slate-900/5 select-none">
-            {length > 0 && width > 0 ? (
-              <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
-                {/* Grid guidelines for helper */}
-                <path d="M 50 150 L 200 65 L 350 150" fill="none" stroke="rgba(0,0,0,0.03)" strokeWidth="2" strokeDasharray="3,3" />
-
-                {/* Back Top/Bottom Wireframes (Hidden parts dashed) */}
-                <path d={`M ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p1.x} ${p1.y}`} fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4,4" />
-                <path d={`M ${t2.x} ${t2.y} L ${t3.x} ${t3.y} L ${t1.x} ${t1.y}`} fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4,4" />
-                <line x1={p3.x} y1={p3.y} x2={t3.x} y2={t3.y} stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="4,4" />
-
-                {/* Front Left Face */}
-                <polygon
-                  points={`${p2.x},${p2.y} ${t2.x},${t2.y} ${t0.x},${t0.y} ${p0.x},${p0.y}`}
-                  fill="#64748b"
-                  stroke="#475569"
-                  strokeWidth="1.5"
-                />
-
-                {/* Front Right Face */}
-                <polygon
-                  points={`${p0.x},${p0.y} ${t0.x},${t0.y} ${t1.x},${t1.y} ${p1.x},${p1.y}`}
-                  fill="#475569"
-                  stroke="#334155"
-                  strokeWidth="1.5"
-                />
-
-                {/* Top Concrete Surface */}
-                <polygon
-                  points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`}
-                  fill="#cbd5e1"
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                />
-
-                {/* Structural Texture Lines on Concrete Top */}
-                <path 
-                  d={`M ${(t0.x + t2.x)/2} ${(t0.y + t2.y)/2} L ${(t1.x + t3.x)/2} ${(t1.y + t3.y)/2}`}
-                  stroke="#94a3b8"
-                  strokeWidth="1"
-                  strokeDasharray="2,2"
-                />
-                <path 
-                  d={`M ${(t0.x + t1.x)/2} ${(t0.y + t1.y)/2} L ${(t2.x + t3.x)/2} ${(t2.y + t3.y)/2}`}
-                  stroke="#94a3b8"
-                  strokeWidth="1"
-                  strokeDasharray="2,2"
-                />
-
-                {/* Labels & Dim Lines */}
-                {/* Length Label (Right side) */}
-                <text 
-                  x={(p0.x + p1.x) / 2 + 10} 
-                  y={(p0.y + p1.y) / 2 + 15} 
-                  fill="#334155" 
-                  fontSize="11" 
-                  fontWeight="bold" 
-                  textAnchor="middle"
-                >
-                  Length: {length.toFixed(1)}m
-                </text>
-
-                {/* Width Label (Left side) */}
-                <text 
-                  x={(p0.x + p2.x) / 2 - 10} 
-                  y={(p0.y + p2.y) / 2 + 15} 
-                  fill="#334155" 
-                  fontSize="11" 
-                  fontWeight="bold" 
-                  textAnchor="middle"
-                >
-                  Width: {width.toFixed(1)}m
-                </text>
-
-                {/* Thickness Label */}
-                <line x1={p0.x - 15} y1={p0.y} x2={p0.x - 15} y2={t0.y} stroke="#e2e8f0" strokeWidth="1" />
-                <line x1={p0.x - 18} y1={p0.y} x2={p0.x - 12} y2={p0.y} stroke="#cbd5e1" strokeWidth="1" />
-                <line x1={p0.x - 18} y1={t0.y} x2={p0.x - 12} y2={t0.y} stroke="#cbd5e1" strokeWidth="1" />
-                <text 
-                  x={p0.x - 22} 
-                  y={(p0.y + t0.y) / 2 + 4} 
-                  fill="#ef4444" 
-                  fontSize="10" 
-                  fontWeight="black" 
-                  textAnchor="end"
-                >
-                  {thickness}mm
-                </text>
-              </svg>
-            ) : (
-              <p className="text-sm text-slate-400 italic">Please enter positive dimensions for preview.</p>
-            )}
+            {renderVisualizer()}
           </CardContent>
         </Card>
       </div>
@@ -637,20 +910,20 @@ export function ConcreteCalculator() {
         <Card className="border-none shadow-sm bg-slate-900 text-white overflow-hidden">
           <CardHeader className="border-b border-slate-800 pb-4">
             <CardTitle className="font-headline text-lg text-slate-100 flex items-center gap-2">
-              Slab Material Summary
+              Estimation Summary
             </CardTitle>
-            <CardDescription className="text-slate-400 text-xs">Based on mix and wastage factors.</CardDescription>
+            <CardDescription className="text-slate-400 text-xs">Volume and ingredients quantities.</CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
-            {/* Primary Volume / Area */}
+            {/* Primary Volume & Area */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Total Slab Area</span>
-                <p className="text-xl font-black text-slate-100 mt-1">{calculations.area.toFixed(2)} m²</p>
+                <span className="text-[10px] uppercase font-bold text-slate-400">Total Wet Volume</span>
+                <p className="text-lg font-black text-sky-400 mt-1">{calculations.wetVolume.toFixed(3)} m³</p>
               </div>
               <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-800">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Concrete Volume</span>
-                <p className="text-xl font-black text-sky-400 mt-1">{calculations.wetVolume.toFixed(3)} m³</p>
+                <span className="text-[10px] uppercase font-bold text-slate-400">Total Dry Volume</span>
+                <p className="text-lg font-black text-slate-100 mt-1">{calculations.dryVolume.toFixed(3)} m³</p>
               </div>
             </div>
 
@@ -664,7 +937,7 @@ export function ConcreteCalculator() {
                   <div className="bg-sky-500/20 text-sky-400 p-2 rounded-lg font-bold text-xs uppercase">CEM</div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-400">Cement (50kg bags)</h4>
-                    <p className="text-[10px] text-slate-500 font-medium">Standard structural grade</p>
+                    <p className="text-[10px] text-slate-500 font-medium">Standard 50kg bag packing</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -678,7 +951,7 @@ export function ConcreteCalculator() {
                 <div className="flex items-center gap-3">
                   <div className="bg-amber-500/20 text-amber-400 p-2 rounded-lg font-bold text-xs uppercase">SND</div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-400">Sand</h4>
+                    <h4 className="text-xs font-bold text-slate-400">Sand (Fine Aggregate)</h4>
                     <p className="text-[10px] text-slate-500 font-medium">≈ {calculations.sandWheelbarrows} wheelbarrows</p>
                   </div>
                 </div>
@@ -693,7 +966,7 @@ export function ConcreteCalculator() {
                 <div className="flex items-center gap-3">
                   <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-lg font-bold text-xs uppercase">BLS</div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-400">Ballast / Aggregate</h4>
+                    <h4 className="text-xs font-bold text-slate-400">Ballast (Aggregate)</h4>
                     <p className="text-[10px] text-slate-500 font-medium">≈ {calculations.ballastWheelbarrows} wheelbarrows</p>
                   </div>
                 </div>
@@ -703,29 +976,31 @@ export function ConcreteCalculator() {
                 </div>
               </div>
 
-              {/* BRC */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-800/50 hover:bg-slate-800/50 transition-colors duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="bg-red-500/20 text-red-400 p-2 rounded-lg font-bold text-xs uppercase">BRC</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-400">BRC Mesh A98</h4>
-                    <p className="text-[10px] text-slate-500 font-medium">Fabric roll (2.4m x 48m)</p>
+              {/* BRC Mesh - Slab only */}
+              {structureType === 'slab' && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/30 border border-slate-800/50 hover:bg-slate-800/50 transition-colors duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-500/20 text-red-400 p-2 rounded-lg font-bold text-xs uppercase">BRC</div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400">BRC Mesh A98</h4>
+                      <p className="text-[10px] text-slate-500 font-medium">2.4m x 48m fabric rolls</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-black text-slate-100">{calculations.brcRolls}</span>
+                    <span className="text-xs font-semibold text-slate-400 ml-1">rolls</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xl font-black text-slate-100">{calculations.brcRolls}</span>
-                  <span className="text-xs font-semibold text-slate-400 ml-1">rolls</span>
-                </div>
-              </div>
+              )}
             </div>
           </CardContent>
           <CardFooter className="bg-slate-950 border-t border-slate-800/80 p-4">
             <Button
               onClick={() => setIsDownloadOpen(true)}
               className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold h-12 shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
-              disabled={calculations.area === 0}
+              disabled={calculations.wetVolume === 0}
             >
-              <Download className="h-5 w-5" /> Download Estimate Receipt
+              <Download className="h-5 w-5" /> Download Materials Receipt
             </Button>
           </CardFooter>
         </Card>
@@ -771,7 +1046,7 @@ export function ConcreteCalculator() {
                 id="projectName" 
                 value={clientInfo.projectName} 
                 onChange={handleInputChange} 
-                placeholder="e.g. Residential Slab Casting"
+                placeholder="e.g. Residential Construction"
                 className="h-10 text-sm"
               />
             </div>
@@ -781,7 +1056,7 @@ export function ConcreteCalculator() {
                 id="projectLocation" 
                 value={clientInfo.projectLocation} 
                 onChange={handleInputChange} 
-                placeholder="e.g. Juja, Kiambu"
+                placeholder="e.g. Karen, Nairobi"
                 className="h-10 text-sm"
               />
             </div>
