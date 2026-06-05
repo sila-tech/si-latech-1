@@ -121,6 +121,8 @@ interface CalculatorContextType {
   setLogoUrl: (url: string | null) => void;
   saveProject: (details: ProjectDetails) => Promise<string | undefined>;
   loadProjectData: (projectData: ProjectData | null) => void;
+  displayUnit: 'm' | 'ft';
+  setDisplayUnit: (unit: 'm' | 'ft') => void;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -138,6 +140,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [projectLocation, setProjectLocation] = useState<string>('');
   const [contactPerson, setContactPerson] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
+  const [displayUnit, setDisplayUnit] = useState<'m' | 'ft'>('m');
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
@@ -360,6 +363,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setLogoUrl,
         saveProject,
         loadProjectData,
+        displayUnit,
+        setDisplayUnit,
       }}
     >
       {children}

@@ -61,6 +61,9 @@ export function ConcreteCalculator() {
   // Structure Type Selection
   const [structureType, setStructureType] = useState<'slab' | 'beam' | 'column' | 'general'>('slab');
 
+  // Dimension Unit System
+  const [unit, setUnit] = useState<'m' | 'ft' | 'mm'>('m');
+
   // Slab inputs
   const [length, setLength] = useState<number>(10);
   const [width, setWidth] = useState<number>(10);
@@ -88,6 +91,85 @@ export function ConcreteCalculator() {
   const [customCement, setCustomCement] = useState<number>(1);
   const [customSand, setCustomSand] = useState<number>(2);
   const [customBallast, setCustomBallast] = useState<number>(4);
+
+  // Handle unit conversion to prevent losing progress
+  const handleUnitChange = (newUnit: 'm' | 'ft' | 'mm') => {
+    if (newUnit === unit) return;
+
+    if (unit === 'm' && newUnit === 'ft') {
+      setLength(Number((length * 3.28084).toFixed(2)));
+      setWidth(Number((width * 3.28084).toFixed(2)));
+      setThickness(Number((thickness / 25.4).toFixed(1)));
+
+      setBeamLength(Number((beamLength * 3.28084).toFixed(2)));
+      setBeamWidth(Number((beamWidth / 25.4).toFixed(1)));
+      setBeamHeight(Number((beamHeight / 25.4).toFixed(1)));
+
+      setColumnWidth(Number((columnWidth / 25.4).toFixed(1)));
+      setColumnDepth(Number((columnDepth / 25.4).toFixed(1)));
+      setColumnHeight(Number((columnHeight * 3.28084).toFixed(2)));
+
+      setGeneralVolume(Number((generalVolume * 35.3147).toFixed(2)));
+    } else if (unit === 'm' && newUnit === 'mm') {
+      setLength(Number((length * 1000).toFixed(0)));
+      setWidth(Number((width * 1000).toFixed(0)));
+
+      setBeamLength(Number((beamLength * 1000).toFixed(0)));
+
+      setColumnHeight(Number((columnHeight * 1000).toFixed(0)));
+    } else if (unit === 'ft' && newUnit === 'm') {
+      setLength(Number((length / 3.28084).toFixed(2)));
+      setWidth(Number((width / 3.28084).toFixed(2)));
+      setThickness(Number((thickness * 25.4).toFixed(0)));
+
+      setBeamLength(Number((beamLength / 3.28084).toFixed(2)));
+      setBeamWidth(Number((beamWidth * 25.4).toFixed(0)));
+      setBeamHeight(Number((beamHeight * 25.4).toFixed(0)));
+
+      setColumnWidth(Number((columnWidth * 25.4).toFixed(0)));
+      setColumnDepth(Number((columnDepth * 25.4).toFixed(0)));
+      setColumnHeight(Number((columnHeight / 3.28084).toFixed(2)));
+
+      setGeneralVolume(Number((generalVolume / 35.3147).toFixed(2)));
+    } else if (unit === 'ft' && newUnit === 'mm') {
+      setLength(Number((length * 304.8).toFixed(0)));
+      setWidth(Number((width * 304.8).toFixed(0)));
+      setThickness(Number((thickness * 25.4).toFixed(0)));
+
+      setBeamLength(Number((beamLength * 304.8).toFixed(0)));
+      setBeamWidth(Number((beamWidth * 25.4).toFixed(0)));
+      setBeamHeight(Number((beamHeight * 25.4).toFixed(0)));
+
+      setColumnWidth(Number((columnWidth * 25.4).toFixed(0)));
+      setColumnDepth(Number((columnDepth * 25.4).toFixed(0)));
+      setColumnHeight(Number((columnHeight * 304.8).toFixed(0)));
+
+      setGeneralVolume(Number((generalVolume / 35.3147).toFixed(2)));
+    } else if (unit === 'mm' && newUnit === 'm') {
+      setLength(Number((length / 1000).toFixed(2)));
+      setWidth(Number((width / 1000).toFixed(2)));
+
+      setBeamLength(Number((beamLength / 1000).toFixed(2)));
+
+      setColumnHeight(Number((columnHeight / 1000).toFixed(2)));
+    } else if (unit === 'mm' && newUnit === 'ft') {
+      setLength(Number((length / 304.8).toFixed(2)));
+      setWidth(Number((width / 304.8).toFixed(2)));
+      setThickness(Number((thickness / 25.4).toFixed(1)));
+
+      setBeamLength(Number((beamLength / 304.8).toFixed(2)));
+      setBeamWidth(Number((beamWidth / 25.4).toFixed(1)));
+      setBeamHeight(Number((beamHeight / 25.4).toFixed(1)));
+
+      setColumnWidth(Number((columnWidth / 25.4).toFixed(1)));
+      setColumnDepth(Number((columnDepth / 25.4).toFixed(1)));
+      setColumnHeight(Number((columnHeight / 304.8).toFixed(2)));
+
+      setGeneralVolume(Number((generalVolume * 35.3147).toFixed(2)));
+    }
+
+    setUnit(newUnit);
+  };
 
   // Client info for quote download
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
@@ -121,27 +203,95 @@ export function ConcreteCalculator() {
     let wetVolume = 0;
     let area = 0;
 
-    if (structureType === 'slab') {
-      const L = Math.max(0, length);
-      const W = Math.max(0, width);
-      const T = Math.max(0, thickness / 1000);
-      area = L * W;
-      wetVolume = area * T;
-    } else if (structureType === 'beam') {
-      const L = Math.max(0, beamLength);
-      const W = Math.max(0, beamWidth / 1000);
-      const H = Math.max(0, beamHeight / 1000);
-      area = L * W;
-      wetVolume = L * W * H;
-    } else if (structureType === 'column') {
-      const qty = Math.max(0, columnQty);
-      const W = Math.max(0, columnWidth / 1000);
-      const D = Math.max(0, columnDepth / 1000);
-      const H = Math.max(0, columnHeight);
-      area = W * D * qty;
-      wetVolume = qty * W * D * H;
-    } else if (structureType === 'general') {
-      wetVolume = Math.max(0, generalVolume);
+    // Convert inputs to meters based on the selected unit
+    let L_m = 0;
+    let W_m = 0;
+    let T_m = 0; // slab thickness in meters
+    let H_m = 0; // beam height or column height in meters
+    let D_m = 0; // column depth in meters
+
+    if (unit === 'ft') {
+      L_m = Math.max(0, length * 0.3048);
+      W_m = Math.max(0, width * 0.3048);
+      T_m = Math.max(0, thickness * 0.0254); // thickness in inches
+
+      // beam
+      const beamL_m = Math.max(0, beamLength * 0.3048);
+      const beamW_m = Math.max(0, beamWidth * 0.0254); // width in inches
+      const beamH_m = Math.max(0, beamHeight * 0.0254); // height in inches
+
+      // column
+      const colW_m = Math.max(0, columnWidth * 0.0254); // width in inches
+      const colD_m = Math.max(0, columnDepth * 0.0254); // depth in inches
+      const colH_m = Math.max(0, columnHeight * 0.3048);
+
+      if (structureType === 'slab') {
+        area = L_m * W_m;
+        wetVolume = area * T_m;
+      } else if (structureType === 'beam') {
+        area = beamL_m * beamW_m;
+        wetVolume = beamL_m * beamW_m * beamH_m;
+      } else if (structureType === 'column') {
+        area = colW_m * colD_m * Math.max(0, columnQty);
+        wetVolume = Math.max(0, columnQty) * colW_m * colD_m * colH_m;
+      } else if (structureType === 'general') {
+        wetVolume = Math.max(0, generalVolume * 0.028316846592); // cubic feet to cubic meters
+      }
+    } else if (unit === 'mm') {
+      L_m = Math.max(0, length / 1000);
+      W_m = Math.max(0, width / 1000);
+      T_m = Math.max(0, thickness / 1000);
+
+      // beam
+      const beamL_m = Math.max(0, beamLength / 1000);
+      const beamW_m = Math.max(0, beamWidth / 1000);
+      const beamH_m = Math.max(0, beamHeight / 1000);
+
+      // column
+      const colW_m = Math.max(0, columnWidth / 1000);
+      const colD_m = Math.max(0, columnDepth / 1000);
+      const colH_m = Math.max(0, columnHeight / 1000);
+
+      if (structureType === 'slab') {
+        area = L_m * W_m;
+        wetVolume = area * T_m;
+      } else if (structureType === 'beam') {
+        area = beamL_m * beamW_m;
+        wetVolume = beamL_m * beamW_m * beamH_m;
+      } else if (structureType === 'column') {
+        area = colW_m * colD_m * Math.max(0, columnQty);
+        wetVolume = Math.max(0, columnQty) * colW_m * colD_m * colH_m;
+      } else if (structureType === 'general') {
+        wetVolume = Math.max(0, generalVolume);
+      }
+    } else {
+      // Metric 'm'
+      L_m = Math.max(0, length);
+      W_m = Math.max(0, width);
+      T_m = Math.max(0, thickness / 1000); // thickness is mm
+
+      // beam
+      const beamL_m = Math.max(0, beamLength);
+      const beamW_m = Math.max(0, beamWidth / 1000);
+      const beamH_m = Math.max(0, beamHeight / 1000);
+
+      // column
+      const colW_m = Math.max(0, columnWidth / 1000);
+      const colD_m = Math.max(0, columnDepth / 1000);
+      const colH_m = Math.max(0, columnHeight);
+
+      if (structureType === 'slab') {
+        area = L_m * W_m;
+        wetVolume = area * T_m;
+      } else if (structureType === 'beam') {
+        area = beamL_m * beamW_m;
+        wetVolume = beamL_m * beamW_m * beamH_m;
+      } else if (structureType === 'column') {
+        area = colW_m * colD_m * Math.max(0, columnQty);
+        wetVolume = Math.max(0, columnQty) * colW_m * colD_m * colH_m;
+      } else if (structureType === 'general') {
+        wetVolume = Math.max(0, generalVolume);
+      }
     }
 
     const W_factor = 1 + (Math.max(0, wastage) / 100);
@@ -204,6 +354,7 @@ export function ConcreteCalculator() {
     };
   }, [
     structureType,
+    unit,
     length, width, thickness,
     beamLength, beamWidth, beamHeight,
     columnQty, columnWidth, columnDepth, columnHeight,
@@ -295,16 +446,52 @@ export function ConcreteCalculator() {
     
     if (structureType === 'slab') {
       structureLabel = 'STRUCTURE TYPE: CONCRETE SLAB / FLOOR';
-      dimensionsText = `Length: ${length.toFixed(2)} m | Width: ${width.toFixed(2)} m | Thickness: ${thickness} mm | Area: ${calculations.area.toFixed(2)} sq.m`;
+      if (unit === 'ft') {
+        const L_m = length * 0.3048;
+        const W_m = width * 0.3048;
+        const T_mm = thickness * 25.4;
+        dimensionsText = `Length: ${length.toFixed(2)} ft (${L_m.toFixed(2)} m) | Width: ${width.toFixed(2)} ft (${W_m.toFixed(2)} m) | Thickness: ${thickness.toFixed(1)} in (${T_mm.toFixed(0)} mm) | Area: ${(length * width).toFixed(2)} sq.ft (${calculations.area.toFixed(2)} sq.m)`;
+      } else if (unit === 'mm') {
+        const L_m = length / 1000;
+        const W_m = width / 1000;
+        dimensionsText = `Length: ${length.toFixed(0)} mm (${L_m.toFixed(2)} m) | Width: ${width.toFixed(0)} mm (${W_m.toFixed(2)} m) | Thickness: ${thickness.toFixed(0)} mm | Area: ${calculations.area.toFixed(2)} sq.m`;
+      } else {
+        dimensionsText = `Length: ${length.toFixed(2)} m | Width: ${width.toFixed(2)} m | Thickness: ${thickness} mm | Area: ${calculations.area.toFixed(2)} sq.m`;
+      }
     } else if (structureType === 'beam') {
       structureLabel = 'STRUCTURE TYPE: RING BEAM / LINTEL';
-      dimensionsText = `Total Length: ${beamLength.toFixed(2)} m | Width: ${beamWidth} mm | Height: ${beamHeight} mm`;
+      if (unit === 'ft') {
+        const L_m = beamLength * 0.3048;
+        const W_mm = beamWidth * 25.4;
+        const H_mm = beamHeight * 25.4;
+        dimensionsText = `Total Length: ${beamLength.toFixed(2)} ft (${L_m.toFixed(2)} m) | Width: ${beamWidth.toFixed(1)} in (${W_mm.toFixed(0)} mm) | Height: ${beamHeight.toFixed(1)} in (${H_mm.toFixed(0)} mm)`;
+      } else if (unit === 'mm') {
+        const L_m = beamLength / 1000;
+        dimensionsText = `Total Length: ${beamLength.toFixed(0)} mm (${L_m.toFixed(2)} m) | Width: ${beamWidth.toFixed(0)} mm | Height: ${beamHeight.toFixed(0)} mm`;
+      } else {
+        dimensionsText = `Total Length: ${beamLength.toFixed(2)} m | Width: ${beamWidth} mm | Height: ${beamHeight} mm`;
+      }
     } else if (structureType === 'column') {
       structureLabel = 'STRUCTURE TYPE: COLUMNS / PILLARS';
-      dimensionsText = `Quantity: ${columnQty} pcs | Section: ${columnWidth}x${columnDepth} mm | Height: ${columnHeight.toFixed(2)} m`;
+      if (unit === 'ft') {
+        const L_mm = columnWidth * 25.4;
+        const W_mm = columnDepth * 25.4;
+        const H_m = columnHeight * 0.3048;
+        dimensionsText = `Quantity: ${columnQty} pcs | Section: ${columnWidth.toFixed(1)}x${columnDepth.toFixed(1)} in (${L_mm.toFixed(0)}x${W_mm.toFixed(0)} mm) | Height: ${columnHeight.toFixed(2)} ft (${H_m.toFixed(2)} m)`;
+      } else if (unit === 'mm') {
+        const H_m = columnHeight / 1000;
+        dimensionsText = `Quantity: ${columnQty} pcs | Section: ${columnWidth.toFixed(0)}x${columnDepth.toFixed(0)} mm | Height: ${columnHeight.toFixed(0)} mm (${H_m.toFixed(2)} m)`;
+      } else {
+        dimensionsText = `Quantity: ${columnQty} pcs | Section: ${columnWidth}x${columnDepth} mm | Height: ${columnHeight.toFixed(2)} m`;
+      }
     } else if (structureType === 'general') {
       structureLabel = 'STRUCTURE TYPE: GENERAL VOLUME';
-      dimensionsText = `Direct Concrete Input Volume: ${generalVolume.toFixed(2)} cu.m`;
+      if (unit === 'ft') {
+        const V_m = generalVolume * 0.028316846592;
+        dimensionsText = `Direct Concrete Input Volume: ${generalVolume.toFixed(2)} cu.ft (${V_m.toFixed(2)} cu.m)`;
+      } else {
+        dimensionsText = `Direct Concrete Input Volume: ${generalVolume.toFixed(2)} cu.m`;
+      }
     }
 
     doc.text(structureLabel, 14, currentY);
@@ -416,6 +603,10 @@ export function ConcreteCalculator() {
       const t2 = { x: p2.x, y: p2.y - tScale };
       const t3 = { x: p3.x, y: p3.y - tScale };
 
+      const lengthUnit = unit === 'ft' ? 'ft' : unit === 'mm' ? 'mm' : 'm';
+      const widthUnit = unit === 'ft' ? 'ft' : unit === 'mm' ? 'mm' : 'm';
+      const thicknessUnit = unit === 'ft' ? 'in' : 'mm';
+
       return (
         <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
           {/* Back hidden outline */}
@@ -430,9 +621,9 @@ export function ConcreteCalculator() {
           <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
 
           {/* Labels */}
-          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 15} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Length: {length}m</text>
-          <text x={(p0.x + p2.x) / 2 - 10} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Width: {width}m</text>
-          <text x={p0.x - 22} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">{thickness}mm</text>
+          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 15} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Length: {length}{lengthUnit}</text>
+          <text x={(p0.x + p2.x) / 2 - 10} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Width: {width}{widthUnit}</text>
+          <text x={p0.x - 22} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">{thickness}{thicknessUnit}</text>
           <line x1={p0.x - 15} y1={p0.y} x2={p0.x - 15} y2={t0.y} stroke="#ef4444" strokeWidth="1.5" />
         </svg>
       );
@@ -452,6 +643,9 @@ export function ConcreteCalculator() {
       const t2 = { x: p2.x, y: p2.y - hScale };
       const t3 = { x: p3.x, y: p3.y - hScale };
 
+      const lengthUnit = unit === 'ft' ? 'ft' : unit === 'mm' ? 'mm' : 'm';
+      const sizeUnit = unit === 'ft' ? 'in' : 'mm';
+
       return (
         <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
           <path d={`M ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p1.x} ${p1.y}`} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
@@ -465,9 +659,9 @@ export function ConcreteCalculator() {
           <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
 
           {/* Labels */}
-          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 18} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Length: {beamLength}m</text>
-          <text x={(p0.x + p2.x) / 2 - 15} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="10" fontWeight="bold" textAnchor="middle">W: {beamWidth}mm</text>
-          <text x={p0.x - 12} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">{beamHeight}mm</text>
+          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 18} fill="#334155" fontSize="11" fontWeight="bold" textAnchor="middle">Length: {beamLength}{lengthUnit}</text>
+          <text x={(p0.x + p2.x) / 2 - 15} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="10" fontWeight="bold" textAnchor="middle">W: {beamWidth}{sizeUnit}</text>
+          <text x={p0.x - 12} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">{beamHeight}{sizeUnit}</text>
           <line x1={p0.x - 5} y1={p0.y} x2={p0.x - 5} y2={t0.y} stroke="#ef4444" strokeWidth="1.5" />
         </svg>
       );
@@ -486,6 +680,9 @@ export function ConcreteCalculator() {
       const t2 = { x: p2.x, y: p2.y - hScale };
       const t3 = { x: p3.x, y: p3.y - hScale };
 
+      const sizeUnit = unit === 'ft' ? 'in' : 'mm';
+      const heightUnit = unit === 'ft' ? 'ft' : unit === 'mm' ? 'mm' : 'm';
+
       return (
         <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
           <path d={`M ${p2.x} ${p2.y} L ${p3.x} ${p3.y} L ${p1.x} ${p1.y}`} fill="none" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3,3" />
@@ -499,9 +696,9 @@ export function ConcreteCalculator() {
           <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
 
           {/* Labels */}
-          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 15} fill="#334155" fontSize="9" fontWeight="bold" textAnchor="middle">D: {columnDepth}mm</text>
-          <text x={(p0.x + p2.x) / 2 - 10} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="9" fontWeight="bold" textAnchor="middle">W: {columnWidth}mm</text>
-          <text x={p0.x - 15} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">H: {columnHeight}m</text>
+          <text x={(p0.x + p1.x) / 2 + 10} y={(p0.y + p1.y) / 2 + 15} fill="#334155" fontSize="9" fontWeight="bold" textAnchor="middle">D: {columnDepth}{sizeUnit}</text>
+          <text x={(p0.x + p2.x) / 2 - 10} y={(p0.y + p2.y) / 2 + 15} fill="#334155" fontSize="9" fontWeight="bold" textAnchor="middle">W: {columnWidth}{sizeUnit}</text>
+          <text x={p0.x - 15} y={(p0.y + t0.y) / 2 + 4} fill="#ef4444" fontSize="10" fontWeight="bold" textAnchor="end">H: {columnHeight}{heightUnit}</text>
           <line x1={p0.x - 7} y1={p0.y} x2={p0.x - 7} y2={t0.y} stroke="#ef4444" strokeWidth="1.5" />
           <text x={x0} y={230} fill="#64748b" fontSize="11" fontWeight="black" textAnchor="middle">Quantity: {columnQty} Columns</text>
         </svg>
@@ -519,12 +716,14 @@ export function ConcreteCalculator() {
       const t2 = { x: p2.x, y: p2.y - size };
       const t3 = { x: p3.x, y: p3.y - size };
 
+      const volumeUnit = unit === 'ft' ? ' ft³' : ' m³';
+
       return (
         <svg width="100%" height="220" viewBox="0 0 400 240" className="max-w-md filter drop-shadow-md overflow-visible">
           <polygon points={`${p2.x},${p2.y} ${t2.x},${t2.y} ${t0.x},${t0.y} ${p0.x},${p0.y}`} fill="#64748b" stroke="#475569" strokeWidth="1.5" />
           <polygon points={`${p0.x},${p0.y} ${t0.x},${t0.y} ${t1.x},${t1.y} ${p1.x},${p1.y}`} fill="#475569" stroke="#334155" strokeWidth="1.5" />
           <polygon points={`${t0.x},${t0.y} ${t1.x},${t1.y} ${t3.x},${t3.y} ${t2.x},${t2.y}`} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
-          <text x={x0} y={y0 + 20} fill="#1e293b" fontSize="12" fontWeight="black" textAnchor="middle">Volume: {generalVolume.toFixed(2)}m³</text>
+          <text x={x0} y={y0 + 20} fill="#1e293b" fontSize="12" fontWeight="black" textAnchor="middle">Volume: {generalVolume.toFixed(2)}{volumeUnit}</text>
         </svg>
       );
     }
@@ -574,6 +773,33 @@ export function ConcreteCalculator() {
 
             <Separator />
 
+            {/* Unit Selector Toggle */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Dimension Unit System</Label>
+              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start inline-flex">
+                {[
+                  { id: 'm', label: 'Metric (m / mm)' },
+                  { id: 'ft', label: 'Imperial (ft / in)' },
+                  { id: 'mm', label: 'Millimeters (mm)' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleUnitChange(item.id as any)}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 ${
+                      unit === item.id
+                        ? 'bg-white text-primary shadow-xs'
+                        : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Dynamic Dimension Fields depending on structure type */}
             {structureType === 'slab' && (
               <div className="space-y-4 animate-in fade-in duration-300">
@@ -581,7 +807,7 @@ export function ConcreteCalculator() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="length" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                      <Ruler className="h-4 w-4 text-sky-500" /> Length (meters)
+                      <Ruler className="h-4 w-4 text-sky-500" /> Length ({unit === 'ft' ? 'feet' : unit === 'mm' ? 'mm' : 'meters'})
                     </Label>
                     <Input
                       id="length"
@@ -592,12 +818,18 @@ export function ConcreteCalculator() {
                       onChange={(e) => setLength(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(length * 3.28084).toFixed(1)} feet</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(length * 0.3048).toFixed(2)} meters` 
+                        : unit === 'mm' 
+                          ? `≈ ${(length / 1000).toFixed(2)} meters` 
+                          : `≈ ${(length * 3.28084).toFixed(1)} feet`}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="width" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                      <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width (meters)
+                      <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width ({unit === 'ft' ? 'feet' : unit === 'mm' ? 'mm' : 'meters'})
                     </Label>
                     <Input
                       id="width"
@@ -608,29 +840,39 @@ export function ConcreteCalculator() {
                       onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(width * 3.28084).toFixed(1)} feet</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(width * 0.3048).toFixed(2)} meters` 
+                        : unit === 'mm' 
+                          ? `≈ ${(width / 1000).toFixed(2)} meters` 
+                          : `≈ ${(width * 3.28084).toFixed(1)} feet`}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="thickness" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                      <Layers className="h-4 w-4 text-sky-500" /> Thickness (mm)
+                      <Layers className="h-4 w-4 text-sky-500" /> Thickness ({unit === 'ft' ? 'inches' : 'mm'})
                     </Label>
                     <Input
                       id="thickness"
                       type="number"
-                      min="10"
-                      step="5"
+                      min="0.1"
+                      step={unit === 'ft' ? '0.5' : '5'}
                       value={thickness}
                       onChange={(e) => setThickness(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">= {(thickness / 1000).toFixed(3)} meters</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(thickness * 25.4).toFixed(1)} mm` 
+                        : `= ${(thickness / 1000).toFixed(3)} meters`}
+                    </span>
                   </div>
                 </div>
                 
                 {/* Presets */}
                 <div className="flex gap-2">
-                  {[100, 150, 200, 250].map((t) => (
+                  {(unit === 'ft' ? [4, 5, 6, 8] : [100, 150, 200, 250]).map((t) => (
                     <button
                       key={t}
                       type="button"
@@ -641,7 +883,7 @@ export function ConcreteCalculator() {
                           : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                       }`}
                     >
-                      {t} mm
+                      {t} {unit === 'ft' ? 'in' : 'mm'}
                     </button>
                   ))}
                 </div>
@@ -654,7 +896,7 @@ export function ConcreteCalculator() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="beamLength" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                      <Ruler className="h-4 w-4 text-sky-500" /> Total Length (m)
+                      <Ruler className="h-4 w-4 text-sky-500" /> Total Length ({unit === 'ft' ? 'feet' : unit === 'mm' ? 'mm' : 'meters'})
                     </Label>
                     <Input
                       id="beamLength"
@@ -665,44 +907,61 @@ export function ConcreteCalculator() {
                       onChange={(e) => setBeamLength(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(beamLength * 3.28084).toFixed(1)} feet</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(beamLength * 0.3048).toFixed(2)} meters` 
+                        : unit === 'mm' 
+                          ? `≈ ${(beamLength / 1000).toFixed(2)} meters` 
+                          : `≈ ${(beamLength * 3.28084).toFixed(1)} feet`}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="beamWidth" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                      <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width (mm)
+                      <Ruler className="h-4 w-4 text-sky-500 rotate-90" /> Width ({unit === 'ft' ? 'inches' : 'mm'})
                     </Label>
                     <Input
                       id="beamWidth"
                       type="number"
-                      min="50"
-                      step="10"
+                      min="0.1"
+                      step={unit === 'ft' ? '0.5' : '10'}
                       value={beamWidth}
                       onChange={(e) => setBeamWidth(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">= {(beamWidth / 1000).toFixed(3)} m</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(beamWidth * 25.4).toFixed(1)} mm` 
+                        : `= ${(beamWidth / 1000).toFixed(3)} m`}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="beamHeight" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                      <Layers className="h-4 w-4 text-sky-500" /> Height (mm)
+                      <Layers className="h-4 w-4 text-sky-500" /> Height ({unit === 'ft' ? 'inches' : 'mm'})
                     </Label>
                     <Input
                       id="beamHeight"
                       type="number"
-                      min="50"
-                      step="10"
+                      min="0.1"
+                      step={unit === 'ft' ? '0.5' : '10'}
                       value={beamHeight}
                       onChange={(e) => setBeamHeight(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">= {(beamHeight / 1000).toFixed(3)} m</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(beamHeight * 25.4).toFixed(1)} mm` 
+                        : `= ${(beamHeight / 1000).toFixed(3)} m`}
+                    </span>
                   </div>
                 </div>
                 {/* Presets */}
                 <div className="flex gap-2">
-                  {['200x200', '200x300', '150x225', '150x300'].map((dim) => {
+                  {(unit === 'ft' 
+                    ? ['6x6', '6x9', '8x8', '8x12'] 
+                    : ['200x200', '200x300', '150x225', '150x300']
+                  ).map((dim) => {
                     const [w, h] = dim.split('x').map(Number);
                     return (
                       <button
@@ -718,7 +977,7 @@ export function ConcreteCalculator() {
                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {w}x{h} mm
+                        {w}x{h} {unit === 'ft' ? 'in' : 'mm'}
                       </button>
                     );
                   })}
@@ -743,35 +1002,43 @@ export function ConcreteCalculator() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="columnWidth" className="text-sm font-bold text-slate-700">Width (mm)</Label>
+                    <Label htmlFor="columnWidth" className="text-sm font-bold text-slate-700">Width ({unit === 'ft' ? 'inches' : 'mm'})</Label>
                     <Input
                       id="columnWidth"
                       type="number"
-                      min="50"
-                      step="10"
+                      min="0.1"
+                      step={unit === 'ft' ? '0.5' : '10'}
                       value={columnWidth}
                       onChange={(e) => setColumnWidth(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">= {(columnWidth / 1000).toFixed(3)} m</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(columnWidth * 25.4).toFixed(1)} mm` 
+                        : `= ${(columnWidth / 1000).toFixed(3)} m`}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="columnDepth" className="text-sm font-bold text-slate-700">Depth (mm)</Label>
+                    <Label htmlFor="columnDepth" className="text-sm font-bold text-slate-700">Depth ({unit === 'ft' ? 'inches' : 'mm'})</Label>
                     <Input
                       id="columnDepth"
                       type="number"
-                      min="50"
-                      step="10"
+                      min="0.1"
+                      step={unit === 'ft' ? '0.5' : '10'}
                       value={columnDepth}
                       onChange={(e) => setColumnDepth(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">= {(columnDepth / 1000).toFixed(3)} m</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(columnDepth * 25.4).toFixed(1)} mm` 
+                        : `= ${(columnDepth / 1000).toFixed(3)} m`}
+                    </span>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="columnHeight" className="text-sm font-bold text-slate-700">Height (meters)</Label>
+                    <Label htmlFor="columnHeight" className="text-sm font-bold text-slate-700">Height ({unit === 'ft' ? 'feet' : unit === 'mm' ? 'mm' : 'meters'})</Label>
                     <Input
                       id="columnHeight"
                       type="number"
@@ -781,7 +1048,13 @@ export function ConcreteCalculator() {
                       onChange={(e) => setColumnHeight(parseFloat(e.target.value) || 0)}
                       className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold"
                     />
-                    <span className="text-[10px] text-slate-400 font-medium block">≈ {(columnHeight * 3.28084).toFixed(1)} feet</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      {unit === 'ft' 
+                        ? `≈ ${(columnHeight * 0.3048).toFixed(2)} meters` 
+                        : unit === 'mm' 
+                          ? `≈ ${(columnHeight / 1000).toFixed(2)} meters` 
+                          : `≈ ${(columnHeight * 3.28084).toFixed(1)} feet`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -792,7 +1065,7 @@ export function ConcreteCalculator() {
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Direct Volume Input</h3>
                 <div className="space-y-2 max-w-xs">
                   <Label htmlFor="generalVolume" className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                    <Box className="h-4 w-4 text-sky-500" /> Concrete Volume (m³)
+                    <Box className="h-4 w-4 text-sky-500" /> Concrete Volume ({unit === 'ft' ? 'cu.ft' : 'm³'})
                   </Label>
                   <Input
                     id="generalVolume"
@@ -804,7 +1077,9 @@ export function ConcreteCalculator() {
                     className="bg-slate-50 border-slate-200 focus-visible:ring-sky-500 h-10 font-semibold text-lg"
                   />
                   <span className="text-[11px] text-slate-400 font-medium block">
-                    Direct volumetric input. Ratios will apply directly to this amount.
+                    {unit === 'ft'
+                      ? `≈ ${(generalVolume * 0.0283168).toFixed(2)} cubic meters. Ratios will apply directly.`
+                      : `≈ ${(generalVolume * 35.3147).toFixed(1)} cubic feet. Ratios will apply directly.`}
                   </span>
                 </div>
               </div>

@@ -44,7 +44,14 @@ import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '../ui/textarea';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
-import { calculateProjectTotals } from '@/lib/calculator';
+import { 
+  calculateProjectTotals,
+  calcRoomBlocksAndBeams,
+  calcConcrete,
+  calcBRC,
+  calcTimberAndProps,
+  getAggregatedRoomBreakdown
+} from '@/lib/calculator';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useCalculator } from '@/context/calculator-context';

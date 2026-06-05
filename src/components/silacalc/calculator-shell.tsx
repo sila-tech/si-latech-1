@@ -109,7 +109,7 @@ function TechAdvantages() {
 }
 
 export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
-  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings } = useCalculator();
+  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings, displayUnit, setDisplayUnit } = useCalculator();
 
   // Load initial data when the component mounts or when initialProjectData changes
   useEffect(() => {
@@ -182,7 +182,33 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
           </Card>
 
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
+              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setDisplayUnit('m')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 ${
+                    displayUnit === 'm'
+                      ? 'bg-white text-primary shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                  }`}
+                >
+                  Meters (m)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDisplayUnit('ft')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-300 ${
+                    displayUnit === 'ft'
+                      ? 'bg-white text-primary shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 bg-transparent'
+                  }`}
+                >
+                  Feet (ft)
+                </button>
+              </div>
+            </div>
             {rooms.map((room, i) => (
               <RoomCard
                 key={room.id}

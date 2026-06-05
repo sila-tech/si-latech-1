@@ -45,6 +45,12 @@ export const extractWhatsAppMeasurements = ai.defineFlow(
       },
     });
 
+    if (!output) {
+      return {
+        action: 'UNKNOWN' as const
+      };
+    }
+
     return output;
   }
 );
