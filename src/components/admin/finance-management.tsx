@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock, Download, FileText } from 'lucide-react';
+import { Loader2, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock, Download, FileText, Pencil, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -24,6 +25,14 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
     const [type, setType] = useState(isSuperAdmin ? 'income' : 'facilitation_request');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statementPeriod, setStatementPeriod] = useState('all');
+
+    // States for editing
+    const [editingRecord, setEditingRecord] = useState<any | null>(null);
+    const [editAmount, setEditAmount] = useState('');
+    const [editReason, setEditReason] = useState('');
+    const [editType, setEditType] = useState('');
+    const [editStatus, setEditStatus] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -78,6 +87,51 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
             toast({ title: 'Updated', description: `Request marked as ${status}.` });
         } catch (error) {
             toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
+        }
+    };
+
+    const startEdit = (record: any) => {
+        setEditingRecord(record);
+        setEditAmount(record.amount?.toString() || '');
+        setEditReason(record.reason || '');
+        setEditType(record.type || 'income');
+        setEditStatus(record.status || 'pending');
+    };
+
+    const handleUpdateRecord = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRecord) return;
+        if (!editAmount || !editReason) {
+            toast({ title: 'Error', description: 'Amount and reason are required.', variant: 'destructive' });
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            await updateDoc(doc(firestore, 'finances', editingRecord.id), {
+                amount: parseFloat(editAmount),
+                reason: editReason,
+                type: editType,
+                status: editStatus
+            });
+            toast({ title: 'Success', description: 'Financial record updated.' });
+            setEditingRecord(null);
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not update record.', variant: 'destructive' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleDeleteRecord = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this financial record? This cannot be undone.')) {
+            return;
+        }
+        try {
+            await deleteDoc(doc(firestore, 'finances', id));
+            toast({ title: 'Deleted', description: 'Financial record deleted successfully.' });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not delete record.', variant: 'destructive' });
         }
     };
 
@@ -301,11 +355,12 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                     <TableHead className="text-right text-red-600">Debit</TableHead>
                                                     <TableHead className="text-right text-green-600">Credit</TableHead>
                                                     <TableHead className="text-right font-bold">Balance</TableHead>
+                                                    <TableHead className="text-center w-[80px]">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {displayLedger.length === 0 ? (
-                                                    <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-8">No ledger records found.</TableCell></TableRow>
+                                                    <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">No ledger records found.</TableCell></TableRow>
                                                 ) : (
                                                     displayLedger.map((entry: any) => (
                                                         <TableRow key={entry.id}>
@@ -319,6 +374,28 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                             <TableCell className="text-right text-red-600">{entry.debit > 0 ? `-${entry.debit.toLocaleString()}` : '-'}</TableCell>
                                                             <TableCell className="text-right text-green-600">{entry.credit > 0 ? `+${entry.credit.toLocaleString()}` : '-'}</TableCell>
                                                             <TableCell className="text-right font-bold">KSh {entry.balance.toLocaleString()}</TableCell>
+                                                            <TableCell className="text-center">
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-7 w-7 text-slate-500 hover:text-slate-900" 
+                                                                        onClick={() => startEdit(entry)}
+                                                                        title="Edit"
+                                                                    >
+                                                                        <Pencil size={14} />
+                                                                    </Button>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" 
+                                                                        onClick={() => handleDeleteRecord(entry.id)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))
                                                 )}
@@ -342,11 +419,12 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                     <TableHead>User</TableHead>
                                                     <TableHead className="text-right">Amount</TableHead>
                                                     <TableHead className="text-center">Status / Action</TableHead>
+                                                    <TableHead className="text-center w-[80px]">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {finances?.length === 0 ? (
-                                                    <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">No records found.</TableCell></TableRow>
+                                                    <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">No records found.</TableCell></TableRow>
                                                 ) : (
                                                     finances?.map(f => (
                                                         <TableRow key={f.id}>
@@ -379,6 +457,28 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                                                     </Badge>
                                                                 )}
                                                             </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-7 w-7 text-slate-500 hover:text-slate-900" 
+                                                                        onClick={() => startEdit(f)}
+                                                                        title="Edit"
+                                                                    >
+                                                                        <Pencil size={14} />
+                                                                    </Button>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" 
+                                                                        onClick={() => handleDeleteRecord(f.id)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))
                                                 )}
@@ -391,6 +491,68 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Edit Financial Record Dialog */}
+            <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
+                <DialogContent className="max-w-md bg-white border border-slate-200 shadow-lg rounded-lg">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900">Edit Financial Record</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleUpdateRecord} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-type">Type</Label>
+                            <Select value={editType} onValueChange={setEditType}>
+                                <SelectTrigger id="edit-type"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="income">Income (Money Received)</SelectItem>
+                                    <SelectItem value="facilitation_request">Facilitation Request</SelectItem>
+                                    <SelectItem value="advertisement">Advertisement Expense</SelectItem>
+                                    <SelectItem value="other_expense">Other Expense</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-amount">Amount (KSh)</Label>
+                            <Input 
+                                id="edit-amount"
+                                type="number" 
+                                value={editAmount} 
+                                onChange={(e) => setEditAmount(e.target.value)} 
+                                placeholder="0" 
+                                className="w-full"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-reason">Description / Reason</Label>
+                            <Input 
+                                id="edit-reason"
+                                value={editReason} 
+                                onChange={(e) => setEditReason(e.target.value)} 
+                                placeholder="Reason" 
+                                className="w-full"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-status">Status</Label>
+                            <Select value={editStatus} onValueChange={setEditStatus}>
+                                <SelectTrigger id="edit-status"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="approved">Approved</SelectItem>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-4">
+                            <Button type="button" variant="outline" onClick={() => setEditingRecord(null)}>Cancel</Button>
+                            <Button type="submit" disabled={isUpdating} className="bg-primary hover:bg-primary/95 text-white">
+                                {isUpdating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                                Save Changes
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

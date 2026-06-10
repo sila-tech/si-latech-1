@@ -3,8 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePathname } from 'next/navigation';
 
 export function WhatsAppButton() {
+  const pathname = usePathname();
+  const isAdminSection = pathname?.startsWith('/admin');
+
   const [isVisible, setIsVisible] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const phoneNumber = '254701792088';
@@ -27,6 +31,7 @@ export function WhatsAppButton() {
     };
   }, []);
 
+  if (isAdminSection) return null;
   if (!isVisible) return null;
 
   return (
