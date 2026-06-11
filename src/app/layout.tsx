@@ -7,13 +7,14 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { WhatsAppButton } from '@/components/whatsapp-button';
 
 export const metadata: Metadata = {
-  title: 'SI-LATECH | SilaCalc Construction Calculator',
-  description: 'Precision construction material calculator for blocks and beams by SI-LATECH. Get instant official quotes for your construction projects.',
-  keywords: ['SI-LATECH', 'SilaCalc', 'Construction Calculator', 'Beam and Block', 'Kenya Construction', 'Material Estimator'],
+  metadataBase: new URL('https://si-latech.com'),
+  title: 'Beam & Block Calculator Kenya | Free Instant Quotes | SI-LATECH',
+  description: 'Kenya\'s #1 beam and block construction calculator. Get instant, official material quotes for beams, blocks, cement, sand & BRC for your slab project. Serving Nairobi, Mombasa & across Kenya.',
+  keywords: ['SI-LATECH', 'SilaCalc', 'Construction Calculator', 'Beam and Block', 'Kenya Construction', 'Material Estimator', 'Nairobi Construction', 'Beam Block Slab Kenya', 'Construction Quotes Kenya', 'Precast Beams Kenya'],
   authors: [{ name: 'SI-LATECH' }],
   openGraph: {
-    title: 'SI-LATECH | Precision Construction Calculator',
-    description: 'The definitive tool for beam and block construction calculations.',
+    title: 'SI-LATECH | Beam & Block Construction Calculator Kenya',
+    description: 'Get instant official material quotes for your beam & block slab project. Trusted by 500+ contractors across Kenya.',
     url: 'https://si-latech.com',
     siteName: 'SI-LATECH',
     images: [
@@ -29,8 +30,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SI-LATECH | Precision Construction Calculator',
-    description: 'The definitive tool for beam and block construction calculations.',
+    title: 'SI-LATECH | Beam & Block Construction Calculator Kenya',
+    description: 'Get instant official material quotes for your beam & block slab project.',
     images: ['/logo.png'],
   },
   icons: {
@@ -57,6 +58,56 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'SoftwareApplication',
+        name: 'SilaCalc by SI-LATECH',
+        operatingSystem: 'Web',
+        applicationCategory: 'BusinessApplication',
+        description: 'Precision beam and block construction material calculator for Kenya. Get instant quotes for beams, blocks, cement, sand, BRC and props.',
+        offers: {
+          '@type': 'Offer',
+          price: '0',
+          priceCurrency: 'KES',
+        },
+        url: 'https://si-latech.com',
+        author: {
+          '@type': 'Organization',
+          name: 'SI-LATECH',
+        },
+      },
+      {
+        '@type': 'LocalBusiness',
+        name: 'SI-LATECH',
+        description: 'Beam and block specialists providing precast concrete beams and hollow concrete blocks for construction projects across Kenya.',
+        url: 'https://si-latech.com',
+        telephone: '+254701792088',
+        address: {
+          '@type': 'PostalAddress',
+          addressCountry: 'KE',
+          addressRegion: 'Nairobi',
+        },
+        contactPoint: {
+          '@type': 'ContactPoint',
+          telephone: '+254701792088',
+          contactType: 'customer service',
+          availableLanguage: 'English',
+        },
+        sameAs: [
+          'https://wa.me/254701792088',
+        ],
+        openingHoursSpecification: {
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+          opens: '08:00',
+          closes: '17:00',
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="en">
       <head>
@@ -69,6 +120,10 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Source+Code+Pro:wght@400;500&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="font-body antialiased">

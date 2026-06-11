@@ -1,6 +1,8 @@
 
 'use client';
 import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
+import { MobileQuoteBar } from '@/components/mobile-quote-bar';
 import { CalculatorShell } from '@/components/silacalc/calculator-shell';
 import { ConcreteCalculator } from '@/components/silacalc/concrete-calculator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,7 +12,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-slate-50">
       <Header />
-      <main className="flex-1 p-4 sm:p-6 md:p-8">
+      <main className="flex-1 p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
         <div className="container mx-auto max-w-7xl">
           <Tabs defaultValue="beam-block" className="space-y-6">
             <div className="flex justify-center sm:justify-start">
@@ -40,6 +42,8 @@ export default function Home() {
           </Tabs>
         </div>
       </main>
+      <Footer />
+      <MobileQuoteBar />
     </div>
   );
 }

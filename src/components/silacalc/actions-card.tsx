@@ -1180,6 +1180,11 @@ export function ActionsCard() {
           <CardDescription>
             Generate documents, analyze plans, or manage your project.
           </CardDescription>
+          {/* Cloud storage context */}
+          <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+            Save &amp; Load use your <strong className="text-primary">Firebase cloud account</strong> — accessible from any device
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={handleCreateNew}>

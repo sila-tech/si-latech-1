@@ -15,13 +15,23 @@ import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud } from 'lucide-react';
-import React from 'react';
+import { UploadCloud, ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
+import React, { useState } from 'react';
+
+function AdvancedSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">{title}</p>
+      {children}
+    </div>
+  );
+}
 
 export function SettingsCard() {
   const { settings, setSettings, logoUrl, setLogoUrl } = useCalculator();
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleSettingChange = (
     key: keyof CalculationDefaults,
@@ -54,7 +64,6 @@ export function SettingsCard() {
     };
     reader.readAsDataURL(file);
   };
-
 
   const basicSettings = [
     { key: 'blockLength', label: 'Block Length (m)' },
@@ -107,6 +116,28 @@ export function SettingsCard() {
     { key: 'brcRollLength', label: 'BRC Roll Length (m)' },
   ];
 
+  const renderInputs = (settingsList: { key: string; label: string }[], cols: number = 2, step: string = '0.01') => (
+    <div className={`grid grid-cols-${cols} gap-x-4 gap-y-4`}>
+      {settingsList.map(({ key, label }) => (
+        <div className="space-y-2" key={key}>
+          <Label htmlFor={key} className="text-sm font-bold text-slate-900">
+            {label}
+          </Label>
+          <Input
+            id={key}
+            type="number"
+            className="bg-[#eff3f8] border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary"
+            value={settings[key as keyof CalculationDefaults]}
+            onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
+            min="0"
+            step={key.includes('dia') || key === 'num_longitudinal' ? '1' : step}
+            placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Card className="border-none shadow-sm">
       <CardHeader>
@@ -116,180 +147,67 @@ export function SettingsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-          {basicSettings.map(({ key, label }) => (
-            <div className="space-y-2" key={key}>
-              <Label htmlFor={key} className="text-sm font-bold text-slate-900">
-                {label}
-              </Label>
-              <Input
-                id={key}
-                type="number"
-                className="bg-[#eff3f8] border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary"
-                value={settings[key as keyof CalculationDefaults]}
-                onChange={(e) =>
-                  handleSettingChange(
-                    key as keyof CalculationDefaults,
-                    e.target.value
-                  )
-                }
-                min="0"
-                step="0.01"
-                placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-              />
-            </div>
-          ))}
-        </div>
-        
+        {/* Basic Settings — always visible */}
+        {renderInputs(basicSettings)}
+
         <Separator />
 
-        <div>
-          <Label className="text-lg font-black text-slate-900">Lintel Dimensions</Label>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
-            {lintelSettings.map(({ key, label }) => (
-              <div className="space-y-2" key={key}>
-                <Label htmlFor={key} className="text-sm font-bold text-slate-900">
-                  {label}
-                </Label>
-                <Input
-                  id={key}
-                  type="number"
-                  className="bg-[#eff3f8] border-none shadow-none"
-                  value={settings[key as keyof CalculationDefaults]}
-                  onChange={(e) =>
-                    handleSettingChange(
-                      key as keyof CalculationDefaults,
-                      e.target.value
-                    )
-                  }
-                  min="0"
-                  step="0.01"
-                  placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-                />
-              </div>
-            ))}
+        {/* Advanced Settings Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors text-slate-700"
+        >
+          <span className="flex items-center gap-2 text-sm font-bold">
+            <Settings2 size={15} className="text-primary" />
+            Advanced Settings
+            <span className="text-[10px] font-normal text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">
+              Lintel, Steel, Timber, Concrete Mix
+            </span>
+          </span>
+          {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {showAdvanced && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
+            <Separator />
+
+            <AdvancedSection title="Lintel Dimensions">
+              {renderInputs(lintelSettings)}
+            </AdvancedSection>
+
+            <Separator />
+
+            <AdvancedSection title="Lintel Steel">
+              {renderInputs(steelSettings)}
+            </AdvancedSection>
+
+            <Separator />
+
+            <AdvancedSection title="Timber & Props">
+              {renderInputs(timberSettings, 3, '0.1')}
+            </AdvancedSection>
+
+            <Separator />
+
+            <AdvancedSection title="Concrete Mix Ratio (by Volume)">
+              <p className="text-xs text-muted-foreground mb-2">e.g., 1 part Cement : 2 parts Sand : 4 parts Ballast</p>
+              {renderInputs(concreteRatioSettings, 3, '0.1')}
+            </AdvancedSection>
+
+            <Separator />
+
+            <AdvancedSection title="Material Densities">
+              {renderInputs(densitySettings, 2, '1')}
+            </AdvancedSection>
+
+            <Separator />
+
+            <AdvancedSection title="BRC Mesh">
+              {renderInputs(brcSettings, 2, '0.1')}
+            </AdvancedSection>
           </div>
-        </div>
-
-        <Separator />
-
-        <div>
-            <Label className="text-lg font-black text-slate-900">Lintel Steel</Label>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-2">
-                {steelSettings.map(({ key, label }) => (
-                    <div className="space-y-2" key={key}>
-                        <Label htmlFor={key} className="text-sm font-bold text-slate-900">{label}</Label>
-                        <Input
-                            id={key}
-                            type="number"
-                            className="bg-[#eff3f8] border-none shadow-none"
-                            value={settings[key as keyof CalculationDefaults]}
-                            onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
-                            min="0"
-                            step={key.includes('dia') || key.includes('num') ? "1" : "0.01"}
-                            placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-                        />
-                    </div>
-                ))}
-            </div>
-        </div>
-
-        <Separator />
-
-        <div>
-          <Label className="text-base font-medium">Timber & Props</Label>
-          <div className="grid grid-cols-3 gap-x-2 mt-2">
-            {timberSettings.map(({ key, label }) => (
-              <div className="space-y-2" key={key}>
-                <Label htmlFor={key} className="text-sm font-normal text-muted-foreground">{label}</Label>
-                <Input
-                  id={key}
-                  type="number"
-                  value={settings[key as keyof CalculationDefaults]}
-                  onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
-                  min="0"
-                  step="0.1"
-                  placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div>
-          <Label className="text-base font-medium">Concrete Mix Ratio (by Volume)</Label>
-          <p className="text-xs text-muted-foreground mb-2">e.g., 1 part Cement : 2 parts Sand : 4 parts Ballast</p>
-          <div className="grid grid-cols-3 gap-x-2">
-              {concreteRatioSettings.map(({ key, label }) => (
-                <div className="space-y-2" key={key}>
-                  <Label htmlFor={key} className="text-sm font-normal text-muted-foreground">{label}</Label>
-                  <Input
-                    id={key}
-                    type="number"
-                    value={settings[key as keyof CalculationDefaults]}
-                    onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
-                    min="0"
-                    step="0.1"
-                    placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-                  />
-                </div>
-              ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-          {densitySettings.map(({ key, label }) => (
-            <div className="space-y-2" key={key}>
-              <Label htmlFor={key} className="text-sm">
-                {label}
-              </Label>
-              <Input
-                id={key}
-                type="number"
-                value={settings[key as keyof CalculationDefaults]}
-                onChange={(e) =>
-                  handleSettingChange(
-                    key as keyof CalculationDefaults,
-                    e.target.value
-                  )
-                }
-                min="0"
-                step="1"
-                placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-              />
-            </div>
-          ))}
-        </div>
-
-        <Separator />
-        
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-          {brcSettings.map(({ key, label }) => (
-            <div className="space-y-2" key={key}>
-              <Label htmlFor={key} className="text-sm">
-                {label}
-              </Label>
-              <Input
-                id={key}
-                type="number"
-                value={settings[key as keyof CalculationDefaults]}
-                onChange={(e) =>
-                  handleSettingChange(
-                    key as keyof CalculationDefaults,
-                    e.target.value
-                  )
-                }
-                min="0"
-                step="0.1"
-                placeholder={String(DEFAULTS[key as keyof CalculationDefaults])}
-              />
-            </div>
-          ))}
-        </div>
+        )}
       </CardContent>
     </Card>
   );

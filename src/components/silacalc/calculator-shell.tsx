@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
 import { SettingsCard } from './settings-card';
 import { TotalsCard } from './totals-card';
-import { PlusCircle, Download } from 'lucide-react';
+import { PlusCircle, Download, LayoutGrid, Star, Users, Layers, Zap, ClipboardList, FileDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { QuickQuoteCard } from './quick-quote-card';
@@ -108,8 +108,132 @@ function TechAdvantages() {
   );
 }
 
+function SocialProofBanner() {
+  const stats = [
+    { value: '500+', label: 'Projects Quoted', icon: <Star size={18} className="text-[#f59e0b]" /> },
+    { value: '3+', label: 'Years in Business', icon: <Users size={18} className="text-emerald-400" /> },
+    { value: 'Up to 30%', label: 'Cost Savings', icon: <Zap size={18} className="text-sky-400" /> },
+  ];
+  return (
+    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl px-6 py-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-700">
+      <p className="text-white text-sm font-semibold text-center sm:text-left">
+        <span className="text-[#f59e0b] font-black">Trusted by 500+ contractors</span> across Kenya for beam & block estimates
+      </p>
+      <div className="flex items-center gap-6">
+        {stats.map(({ value, label, icon }) => (
+          <div key={label} className="flex flex-col items-center">
+            <div className="flex items-center gap-1">
+              {icon}
+              <span className="text-white font-black text-base">{value}</span>
+            </div>
+            <span className="text-slate-400 text-[10px] uppercase tracking-wider">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 3-step How It Works banner shown above the calculator grid */
+function HowItWorks() {
+  const steps = [
+    {
+      num: 1,
+      icon: <ClipboardList size={22} className="text-primary" />,
+      title: 'Add Rooms',
+      desc: 'Enter the length & width of each room or area. Rename them for clarity (e.g., "Living Room", "Bedroom 1").',
+    },
+    {
+      num: 2,
+      icon: <Zap size={22} className="text-amber-500" />,
+      title: 'Instant Calculations',
+      desc: 'Quantities for beams, blocks, cement, BRC mesh, sand & ballast update automatically in real time.',
+    },
+    {
+      num: 3,
+      icon: <FileDown size={22} className="text-emerald-500" />,
+      title: 'Download Quote',
+      desc: 'Generate a professional PDF quote or share your summary instantly via WhatsApp.',
+    },
+  ];
+  return (
+    <div className="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="px-6 pt-6 pb-2">
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">How It Works</p>
+        <h2 className="text-xl font-black text-slate-900">Get your estimate in 3 simple steps</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 px-2 pb-4 pt-2">
+        {steps.map(({ num, icon, title, desc }, i) => (
+          <div key={num} className="flex items-start gap-4 p-4 group">
+            <div className="flex flex-col items-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                {icon}
+              </div>
+              {i < steps.length - 1 && (
+                <ChevronRight size={14} className="text-slate-300 mt-2 hidden sm:block rotate-90 sm:rotate-0" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] font-black text-slate-400">STEP {num}</span>
+              </div>
+              <h3 className="font-black text-slate-900 text-sm mb-1">{title}</h3>
+              <p className="text-slate-500 text-xs leading-relaxed">{desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Quick-access "I know my total area" shortcut above the rooms grid */
+function QuickEntryToggle() {
+  const [mode, setMode] = useState<'rooms' | 'quick'>('rooms');
+  return (
+    <div className="mb-6 flex items-center gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 w-fit">
+      <button
+        onClick={() => setMode('rooms')}
+        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+          mode === 'rooms' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'
+        }`}
+      >
+        📐 Enter by Room
+      </button>
+      <button
+        onClick={() => setMode('quick')}
+        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+          mode === 'quick' ? 'bg-white text-[#f59e0b] shadow-sm' : 'text-slate-500 hover:text-slate-800'
+        }`}
+      >
+        ⚡ I Know My Total Area
+      </button>
+    </div>
+  );
+}
+
+function RoomsEmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-8 rounded-2xl border-2 border-dashed border-slate-200 bg-white text-center">
+      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+        <LayoutGrid size={32} className="text-primary" />
+      </div>
+      <h3 className="text-lg font-black text-slate-900 mb-1">No Rooms Added Yet</h3>
+      <p className="text-slate-500 text-sm mb-6 max-w-xs">
+        Add each room or area of your slab. You can rename them (e.g., "Living Room", "Kitchen") and enter their dimensions.
+      </p>
+      <Button onClick={onAdd} className="bg-primary hover:bg-primary/90 text-white font-bold px-8 h-11 rounded-xl">
+        <PlusCircle className="mr-2 h-4 w-4" /> Add Your First Room
+      </Button>
+    </div>
+  );
+}
+
 export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
   const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings, displayUnit, setDisplayUnit } = useCalculator();
+
+  // Toggle between "enter by room" and "quick total area" mode
+  const [entryMode, setEntryMode] = useState<'rooms' | 'quick'>('rooms');
 
   // Load initial data when the component mounts or when initialProjectData changes
   useEffect(() => {
@@ -119,8 +243,9 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
 
   return (
     <div id="calculator" className="container mx-auto max-w-7xl mt-8 px-4">
+      <SocialProofBanner />
       <TechAdvantages />
-      <ProcessGuide />
+      <HowItWorks />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
           
@@ -181,6 +306,45 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
             </CardContent>
           </Card>
 
+          {/* Entry Mode Toggle */}
+          <div className="mb-2">
+            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200 w-fit mb-6">
+              <button
+                onClick={() => setEntryMode('rooms')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  entryMode === 'rooms' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                📐 Enter by Room
+              </button>
+              <button
+                onClick={() => setEntryMode('quick')}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  entryMode === 'quick' ? 'bg-white text-[#f59e0b] shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                ⚡ I Know My Total Area
+              </button>
+            </div>
+
+            {/* Quick Quote mode — shown inline when selected */}
+            {entryMode === 'quick' && (
+              <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-1">
+                  <QuickQuoteCard />
+                </div>
+                <p className="text-xs text-slate-400 text-center mt-2">
+                  Or switch to{' '}
+                  <button onClick={() => setEntryMode('rooms')} className="text-primary font-semibold hover:underline">
+                    room-by-room entry
+                  </button>{' '}
+                  for more detailed calculations.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Rooms section — always visible */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h2 className="text-2xl font-bold tracking-tight font-headline">Rooms</h2>
@@ -209,15 +373,19 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                 </button>
               </div>
             </div>
-            {rooms.map((room, i) => (
-              <RoomCard
-                key={room.id}
-                room={room}
-                calculations={perRoomCalculations[i]}
-                updateRoom={updateRoom}
-                deleteRoom={deleteRoom}
-              />
-            ))}
+            {rooms.length === 0 ? (
+              <RoomsEmptyState onAdd={addRoom} />
+            ) : (
+              rooms.map((room, i) => (
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  calculations={perRoomCalculations[i]}
+                  updateRoom={updateRoom}
+                  deleteRoom={deleteRoom}
+                />
+              ))
+            )}
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -237,7 +405,6 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
           </div>
 
           <div className="space-y-8 pt-8 border-t border-slate-100">
-            <QuickQuoteCard />
             <PlanReaderCard />
             <ActionsCard />
           </div>
