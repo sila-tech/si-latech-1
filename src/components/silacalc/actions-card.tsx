@@ -414,7 +414,7 @@ export function ActionsCard() {
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
     
     const BLOCK_PRICE = settings.beamType === 'tbeam' ? 110 : 85;
-    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 1250 : 545;
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 1250 : 520;
 
     const renderFloorQuotePage = (pageTitle: string, pageTotals: any) => {
       addLogoToPdf(doc, primaryColor);
@@ -754,7 +754,7 @@ export function ActionsCard() {
       addLogoToPdf(doc, primaryColor);
       
       const activePerRoomCalcs = pageRooms.map((r) => {
-        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name, isOptimized);
+        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 520, r.name, isOptimized);
         return { room: r, roomCalcs };
       });
 
@@ -1013,7 +1013,7 @@ export function ActionsCard() {
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     
     const activePerRoomCalcs = rooms.map((r) => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 545, r.name, isOptimized);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 520, r.name, isOptimized);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
       const timberCalcs = calcTimberAndProps(r, settings);

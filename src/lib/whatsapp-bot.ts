@@ -32,7 +32,7 @@ export async function processWhatsAppMessage(from: string, text: string) {
   }
 
   if (extraction.action === 'FAQ') {
-    await sendWhatsAppMessage(from, `You asked about: ${extraction.faqTopic}. Currently, our high-quality hollow blocks are 85 KES each, and our precast beams are 545 KES per linear meter. Let me know if you want an instant quote!`);
+    await sendWhatsAppMessage(from, `You asked about: ${extraction.faqTopic}. Currently, our high-quality hollow blocks are 85 KES each, and our precast beams are 520 KES per linear meter. Let me know if you want an instant quote!`);
     return;
   }
 

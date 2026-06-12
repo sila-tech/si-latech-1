@@ -10,7 +10,7 @@ export async function generateQuotePdfBuffer(clientInfo: any, rooms: any[]): Pro
   
   const isTBeam = clientInfo?.beamType === 'tbeam';
   const BLOCK_PRICE = isTBeam ? 110 : 85;
-  const BEAM_PRICE_PER_METER = isTBeam ? 1250 : 545;
+  const BEAM_PRICE_PER_METER = isTBeam ? 1250 : 520;
 
   const defaultsWithBeamType = { ...DEFAULTS, beamType: clientInfo?.beamType || 'flat' };
   const totals = calculateProjectTotals(rooms, defaultsWithBeamType);
