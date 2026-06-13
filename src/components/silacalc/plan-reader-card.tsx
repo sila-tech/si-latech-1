@@ -17,9 +17,10 @@ import { HardHat, Loader2, UploadCloud, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCalculator } from '@/context/calculator-context';
 import { analyzePlan, AnalyzePlanOutput } from '@/ai/flows/analyze-plan-flow';
+import { BuildingBlock, ApartmentGroup } from '@/lib/calculator';
 
 export function PlanReaderCard() {
-  const { setRooms } = useCalculator();
+  const { setRooms, setBuildingBlocks } = useCalculator();
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
@@ -60,16 +61,90 @@ export function PlanReaderCard() {
           const result = await analyzePlan({ photoDataUri: base64Data });
 
           if (result.success && result.rooms && result.rooms.length > 0) {
-            const newRooms = result.rooms.map(room => ({
+            const tempRooms = result.rooms.map(room => ({
               id: crypto.randomUUID(),
               name: room.name,
               length: room.length,
               width: room.width,
+              blockId: undefined as string | undefined,
+              apartmentId: undefined as string | undefined,
+              // Keep temporary fields for grouping
+              _blockName: (room as any).blockName,
+              _aptName: (room as any).apartmentName,
+              _seq: (room as any).sequenceInApartment ?? 999,
             }));
-            setRooms(newRooms);
+
+            // Group rooms by block name and apartment name
+            const blocksMap = new Map<string, {
+              id: string;
+              name: string;
+              apartmentsMap: Map<string, {
+                id: string;
+                name: string;
+                rooms: typeof tempRooms;
+              }>;
+            }>();
+
+            for (const r of tempRooms) {
+              if (r._blockName) {
+                if (!blocksMap.has(r._blockName)) {
+                  blocksMap.set(r._blockName, {
+                    id: crypto.randomUUID(),
+                    name: r._blockName,
+                    apartmentsMap: new Map(),
+                  });
+                }
+                const blockEntry = blocksMap.get(r._blockName)!;
+
+                if (r._aptName) {
+                  if (!blockEntry.apartmentsMap.has(r._aptName)) {
+                    blockEntry.apartmentsMap.set(r._aptName, {
+                      id: crypto.randomUUID(),
+                      name: r._aptName,
+                      rooms: [],
+                    });
+                  }
+                  blockEntry.apartmentsMap.get(r._aptName)!.rooms.push(r);
+                }
+              }
+            }
+
+            const buildingBlocks: BuildingBlock[] = [];
+            for (const blockEntry of blocksMap.values()) {
+              const apartments: ApartmentGroup[] = [];
+
+              for (const aptEntry of blockEntry.apartmentsMap.values()) {
+                // Sort rooms in this apartment by sequence
+                aptEntry.rooms.sort((a, b) => a._seq - b._seq);
+
+                // Assign the generated ids to the rooms
+                for (const r of aptEntry.rooms) {
+                  r.blockId = blockEntry.id;
+                  r.apartmentId = aptEntry.id;
+                }
+
+                apartments.push({
+                  id: aptEntry.id,
+                  name: aptEntry.name,
+                  roomIds: aptEntry.rooms.map(r => r.id),
+                });
+              }
+
+              buildingBlocks.push({
+                id: blockEntry.id,
+                name: blockEntry.name,
+                apartments,
+              });
+            }
+
+            // Clean up the temporary fields
+            const cleanedRooms = tempRooms.map(({ _blockName, _aptName, _seq, ...rest }) => rest);
+
+            setRooms(cleanedRooms);
+            setBuildingBlocks(buildingBlocks);
             toast({
               title: 'Blueprint Parsed Successfully',
-              description: `Extracted ${newRooms.length} rooms and populated the calculator.`,
+              description: `Extracted ${cleanedRooms.length} rooms and populated the calculator. Found ${buildingBlocks.length} building block(s).`,
             });
           } else {
             throw new Error(result.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');

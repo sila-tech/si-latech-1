@@ -33,7 +33,10 @@ export function TotalsCard() {
     totalBallastTonnes,
     brc,
     timber,
+    totalLintelLength,
   } = totals;
+  const rawLintelLength = (totals as any).rawLintelLength || totalLintelLength;
+  const sharedWallDeduction = (totals as any).sharedWallDeduction || 0;
 
   const excessRooms = perRoomCalculations.filter(p => p.roomCalcs.excessBeamCount > 0);
   const totalExcessBeams = excessRooms.reduce((sum, p) => sum + p.roomCalcs.excessBeamCount, 0);
@@ -119,6 +122,31 @@ export function TotalsCard() {
             </div>
           </div>
         </div>
+
+        {/* Shared Wall Deduction Lintel Summary */}
+        {sharedWallDeduction > 0 && (
+          <>
+            <Separator className="bg-slate-100" />
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400">Lintel Steel (Adjusted)</h4>
+              <div className="grid grid-cols-3 gap-1.5 text-center">
+                <div className="bg-slate-50 border border-slate-100 rounded-lg p-2">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase">Raw</p>
+                  <p className="text-xs font-bold text-slate-600">{rawLintelLength.toFixed(1)}m</p>
+                </div>
+                <div className="bg-red-50 border border-red-100 rounded-lg p-2">
+                  <p className="text-[9px] text-red-400 font-bold uppercase">Deducted</p>
+                  <p className="text-xs font-bold text-red-600">−{sharedWallDeduction.toFixed(1)}m</p>
+                </div>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2">
+                  <p className="text-[9px] text-emerald-500 font-bold uppercase">Net</p>
+                  <p className="text-xs font-bold text-emerald-700">{totalLintelLength.toFixed(1)}m</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 text-center">Steel quantities calculated on net lintel length</p>
+            </div>
+          </>
+        )}
 
         <Separator className="bg-slate-100" />
 

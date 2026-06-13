@@ -8,6 +8,29 @@ export interface Room {
   name: string;
   length: number;
   width: number;
+  // Optional: links room to a block/apartment grouping for shared-wall deduction
+  blockId?: string;
+  apartmentId?: string;
+}
+
+/**
+ * Represents one apartment/unit within a building block.
+ * Rooms are listed in the order they are arranged side-by-side.
+ */
+export interface ApartmentGroup {
+  id: string;
+  name: string;        // e.g. "Apt 1"
+  roomIds: string[];   // ordered list of room IDs inside this apartment
+}
+
+/**
+ * Represents one physically separate building block.
+ * Apartments within the same block share party walls; blocks do NOT share walls.
+ */
+export interface BuildingBlock {
+  id: string;
+  name: string;              // e.g. "Block A"
+  apartments: ApartmentGroup[];
 }
 
 export interface CalculationDefaults {
@@ -503,11 +526,58 @@ export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationD
   })).sort((a, b) => (b.shorter * b.longer) - (a.shorter * a.longer));
 }
 
+/**
+ * Calculates the total shared-wall lintel length to deduct across all blocks.
+ *
+ * Rules:
+ *  - Internal walls (between adjacent rooms within one apartment): always deducted.
+ *  - Party walls (between adjacent apartments within the same block): deducted.
+ *  - Walls between different blocks: NOT deducted (physically separate buildings).
+ *
+ * @returns Total metres of lintel to subtract from the naive perimeter sum.
+ */
+export function calcSharedWallDeduction(
+  rooms: Room[],
+  buildingBlocks: BuildingBlock[]
+): number {
+  const roomMap = new Map<string, Room>(rooms.map(r => [r.id, r]));
+  let totalDeduction = 0;
+
+  for (const block of buildingBlocks) {
+    for (let ai = 0; ai < block.apartments.length; ai++) {
+      const apt = block.apartments[ai];
+
+      // 1. Internal walls within this apartment
+      for (let ri = 0; ri < apt.roomIds.length - 1; ri++) {
+        const rA = roomMap.get(apt.roomIds[ri]);
+        const rB = roomMap.get(apt.roomIds[ri + 1]);
+        if (rA && rB) {
+          // Shared wall = the smaller of the two widths (the wall running perpendicular to the row)
+          totalDeduction += Math.min(rA.width, rB.width);
+        }
+      }
+
+      // 2. Party wall between this apartment and the next one in the same block
+      if (ai < block.apartments.length - 1) {
+        const nextApt = block.apartments[ai + 1];
+        const lastRoomOfApt = roomMap.get(apt.roomIds[apt.roomIds.length - 1]);
+        const firstRoomOfNext = roomMap.get(nextApt.roomIds[0]);
+        if (lastRoomOfApt && firstRoomOfNext) {
+          totalDeduction += Math.min(lastRoomOfApt.width, firstRoomOfNext.width);
+        }
+      }
+    }
+  }
+
+  return totalDeduction;
+}
+
 export function calculateProjectTotals(
   rooms: Room[],
   settings: CalculationDefaults,
   lintelLength: number = 0,
-  optimizeExcess: boolean = true
+  optimizeExcess: boolean = true,
+  buildingBlocks: BuildingBlock[] = []
 ): any {
   const initialTotals = {
     totalArea: 0,
@@ -542,9 +612,15 @@ export function calculateProjectTotals(
     return { room: r, roomCalcs, concreteCalcs, brcCalcs, timberCalcs };
   });
 
-  const totalLintelLength = lintelLength > 0 ? lintelLength : rooms.reduce((sum, room) => {
+  const rawLintelLength = lintelLength > 0 ? lintelLength : rooms.reduce((sum, room) => {
       return sum + 2 * (room.length + room.width);
   }, 0);
+
+  // Deduct shared/party walls when building blocks are defined
+  const sharedWallDeduction = buildingBlocks.length > 0
+    ? calcSharedWallDeduction(rooms, buildingBlocks)
+    : 0;
+  const totalLintelLength = Math.max(0, rawLintelLength - sharedWallDeduction);
 
   const aggregated = perRoomCalculations.reduce((acc, p) => {
     acc.totalArea += p.concreteCalcs.area;
@@ -583,6 +659,8 @@ export function calculateProjectTotals(
   return {
     ...aggregated,
     brc,
+    rawLintelLength,
+    sharedWallDeduction,
     totalLintelLength,
     lintel,
     lintelSteel,

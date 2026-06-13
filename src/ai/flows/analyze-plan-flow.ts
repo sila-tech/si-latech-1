@@ -30,6 +30,15 @@ const RoomSchema = z.object({
   width: z.number().describe(
     'The SHORTER dimension of the room in METRES (not millimetres, not feet). Must be > 0 and <= length. If the plan dimensions are in millimetres (e.g. 2800), divide by 1000 first. Minimum: 0.5.'
   ),
+  blockName: z.string().optional().describe(
+    'The name of the building block/wing this room belongs to (e.g. "Block 1", "Block A"). Omit if there are no separate blocks or if this is a common area outside blocks.'
+  ),
+  apartmentName: z.string().optional().describe(
+    'The name of the apartment unit/flat this room belongs to (e.g. "Apt A", "Unit 1"). Omit if this is a common area outside units.'
+  ),
+  sequenceInApartment: z.number().optional().describe(
+    'The 1-based sequence order of this room within the apartment/unit (e.g., Lounge=1, Bedroom=2, Kitchen=3), representing which rooms are adjacent side-by-side. If rooms are arranged in a row or share walls, assign sequential sequence numbers.'
+  ),
 });
 
 const AnalyzePlanOutputSchema = z.object({
@@ -335,9 +344,38 @@ PART 8 — QUALITY RULES BEFORE RETURNING OUTPUT
 ✅ Exclude: gardens, driveways, site/plot outlines, north arrows, title blocks, scale bars.
 ✅ Duplicate units → list EVERY unit's rooms separately.
 ✅ All values > 0.5 m. Values > 20 m → likely mm, divide by 1000.
+✅ If rooms belong to separate blocks or apartments, identify and populate blockName, apartmentName, and sequenceInApartment.
 
 ═══════════════════════════════════════════════════════
-PART 9 — WHEN THE PLAN IS UNCLEAR OR LOW RESOLUTION
+PART 9 — DETECTING BUILDING BLOCKS, APARTMENTS, AND SHARED WALLS
+═══════════════════════════════════════════════════════
+
+For every room, identify if it belongs to a specific Building Block, Apartment/Unit, and its sequence in that unit:
+
+1. BUILDING BLOCKS:
+   - A block is a physically separate building, wing, or distinct section on the floor plan (e.g., "Block A", "Block B", or "Block 1", "Block 2").
+   - If the floor plan consists of multiple separate buildings side-by-side or distinct sections, assign rooms to "Block 1", "Block 2", etc.
+   - If it is a single-block building, default to "Block 1".
+
+2. APARTMENTS / UNITS:
+   - An apartment/unit is a self-contained group of rooms (e.g., "Apt A", "Unit 1", "Flat 1").
+   - If a building has multiple rooms/units arranged in a row (e.g., 14 bedrooms/bedsitters sharing walls side-by-side), treat each separate room/unit as its own Apartment (e.g., "Unit 1", "Unit 2", ..., "Unit 14").
+   - Group all rooms that belong to the same apartment/unit under the same 'apartmentName'.
+
+3. SHARED WALLS & SEQUENCE IN APARTMENT:
+   - The calculator uses room adjacency to deduct shared walls (lintels).
+   - In a multi-room apartment (e.g. Lounge, Bedroom, Kitchen), if rooms are arranged side-by-side, assign them sequential 'sequenceInApartment' numbers (1, 2, 3, etc.) to indicate they share walls in that order.
+   - In a row of single-room apartments or bedsitters (e.g., Bedsitter 1, Bedsitter 2, Bedsitter 3 sharing walls side-by-side):
+     * Assign them to the same Block (e.g., "Block 1").
+     * Assign each room to its own Apartment (e.g., "Unit 1", "Unit 2", "Unit 3").
+     * The calculator will automatically deduct the shared wall between adjacent apartments in the same block.
+   - Use the visual layout or room numbering on the plan to determine the correct order of sequence (e.g., from left to right, or bottom to top).
+
+4. COMMON AREAS:
+   - Common areas like stairs, common corridors, lift lobbies, or external boundary walls that do not belong to any specific block or apartment should omit 'blockName' and 'apartmentName'.
+
+═══════════════════════════════════════════════════════
+PART 10 — WHEN THE PLAN IS UNCLEAR OR LOW RESOLUTION
 ═══════════════════════════════════════════════════════
 
 If blurry, low-res, or partially cut off:

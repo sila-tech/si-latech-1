@@ -6,7 +6,8 @@ import { RoomCard } from './room-card';
 import { ActionsCard } from './actions-card';
 import { SettingsCard } from './settings-card';
 import { TotalsCard } from './totals-card';
-import { PlusCircle, Download, LayoutGrid, Star, Users, Layers, Zap, ClipboardList, FileDown, ChevronRight } from 'lucide-react';
+import { BlockManagerPanel } from './block-manager';
+import { PlusCircle, Download, LayoutGrid, Star, Users, Layers, Zap, ClipboardList, FileDown, ChevronRight, Building2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { QuickQuoteCard } from './quick-quote-card';
@@ -230,10 +231,12 @@ function RoomsEmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
-  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings, displayUnit, setDisplayUnit } = useCalculator();
+  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings, displayUnit, setDisplayUnit, buildingBlocks, totals } = useCalculator();
 
   // Toggle between "enter by room" and "quick total area" mode
   const [entryMode, setEntryMode] = useState<'rooms' | 'quick'>('rooms');
+  // Toggle shared walls panel
+  const [showSharedWalls, setShowSharedWalls] = useState(false);
 
   // Load initial data when the component mounts or when initialProjectData changes
   useEffect(() => {
@@ -387,7 +390,36 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
               ))
             )}
           </div>
-          
+
+          {/* ─── Shared Walls / Block Manager ─── */}
+          {rooms.length > 0 && (
+            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm mb-4">
+              <button
+                onClick={() => setShowSharedWalls(v => !v)}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
+              >
+                <span className="flex items-center gap-2.5 text-sm font-bold text-slate-800">
+                  <Building2 size={16} className="text-sky-500" />
+                  Shared Walls (Multi-Unit / Apartment)
+                  {buildingBlocks.length > 0 && (() => {
+                    const deduction = (totals as any).sharedWallDeduction || 0;
+                    return deduction > 0 ? (
+                      <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        −{deduction.toFixed(1)}m deducted
+                      </span>
+                    ) : null;
+                  })()}
+                </span>
+                {showSharedWalls ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
+              </button>
+              {showSharedWalls && (
+                <div className="px-5 pb-5 border-t border-slate-100 pt-4">
+                  <BlockManagerPanel />
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
             <Button onClick={addRoom} variant="outline" className="flex-1 border-primary text-primary hover:bg-primary/10 hover:text-primary h-12 font-bold">
               <PlusCircle className="mr-2" /> Add Room

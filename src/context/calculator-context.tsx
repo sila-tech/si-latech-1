@@ -13,6 +13,8 @@ import type {
   LintelCalculation,
   TimberAndPropsCalculation,
   LintelSteelCalculation,
+  BuildingBlock,
+  ApartmentGroup,
 } from '@/lib/calculator';
 import {
   DEFAULTS,
@@ -24,6 +26,7 @@ import {
   calcTimberAndProps,
   calcLintelSteel,
   calculateProjectTotals,
+  calcSharedWallDeduction,
 } from '@/lib/calculator';
 import { useFirebase } from '@/firebase';
 import {
@@ -47,6 +50,7 @@ export interface ProjectData {
   rooms: Room[];
   settings: CalculationDefaults;
   lintelLength: number;
+  buildingBlocks?: BuildingBlock[];
   createdAt: Timestamp;
 }
 
@@ -77,6 +81,8 @@ type ProjectTotals = {
   totalBlockCommission: number;
   totalProjectProfit: number;
   totalLintelLength: number;
+  rawLintelLength: number;
+  sharedWallDeduction: number;
   totalConcreteVolume: number;
   totalCementBags: number;
   totalSandTonnes: number;
@@ -105,6 +111,17 @@ interface CalculatorContextType {
   setSettings: React.Dispatch<React.SetStateAction<CalculationDefaults>>;
   lintelLength: number;
   setLintelLength: (length: number) => void;
+  // Building Blocks
+  buildingBlocks: BuildingBlock[];
+  setBuildingBlocks: (blocks: BuildingBlock[]) => void;
+  addBlock: () => void;
+  updateBlockName: (blockId: string, name: string) => void;
+  deleteBlock: (blockId: string) => void;
+  addApartmentToBlock: (blockId: string) => void;
+  updateApartmentName: (blockId: string, aptId: string, name: string) => void;
+  deleteApartment: (blockId: string, aptId: string) => void;
+  assignRoomToApartment: (blockId: string, aptId: string, roomId: string) => void;
+  unassignRoomFromApartment: (blockId: string, aptId: string, roomId: string) => void;
   perRoomCalculations: PerRoomCalculation[];
   aggregatedBreakdown: AggregatedRoomGroup[];
   totals: ProjectTotals;
@@ -133,6 +150,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
   const [lintelLength, setLintelLength] = useState<number>(0);
+  const [buildingBlocks, setBuildingBlocks] = useState<BuildingBlock[]>([]);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
   const [clientName, setClientName] = useState<string>('');
@@ -161,6 +179,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       rooms,
       settings,
       lintelLength,
+      buildingBlocks,
     };
     
     const handler = setTimeout(() => {
@@ -170,12 +189,13 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [rooms, settings, lintelLength, projectName, clientName, clientContact, projectLocation, contactPerson, loadedProjectId, firestore]);
+  }, [rooms, settings, lintelLength, buildingBlocks, projectName, clientName, clientContact, projectLocation, contactPerson, loadedProjectId, firestore]);
 
   const clearCalculator = useCallback(() => {
     setRooms([]);
     setSettings(DEFAULTS);
     setLintelLength(0);
+    setBuildingBlocks([]);
     setLoadedProjectId(null);
     setProjectName('');
     setClientName('');
@@ -195,6 +215,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setRooms(projectData.rooms || []);
     setSettings(projectData.settings || DEFAULTS);
     setLintelLength(projectData.lintelLength || 0);
+    setBuildingBlocks(projectData.buildingBlocks || []);
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
     setClientName(projectData.clientName || '');
@@ -229,6 +250,91 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setLogoUrlState(url);
   };
 
+  // ─── Building Block Management ───────────────────────────────────────────────
+
+  const addBlock = useCallback(() => {
+    setBuildingBlocks(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), name: `Block ${prev.length + 1}`, apartments: [] }
+    ]);
+  }, []);
+
+  const updateBlockName = useCallback((blockId: string, name: string) => {
+    setBuildingBlocks(prev => prev.map(b => b.id === blockId ? { ...b, name } : b));
+  }, []);
+
+  const deleteBlock = useCallback((blockId: string) => {
+    setBuildingBlocks(prev => prev.filter(b => b.id !== blockId));
+  }, []);
+
+  const addApartmentToBlock = useCallback((blockId: string) => {
+    setBuildingBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      return {
+        ...b,
+        apartments: [
+          ...b.apartments,
+          { id: crypto.randomUUID(), name: `Apt ${b.apartments.length + 1}`, roomIds: [] }
+        ]
+      };
+    }));
+  }, []);
+
+  const updateApartmentName = useCallback((blockId: string, aptId: string, name: string) => {
+    setBuildingBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      return {
+        ...b,
+        apartments: b.apartments.map(a => a.id === aptId ? { ...a, name } : a)
+      };
+    }));
+  }, []);
+
+  const deleteApartment = useCallback((blockId: string, aptId: string) => {
+    setBuildingBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      return { ...b, apartments: b.apartments.filter(a => a.id !== aptId) };
+    }));
+  }, []);
+
+  const assignRoomToApartment = useCallback((blockId: string, aptId: string, roomId: string) => {
+    setBuildingBlocks(prev => {
+      // First remove the room from any existing apartment
+      const cleaned = prev.map(b => ({
+        ...b,
+        apartments: b.apartments.map(a => ({
+          ...a,
+          roomIds: a.roomIds.filter(id => id !== roomId)
+        }))
+      }));
+      // Then assign to the target apartment
+      return cleaned.map(b => {
+        if (b.id !== blockId) return b;
+        return {
+          ...b,
+          apartments: b.apartments.map(a => {
+            if (a.id !== aptId) return a;
+            return { ...a, roomIds: [...a.roomIds, roomId] };
+          })
+        };
+      });
+    });
+  }, []);
+
+  const unassignRoomFromApartment = useCallback((blockId: string, aptId: string, roomId: string) => {
+    setBuildingBlocks(prev => prev.map(b => {
+      if (b.id !== blockId) return b;
+      return {
+        ...b,
+        apartments: b.apartments.map(a => {
+          if (a.id !== aptId) return a;
+          return { ...a, roomIds: a.roomIds.filter(id => id !== roomId) };
+        })
+      };
+    }));
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const saveProject = useCallback(async (details: ProjectDetails) => {
     if (!firestore) {
@@ -249,14 +355,14 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         rooms,
         settings,
         lintelLength,
-        profit: calculateProjectTotals(rooms, settings, lintelLength).totalProjectProfit,
+        buildingBlocks,
+        profit: calculateProjectTotals(rooms, settings, lintelLength, true, buildingBlocks).totalProjectProfit,
     };
     
     if (loadedProjectId) {
       const projectRef = doc(firestore, 'projects', loadedProjectId);
       updateProjectData(projectRef, projectDataToSave);
       toast({ title: 'Project Updated', description: `Project "${name}" has been updated.` });
-      // Update local state as well
       setProjectName(name);
       setClientName(clientDetails.clientName || '');
       setClientContact(clientDetails.clientContact || '');
@@ -287,7 +393,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to create project:", error);
       toast({ title: 'Error', description: 'Could not create new project.', variant: 'destructive' });
     }
-  }, [loadedProjectId, rooms, settings, lintelLength, firestore, toast]);
+  }, [loadedProjectId, rooms, settings, lintelLength, buildingBlocks, firestore, toast]);
 
 
   const addRoom = () => {
@@ -311,6 +417,14 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteRoom = (id: string) => {
+    // Also remove from any apartment assignments
+    setBuildingBlocks(prev => prev.map(b => ({
+      ...b,
+      apartments: b.apartments.map(a => ({
+        ...a,
+        roomIds: a.roomIds.filter(rid => rid !== id)
+      }))
+    })));
     setRooms(rooms.filter((room) => room.id !== id));
   };
   
@@ -332,8 +446,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
 
 
   const totals: ProjectTotals = useMemo(() => {
-    return calculateProjectTotals(rooms, settings, lintelLength);
-  }, [rooms, settings, lintelLength]);
+    return calculateProjectTotals(rooms, settings, lintelLength, true, buildingBlocks);
+  }, [rooms, settings, lintelLength, buildingBlocks]);
   
   return (
     <CalculatorContext.Provider
@@ -347,6 +461,16 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setSettings,
         lintelLength,
         setLintelLength,
+        buildingBlocks,
+        setBuildingBlocks,
+        addBlock,
+        updateBlockName,
+        deleteBlock,
+        addApartmentToBlock,
+        updateApartmentName,
+        deleteApartment,
+        assignRoomToApartment,
+        unassignRoomFromApartment,
         perRoomCalculations,
         aggregatedBreakdown,
         totals,
