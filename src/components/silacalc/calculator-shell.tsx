@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { QuickQuoteCard } from './quick-quote-card';
 import { PlanReaderCard } from './plan-reader-card';
+import { SilaAssistant } from './sila-assistant';
 
 import type { ProjectData } from '@/context/calculator-context';
 import Image from 'next/image';
@@ -447,7 +448,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
           <TotalsCard />
         </div>
       </div>
-
+      <SilaAssistant />
     </div>
   );
 }

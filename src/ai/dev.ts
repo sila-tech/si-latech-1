@@ -7,3 +7,4 @@ config();
 
 import '@/ai/flows/generate-monetary-quote.ts';
 import '@/ai/flows/analyze-plan-flow.ts';
+import '@/ai/flows/sila-voice-flow.ts';
