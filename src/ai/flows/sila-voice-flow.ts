@@ -62,7 +62,7 @@ export async function processSilaMessage(input: SilaVoiceInput): Promise<SilaVoi
   }
 }
 
-export const silaVoiceFlow = ai.defineFlow(
+const silaVoiceFlow = ai.defineFlow(
   {
     name: 'silaVoiceFlow',
     inputSchema: SilaVoiceInputSchema,
