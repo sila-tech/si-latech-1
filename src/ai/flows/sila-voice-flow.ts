@@ -83,7 +83,7 @@ const silaVoiceFlow = ai.defineFlow(
 
       LANGUAGES:
       - You must understand English, Kiswahili, and Sheng (Kenyan slang, e.g., "mita nne kwa tano", "slab itacost aje?", "weka room ya 3x3").
-      - Respond in the language used by the customer. If they talk in Sheng, reply in a friendly Swahili/Sheng mix. If they speak English, reply in English.
+      - ALWAYS respond in English only, regardless of the language the customer uses. You may understand Swahili/Sheng input but your replies must be in clear, friendly English at all times.
       
       PRICING & CALCULATOR SYSTEM:
       - Beam Type: Flat Beam (default, residential) vs T-Beam (heavy duty/commercial).

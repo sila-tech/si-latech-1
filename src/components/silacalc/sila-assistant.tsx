@@ -25,7 +25,7 @@ export function SilaAssistant() {
     {
       id: 'welcome',
       role: 'model',
-      content: "Habari! Mimi ni Si-la, AI assistant wako wa SI-LATECH. I can help you compute measurements orally, generate a quote, or answer any slab questions. Unaweza kuongea nami kwa Sheng, Kiswahili, au English! Niambie, unataka kuweka vipimo gani leo?",
+      content: "Hello! I'm Si-la, your SI-LATECH AI assistant. I can help you enter measurements, generate a quote, or answer any slab questions — just speak or type in English, Swahili, or Sheng and I'll understand! What would you like to measure today?",
       timestamp: new Date(0)
     }
   ]);
@@ -308,9 +308,7 @@ export function SilaAssistant() {
       {
         id: 'welcome',
         role: 'model',
-        content: language === 'sw' 
-          ? "Habari! Mimi ni Si-la. Unaweza kuongea nami kwa Sheng, Kiswahili, au English! Niambie vipimo vya chumba chako."
-          : "Hello! I am Si-la. Feel free to speak in Sheng, Kiswahili, or English. Tell me your room dimensions.",
+        content: "Hello! I'm Si-la. You can speak or type in Swahili, Sheng, or English and I'll understand! Tell me your room dimensions to get started.",
         timestamp: new Date()
       }
     ]);
