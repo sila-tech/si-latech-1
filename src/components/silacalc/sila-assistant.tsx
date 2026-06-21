@@ -315,7 +315,7 @@ export function SilaAssistant() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-[108px] right-6 z-[9990] flex flex-col items-end">
       
       {/* Floating Chat Panel */}
       {isOpen && (
