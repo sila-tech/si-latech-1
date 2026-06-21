@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { CalculatorProvider } from '@/context/calculator-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { WhatsAppButton } from '@/components/whatsapp-button';
+import { SilaAssistant } from '@/components/silacalc/sila-assistant';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://si-latech.com'),
@@ -131,6 +132,7 @@ export default function RootLayout({
           <CalculatorProvider>
             {children}
             <WhatsAppButton />
+            <SilaAssistant />
             <Toaster />
           </CalculatorProvider>
         </FirebaseClientProvider>
