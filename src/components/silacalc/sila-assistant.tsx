@@ -315,11 +315,11 @@ export function SilaAssistant() {
   };
 
   return (
-    <div className="fixed bottom-[108px] right-6 z-[9990] flex flex-col items-end">
+    <div className="fixed bottom-[108px] right-6 z-[9995] flex flex-col items-end pointer-events-none">
       
       {/* Floating Chat Panel */}
       {isOpen && (
-        <div className="mb-4 w-[92vw] sm:w-[420px] h-[550px] bg-slate-950/95 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300 ring-1 ring-white/10 relative">
+        <div className="mb-4 w-[92vw] sm:w-[420px] h-[550px] bg-slate-950/95 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300 ring-1 ring-white/10 relative pointer-events-auto">
           
           {/* Decorative glowing blobs */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
@@ -507,7 +507,7 @@ export function SilaAssistant() {
       {/* Floating Activation Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-sky-400 text-white shadow-xl shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border border-white/20 relative"
+        className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-sky-400 text-white shadow-xl shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border border-white/20 relative pointer-events-auto"
       >
         {isOpen ? (
           <X size={22} className="rotate-90 transition-transform duration-300" />
