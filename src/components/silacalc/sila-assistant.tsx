@@ -20,12 +20,13 @@ export function SilaAssistant() {
   const { toast } = useToast();
   
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       role: 'model',
       content: "Habari! Mimi ni Si-la, AI assistant wako wa SI-LATECH. I can help you compute measurements orally, generate a quote, or answer any slab questions. Unaweza kuongea nami kwa Sheng, Kiswahili, au English! Niambie, unataka kuweka vipimo gani leo?",
-      timestamp: new Date()
+      timestamp: new Date(0)
     }
   ]);
   const [inputVal, setInputVal] = useState('');
@@ -46,6 +47,7 @@ export function SilaAssistant() {
 
   // Load settings from localStorage if available
   useEffect(() => {
+    setMounted(true);
     try {
       const storedTts = localStorage.getItem('sila-tts-enabled');
       if (storedTts !== null) {
@@ -313,6 +315,9 @@ export function SilaAssistant() {
       }
     ]);
   };
+
+  // Don't render on the server — prevents hydration mismatch from Date/localStorage
+  if (!mounted) return null;
 
   return (
     <div className="fixed bottom-[108px] right-6 z-[10001] flex flex-col items-end pointer-events-none">
