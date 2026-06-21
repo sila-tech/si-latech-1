@@ -25,7 +25,7 @@ export function SilaAssistant() {
     {
       id: 'welcome',
       role: 'model',
-      content: "Hello! I'm Si-la, your SI-LATECH AI assistant. I can help you enter measurements, generate a quote, or answer any slab questions — just speak or type in English, Swahili, or Sheng and I'll understand! What would you like to measure today?",
+      content: "Hello, and welcome! I'm Si-la, your personal assistant at SI-LATECH. I'm here to help you effortlessly calculate your beam and block requirements, generate accurate quotes, and answer any questions you may have. You're welcome to speak or type in English, Swahili, or Sheng — I understand it all. Shall we get started?",
       timestamp: new Date(0)
     }
   ]);
@@ -308,7 +308,7 @@ export function SilaAssistant() {
       {
         id: 'welcome',
         role: 'model',
-        content: "Hello! I'm Si-la. You can speak or type in Swahili, Sheng, or English and I'll understand! Tell me your room dimensions to get started.",
+        content: "Hello again! I'm Si-la, ready to assist you. Feel free to share your room dimensions whenever you're ready — in English, Swahili, or Sheng. I'm all ears!",
         timestamp: new Date()
       }
     ]);
