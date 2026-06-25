@@ -35,7 +35,7 @@ export function WhatsAppButton() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2 transition-all duration-500 animate-in fade-in slide-in-from-bottom-10">
+    <div className="fixed bottom-[108px] md:bottom-6 right-6 z-[9999] flex flex-col items-end gap-2 transition-all duration-500 animate-in fade-in slide-in-from-bottom-10">
       {/* Tooltip */}
       <div 
         className={cn(

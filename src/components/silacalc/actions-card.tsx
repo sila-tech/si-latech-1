@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -98,6 +99,68 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
     selectedFloor: 'all',
   });
 
+  const [size, setSize] = useState<{ width: number; height: number }>({ width: 512, height: 580 });
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    if (open && typeof window !== 'undefined') {
+      const defaultWidth = Math.min(512, window.innerWidth * 0.95);
+      const defaultHeight = Math.min(580, window.innerHeight * 0.9);
+      setSize({ width: defaultWidth, height: defaultHeight });
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      
+      const newWidth = Math.max(360, Math.min(window.innerWidth * 0.95, 2 * Math.abs(e.clientX - centerX)));
+      const newHeight = Math.max(250, Math.min(window.innerHeight * 0.95, 2 * Math.abs(e.clientY - centerY)));
+
+      setSize({ width: newWidth, height: newHeight });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      const touch = e.touches[0];
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      const newWidth = Math.max(360, Math.min(window.innerWidth * 0.95, 2 * Math.abs(touch.clientX - centerX)));
+      const newHeight = Math.max(250, Math.min(window.innerHeight * 0.95, 2 * Math.abs(touch.clientY - centerY)));
+
+      setSize({ width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isResizing]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsResizing(true);
+  };
+
   const uniqueFloors = useMemo(() => {
     const floorsSet = new Set<string>();
     rooms.forEach(r => {
@@ -131,12 +194,24 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent 
+        className={cn(
+          "max-w-none flex flex-col gap-0 transition-none", 
+          isResizing && "select-none cursor-se-resize"
+        )} 
+        style={{ 
+          width: `${size.width}px`, 
+          height: `${size.height}px`,
+          maxWidth: '95vw',
+          maxHeight: '95vh'
+        }}
+      >
+        <DialogHeader className="pb-4 border-b">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        
+        <div className="flex-1 overflow-y-auto min-h-0 py-4 pr-1 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="clientName">Client Name</Label>
@@ -187,12 +262,32 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
             </div>
           )}
         </div>
-        <DialogFooter>
+        
+        <DialogFooter className="pt-4 border-t">
           <DialogClose asChild>
             <Button type="button" variant="secondary">Cancel</Button>
           </DialogClose>
           <Button onClick={handleGenerate}>Generate & Download</Button>
         </DialogFooter>
+
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          className="absolute bottom-1 right-1 h-4 w-4 cursor-se-resize flex items-end justify-end group z-50 select-none"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="text-muted-foreground/40 group-hover:text-primary transition-colors"
+          >
+            <path d="M11 2L2 11M11 6L6 11M11 10L10 11" strokeLinecap="round" />
+          </svg>
+        </div>
       </DialogContent>
     </Dialog>
   );
