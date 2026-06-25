@@ -247,6 +247,21 @@ export function SilaAssistant() {
             title: `${newRooms.length} Room(s) Added`,
             description: `Added by Si-la: ${newRooms.map(r => `${r.name} (${r.length}x${r.width}m)`).join(', ')}`,
           });
+        } else if (action === 'DOWNLOAD_QUOTE') {
+          const downloadBtn = document.getElementById('real-invoice-btn');
+          if (downloadBtn) {
+            downloadBtn.click();
+            toast({
+              title: "Downloading Your Quote",
+              description: "Si-la is generating your PDF quote now.",
+            });
+          } else {
+            toast({
+              title: "No Quote Available",
+              description: "Please add at least one room before downloading a quote.",
+              variant: "destructive",
+            });
+          }
         }
       }
 
