@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore } from 'firebase/firestore';
+import { Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
@@ -66,6 +66,19 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     isUserLoading: true, // Start loading until first auth event
     userError: null,
   });
+
+  // Enable Firestore offline persistence
+  useEffect(() => {
+    if (firestore) {
+      enableIndexedDbPersistence(firestore).catch((err) => {
+        if (err.code === 'failed-precondition') {
+          console.warn('Firestore persistence failed: multiple tabs open');
+        } else if (err.code === 'unimplemented') {
+          console.warn('Firestore persistence failed: browser unsupported');
+        }
+      });
+    }
+  }, [firestore]);
 
   // Effect to subscribe to Firebase auth state changes
   useEffect(() => {

@@ -140,6 +140,30 @@ interface CalculatorContextType {
   loadProjectData: (projectData: ProjectData | null) => void;
   displayUnit: 'm' | 'ft';
   setDisplayUnit: (unit: 'm' | 'ft') => void;
+  costEstimationEnabled: boolean;
+  setCostEstimationEnabled: (val: boolean) => void;
+  pricingRates: {
+    beamFlatRate: number;
+    beamTbeamRate: number;
+    blockFlatRate: number;
+    blockTbeamRate: number;
+    cementRate: number;
+    sandRate: number;
+    ballastRate: number;
+    brcRate: number;
+    propRate: number;
+  };
+  setPricingRates: React.Dispatch<React.SetStateAction<{
+    beamFlatRate: number;
+    beamTbeamRate: number;
+    blockFlatRate: number;
+    blockTbeamRate: number;
+    cementRate: number;
+    sandRate: number;
+    ballastRate: number;
+    brcRate: number;
+    propRate: number;
+  }>>;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -159,6 +183,18 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [contactPerson, setContactPerson] = useState<string>('');
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
   const [displayUnit, setDisplayUnit] = useState<'m' | 'ft'>('m');
+  const [costEstimationEnabled, setCostEstimationEnabled] = useState<boolean>(false);
+  const [pricingRates, setPricingRates] = useState({
+    beamFlatRate: 520,
+    beamTbeamRate: 1250,
+    blockFlatRate: 85,
+    blockTbeamRate: 110,
+    cementRate: 800,
+    sandRate: 3000,
+    ballastRate: 3200,
+    brcRate: 25000,
+    propRate: 500,
+  });
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
@@ -489,6 +525,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         loadProjectData,
         displayUnit,
         setDisplayUnit,
+        costEstimationEnabled,
+        setCostEstimationEnabled,
+        pricingRates,
+        setPricingRates,
       }}
     >
       {children}

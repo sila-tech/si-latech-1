@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { handleGenerateQuote, QuoteState } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { Textarea } from '../ui/textarea';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
 import { 
@@ -442,7 +443,10 @@ export function ActionsCard() {
     clearCalculator,
     saveProject,
     lintelLength,
+    costEstimationEnabled,
+    pricingRates,
   } = useCalculator();
+  const { auth, user } = useFirebase();
   const { toast } = useToast();
 
   const [aiQuoteFloor, setAiQuoteFloor] = useState<string>('all');
@@ -472,6 +476,7 @@ export function ActionsCard() {
   const [isTimberScheduleOpen, setTimberScheduleOpen] = useState(false);
   
   const [isSaveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [isAuthDialogOpen, setAuthDialogOpen] = useState(false);
   
   const [projectDetails, setProjectDetails] = useState({
       name: '',
@@ -493,8 +498,30 @@ export function ActionsCard() {
     }
   }, [isSaveDialogOpen, projectName, clientName, clientContact, projectLocation, contactPerson]);
 
-  const handleSaveClick = async () => {
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      setAuthDialogOpen(false);
+      setSaveDialogOpen(true);
+      toast({ title: 'Signed In', description: 'You have signed in with Google successfully.' });
+    } catch (err: any) {
+      console.error('Google Sign-in failed:', err);
+      toast({ title: 'Auth Failed', description: 'Could not complete Google Sign-in.', variant: 'destructive' });
+    }
+  };
+
+  const handleContinueAsGuest = () => {
+    setAuthDialogOpen(false);
     setSaveDialogOpen(true);
+  };
+
+  const handleSaveClick = async () => {
+    if (!user && !loadedProjectId) {
+      setAuthDialogOpen(true);
+    } else {
+      setSaveDialogOpen(true);
+    }
   };
 
   const handleCreateNew = () => {
@@ -508,15 +535,30 @@ export function ActionsCard() {
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
     
-    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 110 : 85;
-    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 1250 : 520;
+    const BLOCK_PRICE = settings.beamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
 
     const renderFloorQuotePage = (pageTitle: string, pageTotals: any) => {
       addLogoToPdf(doc, primaryColor);
       
       const blocksTotal = pageTotals.totalBlocks * BLOCK_PRICE;
       const beamsTotal = pageTotals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
-      const grandTotal = blocksTotal + beamsTotal;
+      
+      let cementTotal = 0;
+      let sandTotal = 0;
+      let ballastTotal = 0;
+      let brcTotal = 0;
+      let propsTotal = 0;
+      
+      if (costEstimationEnabled) {
+        cementTotal = pageTotals.totalCementBags * pricingRates.cementRate;
+        sandTotal = pageTotals.totalSandTonnes * pricingRates.sandRate;
+        ballastTotal = pageTotals.totalBallastTonnes * pricingRates.ballastRate;
+        brcTotal = (pageTotals.brc?.rollsNeeded || 0) * pricingRates.brcRate;
+        propsTotal = (pageTotals.timber?.totalProps || 0) * pricingRates.propRate;
+      }
+      
+      const grandTotal = blocksTotal + beamsTotal + cementTotal + sandTotal + ballastTotal + brcTotal + propsTotal;
 
       // --- Header ---
       doc.setFont('helvetica', 'bold');
@@ -582,6 +624,39 @@ export function ActionsCard() {
         ]
       ];
 
+      if (costEstimationEnabled) {
+        tableRows.push([
+          'Cement Bags (50kg)',
+          pageTotals.totalCementBags.toString(),
+          pricingRates.cementRate.toFixed(2),
+          cementTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'River Sand (Tonnes)',
+          pageTotals.totalSandTonnes.toFixed(1),
+          pricingRates.sandRate.toFixed(2),
+          sandTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'Ballast Aggregate (Tonnes)',
+          pageTotals.totalBallastTonnes.toFixed(1),
+          pricingRates.ballastRate.toFixed(2),
+          ballastTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'BRC Mesh Rolls',
+          (pageTotals.brc?.rollsNeeded || 0).toString(),
+          pricingRates.brcRate.toFixed(2),
+          brcTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'Timber Support Props',
+          (pageTotals.timber?.totalProps || 0).toString(),
+          pricingRates.propRate.toFixed(2),
+          propsTotal.toFixed(2)
+        ]);
+      }
+
       (doc as any).autoTable({
         head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
         body: tableRows,
@@ -624,7 +699,11 @@ export function ActionsCard() {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50);
       notesY += 5;
-      doc.text(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+      if (costEstimationEnabled) {
+        doc.text('1. Material Estimates: Cement, sand, ballast, BRC mesh, and support props costs have been included in the estimated grand total.', 14, notesY);
+      } else {
+        doc.text(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+      }
       notesY += 5;
       doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
       notesY += 5;
@@ -1403,6 +1482,52 @@ export function ActionsCard() {
         title="Download Timber & Props Schedule"
         description="Please confirm or update the project details for the timber report."
       />
+
+      <Dialog open={isAuthDialogOpen} onOpenChange={setAuthDialogOpen}>
+        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6 border-slate-200 bg-white">
+          <DialogHeader className="text-center space-y-2">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+              <Save size={24} />
+            </div>
+            <DialogTitle className="font-headline text-xl font-black text-slate-900">
+              Sign In to Save Project
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              Create an account or sign in to save your structural slab dimensions, load them later, or sync across devices.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3 py-4">
+            <Button 
+              type="button" 
+              onClick={handleGoogleSignIn}
+              className="w-full h-11 bg-white hover:bg-slate-50 text-slate-700 font-bold border border-slate-200 rounded-xl flex items-center justify-center gap-2.5 shadow-sm transition-all"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              Sign In with Google
+            </Button>
+            
+            <div className="relative flex items-center justify-center my-1">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+              <span className="relative bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or</span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleContinueAsGuest}
+              className="w-full h-11 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all"
+            >
+              Save as Guest (No Sign-in)
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isSaveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>

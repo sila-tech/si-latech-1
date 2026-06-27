@@ -39,6 +39,9 @@ const RoomSchema = z.object({
   sequenceInApartment: z.number().optional().describe(
     'The 1-based sequence order of this room within the apartment/unit (e.g., Lounge=1, Bedroom=2, Kitchen=3), representing which rooms are adjacent side-by-side. If rooms are arranged in a row or share walls, assign sequential sequence numbers.'
   ),
+  boundingBox: z.array(z.number()).optional().describe(
+    'The bounding box coordinates of the room on the floor plan image as [ymin, xmin, ymax, xmax], with values normalized from 0 to 1000. Omit if not clearly identifiable.'
+  ),
 });
 
 const AnalyzePlanOutputSchema = z.object({
@@ -50,7 +53,15 @@ export type AnalyzePlanOutput = z.infer<typeof AnalyzePlanOutputSchema>;
 
 export interface AnalyzePlanResult {
   success: boolean;
-  rooms?: Array<{ name: string; length: number; width: number }>;
+  rooms?: Array<{ 
+    name: string; 
+    length: number; 
+    width: number; 
+    blockName?: string; 
+    apartmentName?: string; 
+    sequenceInApartment?: number; 
+    boundingBox?: number[];
+  }>;
   error?: string;
 }
 
@@ -336,7 +347,7 @@ STAIRCASE (Opening) standards:
 PART 8 — QUALITY RULES BEFORE RETURNING OUTPUT
 ═══════════════════════════════════════════════════════
 
-✅ Every room: name (string), length (metres), width (metres).
+✅ Every room: name (string), length (metres), width (metres), and optional boundingBox as [ymin, xmin, ymax, xmax].
 ✅ Human-readable names: "Master Bedroom" NOT "MBR". "Bedroom 1" NOT "BR1".
 ✅ Balcony/Verandah/Terrace/Porch → MUST contain "Balcony" or "Verandah".
 ✅ Staircase/Lift/Void/Pool → MUST contain "(Opening)".
@@ -345,6 +356,7 @@ PART 8 — QUALITY RULES BEFORE RETURNING OUTPUT
 ✅ Duplicate units → list EVERY unit's rooms separately.
 ✅ All values > 0.5 m. Values > 20 m → likely mm, divide by 1000.
 ✅ If rooms belong to separate blocks or apartments, identify and populate blockName, apartmentName, and sequenceInApartment.
+✅ Bounding Boxes: Detect visual boundaries of each room on the floor plan, estimating ymin, xmin, ymax, xmax (numbers from 0 to 1000 normalized). For example: [100, 150, 400, 500]. Omit if plan is completely unclear.
 
 ═══════════════════════════════════════════════════════
 PART 9 — DETECTING BUILDING BLOCKS, APARTMENTS, AND SHARED WALLS
