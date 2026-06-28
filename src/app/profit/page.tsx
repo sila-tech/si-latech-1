@@ -163,7 +163,7 @@ function ProfitReportPage() {
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
-        doc.text('Please make payments via M-Pesa to 0741557960.', 14, finalY + 30);
+        doc.text('Please make payments via M-Pesa to 0141981315.', 14, finalY + 30);
         
         doc.save(`Promax-Invoice-${invoiceNumber}.pdf`);
     }

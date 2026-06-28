@@ -11,7 +11,7 @@ export function WhatsAppButton() {
 
   const [isVisible, setIsVisible] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const phoneNumber = '254701792088';
+  const phoneNumber = '254141981315';
   const message = 'Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.';
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 

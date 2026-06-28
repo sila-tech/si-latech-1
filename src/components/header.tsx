@@ -5,7 +5,7 @@ import { Phone, MessageCircle, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const phoneNumber = '254701792088';
+const phoneNumber = '254141981315';
 const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.')}`;
 
 const navLinks = [
@@ -34,8 +34,8 @@ export function Header() {
             <p className="text-sm font-medium text-slate-500 italic">
               @si-latech, a better simpler and cost effective way to build.
             </p>
-            <a href="tel:+254701792088" className="text-[10px] font-bold text-primary hover:underline">
-              Office: +254 701 792 088
+            <a href="tel:+254141981315" className="text-[10px] font-bold text-primary hover:underline">
+              Office: +254 141 981 315
             </a>
           </div>
         </div>
@@ -70,7 +70,7 @@ export function Header() {
               WhatsApp
             </a>
             <a
-              href="tel:+254701792088"
+              href="tel:+254141981315"
               aria-label="Call SI-LATECH"
               className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-2 rounded-lg text-xs font-bold transition-all"
             >
@@ -83,7 +83,7 @@ export function Header() {
         {/* Mobile: Phone + Hamburger */}
         <div className="flex md:hidden items-center gap-2">
           <a
-            href="tel:+254701792088"
+            href="tel:+254141981315"
             aria-label="Call SI-LATECH"
             className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary"
           >
@@ -128,7 +128,7 @@ export function Header() {
               <MessageCircle size={16} /> WhatsApp
             </a>
             <a
-              href="tel:+254701792088"
+              href="tel:+254141981315"
               onClick={() => setMobileOpen(false)}
               className="flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl text-sm font-bold"
             >

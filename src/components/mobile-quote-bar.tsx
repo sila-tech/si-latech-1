@@ -67,7 +67,7 @@ ${costEstimationEnabled ? `💰 Estimated Cost: Ksh ${grandTotal.toLocaleString(
 
 Please send me an official quote and pricing. Thank you.`;
 
-    return `https://wa.me/254701792088?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/254141981315?text=${encodeURIComponent(message)}`;
   };
 
   if (totalArea === 0) {

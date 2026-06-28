@@ -7,7 +7,7 @@ import { Footer } from '@/components/footer';
 import { useState } from 'react';
 
 export default function ContactPage() {
-  const phoneNumber = '254701792088';
+  const phoneNumber = '254141981315';
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.')}`;
 
   const [form, setForm] = useState({ name: '', phone: '', message: '' });
@@ -64,13 +64,13 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="text-xs font-black uppercase tracking-wider text-[#25D366] mb-0.5">WhatsApp (Fastest)</p>
-                        <p className="text-lg font-bold text-slate-900">+254 701 792 088</p>
+                        <p className="text-lg font-bold text-slate-900">+254 141 981 315</p>
                         <p className="text-sm text-slate-500">Chat with us instantly — we reply fast</p>
                       </div>
                     </a>
 
                     <a
-                      href="tel:+254701792088"
+                      href="tel:+254141981315"
                       className="flex items-start gap-4 p-5 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-primary/40 transition-all group"
                     >
                       <div className="p-3 bg-primary/10 rounded-xl text-primary group-hover:bg-primary/20 transition-colors">
@@ -78,7 +78,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="text-xs font-black uppercase tracking-wider text-primary mb-0.5">Office Line</p>
-                        <p className="text-lg font-bold text-slate-900">+254 701 792 088</p>
+                        <p className="text-lg font-bold text-slate-900">+254 141 981 315</p>
                         <p className="text-sm text-slate-500">Mon–Sat, 8:00 AM – 5:00 PM</p>
                       </div>
                     </a>

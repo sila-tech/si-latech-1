@@ -401,7 +401,7 @@ export function ConcreteCalculator() {
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text('Head Office: Juja, Kenya', 140, 16);
-    doc.text('Tel: +254 701 792088', 140, 21);
+    doc.text('Tel: +254 141 981 315', 140, 21);
     doc.text('Email: info.silatechsolutions@gmail.com', 140, 26);
 
     doc.setFont('helvetica', 'italic');
@@ -568,7 +568,7 @@ export function ConcreteCalculator() {
     finalY += 5;
     doc.setTextColor(primaryColor);
     doc.setFont('helvetica', 'bold');
-    doc.text('Call or WhatsApp us at +254 701 792088 today!', 14, finalY);
+    doc.text('Call or WhatsApp us at +254 141 981 315 today!', 14, finalY);
 
     doc.save(`SI-LATECH-Concrete-Estimate-${invoiceNumber}.pdf`);
     setIsDownloadOpen(false);

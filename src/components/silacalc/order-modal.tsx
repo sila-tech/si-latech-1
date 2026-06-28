@@ -124,7 +124,7 @@ export function OrderModal({ open, onOpenChange }: OrderModalProps) {
 
 Please review my request and send an official quote with transport costs. Thank you!`;
 
-    return `https://wa.me/254701792088?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/254141981315?text=${encodeURIComponent(message)}`;
   };
 
   return (
@@ -162,7 +162,7 @@ Please review my request and send an official quote with transport costs. Thank 
                 </Label>
                 <Input
                   id="order-phone"
-                  placeholder="e.g. +254 701 792 088"
+                  placeholder="e.g. +254 141 981 315"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="bg-slate-50 border-slate-200 focus-visible:ring-primary rounded-xl"

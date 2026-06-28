@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Phone, MessageCircle, MapPin, Clock } from 'lucide-react';
 
 export function Footer() {
-  const phoneNumber = '254701792088';
+  const phoneNumber = '254141981315';
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.')}`;
   const year = new Date().getFullYear();
 
@@ -41,7 +41,7 @@ export function Footer() {
                 WhatsApp Us
               </a>
               <a
-                href="tel:+254701792088"
+                href="tel:+254141981315"
                 aria-label="Call SI-LATECH"
                 className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all border border-slate-700"
               >
@@ -80,14 +80,14 @@ export function Footer() {
             <ul className="space-y-3.5">
               <li className="flex items-start gap-2.5 text-sm text-slate-400">
                 <Phone size={15} className="text-primary shrink-0 mt-0.5" />
-                <a href="tel:+254701792088" className="hover:text-white transition-colors">
-                  +254 701 792 088
+                <a href="tel:+254141981315" className="hover:text-white transition-colors">
+                  +254 141 981 315
                 </a>
               </li>
               <li className="flex items-start gap-2.5 text-sm text-slate-400">
                 <MessageCircle size={15} className="text-[#25D366] shrink-0 mt-0.5" />
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                  WhatsApp: +254 701 792 088
+                  WhatsApp: +254 141 981 315
                 </a>
               </li>
               <li className="flex items-start gap-2.5 text-sm text-slate-400">
