@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand colors -->
+    <color name="primary">#1E40AF</color> <!-- Dark Royal Blue -->
+    <color name="primary_light">#B4D4FF</color> <!-- Calm Light Blue -->
+    <color name="primary_dark">#1D4ED8</color>
+    <color name="accent">#A5D8B3</color> <!-- Soft Green Accent -->
+    <color name="accent_dark">#15803D</color>
+    
+    <!-- Backgrounds and neutrals -->
+    <color name="background">#F9F9F9</color> <!-- Off-white -->
+    <color name="surface">#FFFFFF</color>
+    <color name="error">#DC2626</color>
+    
+    <!-- Text colors -->
+    <color name="text_primary">#0F172A</color> <!-- Slate 900 -->
+    <color name="text_secondary">#475569</color> <!-- Slate 600 -->
+    <color name="text_muted">#94A3B8</color> <!-- Slate 400 -->
+    
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- Status bar & UI -->
+    <color name="status_bar">#1E40AF</color>
+</resources>

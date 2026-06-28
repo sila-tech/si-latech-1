@@ -1,0 +1,28 @@
+R_DEF: Internal format may change without notice
+local
+color accent
+color accent_dark
+color background
+color black
+color error
+color primary
+color primary_dark
+color primary_light
+color status_bar
+color surface
+color text_muted
+color text_primary
+color text_secondary
+color transparent
+color white
+id btn_retry
+id offline_icon
+id offline_layout
+id progress_bar
+id swipe_container
+id webview
+layout activity_main
+layout layout_offline
+mipmap ic_launcher
+style Theme.SilaCalc
+xml file_paths

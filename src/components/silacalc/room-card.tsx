@@ -12,10 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Room, RoomCalculation, ConcreteCalculation, TimberAndPropsCalculation } from '@/lib/calculator';
 import { Button } from '../ui/button';
-import { Trash2, Beaker, BrickWall, MoveHorizontal, Hammer, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Beaker, BrickWall, MoveHorizontal, Hammer } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
-import { RoomLayoutVisualizer } from './room-layout-visualizer';
 
 type RoomCardProps = {
   room: Room;
@@ -34,7 +33,6 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
 
   const [localLength, setLocalLength] = useState('');
   const [localWidth, setLocalWidth] = useState('');
-  const [showVisualizer, setShowVisualizer] = useState(true);
 
   // Sync inputs with room data from props, avoiding overwriting while user edits
   useEffect(() => {
@@ -114,81 +112,50 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
         </Button>
       </CardHeader>
       <CardContent className="p-5">
-        <div className={hasDimensions ? "grid grid-cols-1 gap-6 lg:grid-cols-12" : "grid grid-cols-1 gap-4"}>
-          {/* Inputs Section */}
-          <div className={hasDimensions ? "space-y-4 lg:col-span-5 flex flex-col justify-between" : "grid grid-cols-1 gap-4 sm:grid-cols-2"}>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="space-y-1.5">
-                <Label htmlFor={`length-${room.id}`} className="font-bold text-xs text-slate-600 uppercase tracking-wider">
-                  Length ({displayUnit === 'ft' ? 'feet' : 'meters'})
-                </Label>
-                <Input
-                  id={`length-${room.id}`}
-                  type="text"
-                  inputMode="decimal"
-                  value={localLength}
-                  onChange={(e) => handleLengthChange(e.target.value)}
-                  className="w-full font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11"
-                  placeholder={displayUnit === 'ft' ? 'e.g. 32.8' : 'e.g. 10.0'}
-                />
-                <span className="text-[10px] text-slate-400 font-medium block h-4">
-                  {room.length > 0 && (
-                    displayUnit === 'ft' 
-                      ? `≈ ${room.length.toFixed(2)} meters` 
-                      : `≈ ${(room.length * 3.28084).toFixed(1)} feet`
-                  )}
-                </span>
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label htmlFor={`width-${room.id}`} className="font-bold text-xs text-slate-600 uppercase tracking-wider">
-                  Width ({displayUnit === 'ft' ? 'feet' : 'meters'})
-                </Label>
-                <Input
-                  id={`width-${room.id}`}
-                  type="text"
-                  inputMode="decimal"
-                  value={localWidth}
-                  onChange={(e) => handleWidthChange(e.target.value)}
-                  className="w-full font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11"
-                  placeholder={displayUnit === 'ft' ? 'e.g. 32.8' : 'e.g. 10.0'}
-                />
-                <span className="text-[10px] text-slate-400 font-medium block h-4">
-                  {room.width > 0 && (
-                    displayUnit === 'ft' 
-                      ? `≈ ${room.width.toFixed(2)} meters` 
-                      : `≈ ${(room.width * 3.28084).toFixed(1)} feet`
-                  )}
-                </span>
-              </div>
-            </div>
-
-            {hasDimensions && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowVisualizer(!showVisualizer)}
-                className="w-full flex items-center justify-center gap-1.5 text-xs font-bold border-slate-200 text-slate-600 rounded-xl h-9 hover:bg-slate-50 transition-all mt-2 lg:mt-0"
-              >
-                {showVisualizer ? (
-                  <>
-                    <EyeOff size={14} /> Hide Visual Layout
-                  </>
-                ) : (
-                  <>
-                    <Eye size={14} /> Show Visual Layout
-                  </>
-                )}
-              </Button>
-            )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor={`length-${room.id}`} className="font-bold text-xs text-slate-600 uppercase tracking-wider">
+              Length ({displayUnit === 'ft' ? 'feet' : 'meters'})
+            </Label>
+            <Input
+              id={`length-${room.id}`}
+              type="text"
+              inputMode="decimal"
+              value={localLength}
+              onChange={(e) => handleLengthChange(e.target.value)}
+              className="w-full font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11"
+              placeholder={displayUnit === 'ft' ? 'e.g. 32.8' : 'e.g. 10.0'}
+            />
+            <span className="text-[10px] text-slate-400 font-medium block h-4">
+              {room.length > 0 && (
+                displayUnit === 'ft' 
+                  ? `≈ ${room.length.toFixed(2)} meters` 
+                  : `≈ ${(room.length * 3.28084).toFixed(1)} feet`
+              )}
+            </span>
           </div>
-
-          {/* Visualizer Section */}
-          {hasDimensions && showVisualizer && (
-            <div className="lg:col-span-7 border-t lg:border-t-0 lg:border-l border-slate-100 pt-5 lg:pt-0 lg:pl-6 animate-in fade-in duration-200">
-              <RoomLayoutVisualizer calc={roomCalcs} roomName={room.name} />
-            </div>
-          )}
+          
+          <div className="space-y-1.5">
+            <Label htmlFor={`width-${room.id}`} className="font-bold text-xs text-slate-600 uppercase tracking-wider">
+              Width ({displayUnit === 'ft' ? 'feet' : 'meters'})
+            </Label>
+            <Input
+              id={`width-${room.id}`}
+              type="text"
+              inputMode="decimal"
+              value={localWidth}
+              onChange={(e) => handleWidthChange(e.target.value)}
+              className="w-full font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11"
+              placeholder={displayUnit === 'ft' ? 'e.g. 32.8' : 'e.g. 10.0'}
+            />
+            <span className="text-[10px] text-slate-400 font-medium block h-4">
+              {room.width > 0 && (
+                displayUnit === 'ft' 
+                  ? `≈ ${room.width.toFixed(2)} meters` 
+                  : `≈ ${(room.width * 3.28084).toFixed(1)} feet`
+              )}
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>

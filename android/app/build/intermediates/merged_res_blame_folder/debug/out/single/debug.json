@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.silatech.calc.app-merged_res-32:/mipmap_ic_launcher.png.flat",
+        "source": "com.silatech.calc.app-main-34:/mipmap/ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-merged_res-32:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-main-34:\\xml\\file_paths.xml"
+    },
+    {
+        "merged": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-merged_res-32:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-main-34:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-merged_res-32:\\layout_layout_offline.xml.flat",
+        "source": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-main-34:\\layout\\layout_offline.xml"
+    },
+    {
+        "merged": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-merged_res-32:\\mipmap_ic_launcher.png.flat",
+        "source": "C:\\Users\\Admin\\.gradle\\daemon\\8.4\\com.silatech.calc.app-main-34:\\mipmap\\ic_launcher.png"
+    }
+]

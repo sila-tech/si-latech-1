@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#A5D8B3</color>
+    <color name="accent_dark">#15803D</color>
+    <color name="background">#F9F9F9</color>
+    <color name="black">#000000</color>
+    <color name="error">#DC2626</color>
+    <color name="primary">#1E40AF</color>
+    <color name="primary_dark">#1D4ED8</color>
+    <color name="primary_light">#B4D4FF</color>
+    <color name="status_bar">#1E40AF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="transparent">#00000000</color>
+    <color name="white">#FFFFFF</color>
+    <style name="Theme.SilaCalc" parent="Theme.Material3.DayNight.NoActionBar">
+        
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        
+        
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:statusBarColor">@color/status_bar</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
