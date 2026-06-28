@@ -70,13 +70,19 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   // Enable Firestore offline persistence
   useEffect(() => {
     if (firestore) {
-      enableIndexedDbPersistence(firestore).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn('Firestore persistence failed: multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-          console.warn('Firestore persistence failed: browser unsupported');
-        }
-      });
+      try {
+        enableIndexedDbPersistence(firestore).catch((err) => {
+          if (err.code === 'failed-precondition') {
+            console.warn('Firestore persistence failed: multiple tabs open');
+          } else if (err.code === 'unimplemented') {
+            console.warn('Firestore persistence failed: browser unsupported');
+          } else {
+            console.warn('Firestore persistence failed:', err);
+          }
+        });
+      } catch (err) {
+        console.warn('Firestore persistence could not be enabled:', err);
+      }
     }
   }, [firestore]);
 

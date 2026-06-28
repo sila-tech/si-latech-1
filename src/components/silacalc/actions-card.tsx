@@ -368,8 +368,8 @@ const LoadProjectDialog = () => {
     const { firestore } = useFirebase();
 
     const projectsQuery = useMemoFirebase(
-      () => firestore ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc')) : null,
-      [firestore]
+      () => (firestore && isOpen) ? query(collection(firestore, 'projects'), orderBy('createdAt', 'desc')) : null,
+      [firestore, isOpen]
     );
 
     const { data: projects, isLoading } = useCollection<ProjectData>(projectsQuery);

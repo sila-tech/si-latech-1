@@ -97,13 +97,12 @@ function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
 }
 
 /**
- * Builds the final, formatted error message for the LLM.
+ * Builds the final, formatted error message.
  * @param requestObject The simulated request object.
- * @returns A string containing the error message and the JSON payload.
+ * @returns A clean error message without sensitive info.
  */
 function buildErrorMessage(requestObject: SecurityRuleRequest): string {
-  return `Missing or insufficient permissions: The following request was denied by Firestore Security Rules:
-${JSON.stringify(requestObject, null, 2)}`;
+  return `Missing or insufficient permissions: The request to path "${requestObject.path}" was denied by Firestore Security Rules.`;
 }
 
 /**
