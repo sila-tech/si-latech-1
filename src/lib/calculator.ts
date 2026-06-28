@@ -252,56 +252,66 @@ export function calcRoomBlocksAndBeams(
   const longer = Math.max(lengthMeters, widthMeters);
 
   // --- 1. GEOMETRIC PHYSICAL CALCULATION ---
-  // 0.55m is the CLEAR gap between beam faces (not centre-to-centre).
-  // Beam width = 0.20m, so each beam+gap unit along the longer span = 0.75m.
-  //
-  // Layout pattern:
-  //   Wall | 0.55m gap | 0.20m beam | 0.55m gap | 0.20m beam | ... | end gap | Wall
-  //
-  // First gap is always 0.55m. After that, each beam costs 0.75m.
-  // beamCount = floor((longer - clearGap) / unitSpan)
-  const clearGap = C.beamSpacing;        // clear face-to-face gap (0.40m)
-  const beamWidth = C.beamSectionW;      // beam width (0.15m)
-  const unitSpan = 0.55;                 // 0.55m standard spacing unit (clearGap + beamWidth)
-
-  let actualBeamCount = 0;
-  let endGap = 0;
-
   const isBalcony = roomName.toLowerCase().includes('balcony') || 
                     roomName.toLowerCase().includes('verandah') || 
                     roomName.toLowerCase().includes('velander') || 
                     roomName.toLowerCase().includes('veranda') || 
                     roomName.toLowerCase().includes('velanda');
 
+  let beamMultiplier = 1;
+  const spanLengthForBeams = isBalcony ? shorter : longer;
+
+  if (C.beamType === 'tbeam') {
+    if (spanLengthForBeams <= 4.2) {
+      beamMultiplier = 1;
+    } else if (spanLengthForBeams <= 5.2) {
+      beamMultiplier = 2;
+    } else {
+      beamMultiplier = 3;
+    }
+  }
+
+  const clearGap = C.beamSpacing;        // clear face-to-face gap (0.40m)
+  const beamWidth = C.beamSectionW;      // beam width (0.15m)
+  const unitSpan = clearGap + (beamWidth * beamMultiplier); // Dynamic standard spacing unit
+
+  let actualBeamGroupCount = 0;
+  let actualBeamCount = 0;
+  let endGap = 0;
+
   if (longer > 0) {
     if (isBalcony) {
       // Balcony / Verandah: Beams run parallel to the longer side, laid across the shorter side
-      actualBeamCount = Math.ceil(shorter / 0.55);
+      actualBeamGroupCount = Math.ceil(shorter / unitSpan);
       
-      const lastBeamEnd = (actualBeamCount - 1) * 0.55 + 0.15;
+      const lastBeamEnd = (actualBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier);
       endGap = Math.max(0, shorter - lastBeamEnd);
     } else {
       // Standard rooms: Beams run parallel to the shorter side, laid across the longer side
-      actualBeamCount = Math.ceil(longer / 0.55);
+      actualBeamGroupCount = Math.ceil(longer / unitSpan);
       
-      const lastBeamEnd = (actualBeamCount - 1) * 0.55 + 0.15;
+      const lastBeamEnd = (actualBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier);
       endGap = Math.max(0, longer - lastBeamEnd);
     }
   }
 
-  actualBeamCount = Math.max(0, actualBeamCount);
+  actualBeamGroupCount = Math.max(0, actualBeamGroupCount);
+  actualBeamCount = actualBeamGroupCount * beamMultiplier;
 
   // --- Layout Validation and Physical Checks ---
   const spanLength = isBalcony ? shorter : longer;
-  const physicalBeamCount = spanLength > 0 ? Math.max(0, Math.floor(((spanLength - 0.15) / 0.55) + 1e-9) + 1) : 0;
+  const physicalBeamGroupCount = spanLength > 0 ? Math.max(0, Math.floor(((spanLength - (beamWidth * beamMultiplier)) / unitSpan) + 1e-9) + 1) : 0;
+  const physicalBeamCount = physicalBeamGroupCount * beamMultiplier;
 
-  const excessBeamCount = optimizeExcess ? 0 : Math.max(0, actualBeamCount - physicalBeamCount);
+  const excessBeamGroupCount = optimizeExcess ? 0 : Math.max(0, actualBeamGroupCount - physicalBeamGroupCount);
+  const excessBeamCount = excessBeamGroupCount * beamMultiplier;
+
   const clearBeamLength = isBalcony ? longer : shorter;
   const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
   const blocksPerBeamRow = individualBeamLength > 0 ? Math.ceil(individualBeamLength * 4) : 0;
-  const excessBlockCount = optimizeExcess ? 0 : excessBeamCount * blocksPerBeamRow;
+  const excessBlockCount = optimizeExcess ? 0 : excessBeamGroupCount * blocksPerBeamRow;
 
-  const lastPhysicalBeamEnd = physicalBeamCount > 0 ? (physicalBeamCount - 1) * 0.55 + 0.15 : 0;
+  const lastPhysicalBeamEnd = physicalBeamGroupCount > 0 ? (physicalBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier) : 0;
   const physicalEndGap = spanLength > 0 ? Math.max(0, spanLength - lastPhysicalBeamEnd) : 0;
 
   let remainingVoidSpaceMm = 0;
@@ -316,15 +326,17 @@ export function calcRoomBlocksAndBeams(
   }
 
   if (excessBeamCount > 0) {
-    const overflow = (actualBeamCount - 1) * 0.55 + 0.15 - spanLength;
+    const overflow = (actualBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier) - spanLength;
     structuralWarning = `This room has ${excessBeamCount} excess beam(s) and ${excessBlockCount} excess block(s) that extend beyond the room boundary by ${(overflow * 1000).toFixed(0)}mm.`;
   }
 
   // Determine whether to use optimized physical counts or standard counts for calculations
-  const effectiveBeamCount = optimizeExcess ? physicalBeamCount : actualBeamCount;
+  const effectiveBeamGroupCount = optimizeExcess ? physicalBeamGroupCount : actualBeamGroupCount;
+  const effectiveBeamCount = effectiveBeamGroupCount * beamMultiplier;
 
   // Blocks are laid between the walls (clear span)
-  const actualTotalBlocks = effectiveBeamCount * blocksPerBeamRow;
+  // Number of block rows is effectively the number of beam groups
+  const actualTotalBlocks = effectiveBeamGroupCount * blocksPerBeamRow;
   const actualTotalBeamLength = effectiveBeamCount * individualBeamLength;
 
   // --- 2. HARDCODED CONDITIONAL BILLING ---
@@ -381,16 +393,16 @@ export function calcRoomBlocksAndBeams(
     totalRoomProfit,
     layout: {
       gapAtEnd: startWithBlock
-        ? Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15))
+        ? Math.max(0, spanLength - (0.40 + (effectiveBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier)))
         : (optimizeExcess ? physicalEndGap : endGap),
       needsExtraBeam: startWithBlock
-        ? Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15)) > clearGap
+        ? Math.max(0, spanLength - (0.40 + (effectiveBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier))) > clearGap
         : (optimizeExcess ? physicalEndGap : endGap) > clearGap,
       needsHalfBlock: startWithBlock
-        ? Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15)) > 0 && Math.max(0, spanLength - (0.40 + (effectiveBeamCount - 1) * 0.55 + 0.15)) <= clearGap
+        ? Math.max(0, spanLength - (0.40 + (effectiveBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier))) > 0 && Math.max(0, spanLength - (0.40 + (effectiveBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier))) <= clearGap
         : (optimizeExcess ? physicalEndGap : endGap) > 0 && (optimizeExcess ? physicalEndGap : endGap) <= clearGap,
       beamSpacing: clearGap,
-      beamWidth: beamWidth,
+      beamWidth: beamWidth * beamMultiplier,
       unitSpan: unitSpan,
       beamCount: effectiveBeamCount,
       blocksPerRow: blocksPerBeamRow,
