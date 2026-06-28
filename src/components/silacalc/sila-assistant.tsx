@@ -337,7 +337,7 @@ export function SilaAssistant() {
       
       {/* Floating Chat Panel */}
       {isOpen && (
-        <div className="mb-4 w-[92vw] sm:w-[420px] h-[550px] bg-slate-950/95 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300 ring-1 ring-white/10 relative pointer-events-auto">
+        <div className="mb-4 w-[90vw] sm:w-[360px] h-[480px] bg-slate-950 border border-slate-800 rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 relative pointer-events-auto">
           
           {/* Decorative glowing blobs */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
@@ -412,10 +412,10 @@ export function SilaAssistant() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl p-3.5 text-xs leading-relaxed ${
+                  className={`max-w-[85%] rounded-xl p-3 text-xs leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-primary text-white font-semibold rounded-tr-none shadow-md shadow-primary/10'
-                      : 'bg-slate-900/80 border border-slate-800 text-slate-200 rounded-tl-none shadow-sm'
+                      : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none shadow-sm'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -476,7 +476,7 @@ export function SilaAssistant() {
             {/* Voice Input Button */}
             <button
               onClick={toggleListening}
-              className={`h-11 w-11 shrink-0 rounded-2xl flex items-center justify-center transition-all ${
+              className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center transition-all ${
                 isListening
                   ? 'bg-rose-500 hover:bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/20'
                   : 'bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-850'
@@ -505,7 +505,7 @@ export function SilaAssistant() {
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 disabled={isListening}
-                className="h-11 bg-slate-900 border-slate-850 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-primary rounded-2xl text-xs pr-10"
+                className="h-10 bg-slate-900 border-slate-850 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-primary rounded-xl text-xs pr-10"
               />
               
               {/* Send Button inside Input */}
