@@ -60,7 +60,7 @@ import { useCalculator } from '@/context/calculator-context';
 import Link from 'next/link';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '../ui/scroll-area';
-import { useCollection, useFirebase, useMemoFirebase, initializeFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { saveGeneratedQuote } from '@/lib/firestore';
 import type { ProjectData } from '@/context/calculator-context';
@@ -446,7 +446,7 @@ export function ActionsCard() {
     costEstimationEnabled,
     pricingRates,
   } = useCalculator();
-  const { auth, user } = useFirebase();
+  const { auth, user, firestore } = useFirebase();
   const { toast } = useToast();
 
   const [aiQuoteFloor, setAiQuoteFloor] = useState<string>('all');
@@ -768,7 +768,6 @@ export function ActionsCard() {
 
 
     // Save to Admin section
-    const { firestore } = initializeFirebase();
     saveGeneratedQuote(firestore, {
         invoiceNumber,
         clientName: clientInfo.clientName,
