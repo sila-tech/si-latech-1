@@ -3,7 +3,7 @@
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -19,18 +19,31 @@ export function initializeFirebase() {
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
+  let firestore;
+  try {
+    firestore = initializeFirestore(app, { ignoreUndefinedProperties: true });
+  } catch (e) {
+    firestore = getFirestore(app);
+  }
+
   return {
     firebaseApp: app,
     auth: auth,
-    firestore: getFirestore(app),
+    firestore: firestore,
   };
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  let firestore;
+  try {
+    firestore = initializeFirestore(firebaseApp, { ignoreUndefinedProperties: true });
+  } catch (e) {
+    firestore = getFirestore(firebaseApp);
+  }
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp),
+    firestore: firestore,
   };
 }
 
