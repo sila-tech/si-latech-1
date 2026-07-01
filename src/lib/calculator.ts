@@ -308,7 +308,7 @@ export function calcRoomBlocksAndBeams(
 
   const clearBeamLength = isBalcony ? longer : shorter;
   const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
-  const blocksPerBeamRow = individualBeamLength > 0 ? Math.ceil(individualBeamLength * 4) : 0;
+  const blocksPerBeamRow = (individualBeamLength > 0 && C.blockWidth > 0) ? Math.ceil(individualBeamLength / C.blockWidth) : 0;
   const excessBlockCount = optimizeExcess ? 0 : excessBeamGroupCount * blocksPerBeamRow;
 
   const lastPhysicalBeamEnd = physicalBeamGroupCount > 0 ? (physicalBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier) : 0;
