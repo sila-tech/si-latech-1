@@ -259,7 +259,7 @@ export function calcRoomBlocksAndBeams(
                     roomName.toLowerCase().includes('velanda');
 
   let beamMultiplier = 1;
-  const spanLengthForBeams = isBalcony ? shorter : longer;
+  const spanLengthForBeams = isBalcony ? longer : shorter;
 
   if (C.beamType === 'tbeam') {
     if (spanLengthForBeams <= 4.2) {
