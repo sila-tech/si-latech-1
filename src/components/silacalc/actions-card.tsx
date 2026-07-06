@@ -808,20 +808,297 @@ export function ActionsCard() {
     });
   };
 
-  const handleDownloadBothQuotes = async (clientInfo: ClientInfo, isOptimized: boolean = false) => {
+  const handleDownloadBothQuotes = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     toast({
-      title: "Generating Quotes",
-      description: "Downloading separate PDFs for Flat Beam and T-Beam systems...",
+      title: "Generating Combined Quote",
+      description: "Creating a single combined PDF for Flat Beam and T-Beam systems...",
     });
     
-    // Download Flat Beam first
-    handleDownloadInvoice(clientInfo, isOptimized, 'flat');
-    
-    // Wait a brief moment to ensure downloads don't block each other
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    // Download T-Beam second
-    handleDownloadInvoice(clientInfo, isOptimized, 'tbeam');
+    const doc = new jsPDF();
+    const primaryColor = '#095388';
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+    const baseInvoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
+
+    // We will save records to Admin section for both systems
+    const saveQuoteToDatabase = (beamType: 'flat' | 'tbeam', grandTotal: number, activeTotals: any) => {
+      const dbInvoiceNumber = `${baseInvoiceNumber}-${beamType.toUpperCase()}`;
+      saveGeneratedQuote(firestore, {
+          invoiceNumber: dbInvoiceNumber,
+          clientName: clientInfo.clientName,
+          projectName: clientInfo.projectName,
+          projectLocation: clientInfo.projectLocation,
+          clientContact: clientInfo.clientContact,
+          contactPerson: clientInfo.contactPerson,
+          grandTotal,
+          totals: activeTotals,
+          rooms: rooms,
+          items: {
+              blocks: activeTotals.totalBlocks,
+              beamsLength: activeTotals.totalInvoiceBeamLength
+          }
+      }).then(() => {
+          saveProject({
+              name: clientInfo.projectName,
+              clientName: clientInfo.clientName,
+              clientContact: clientInfo.clientContact,
+              projectLocation: clientInfo.projectLocation,
+              contactPerson: clientInfo.contactPerson
+          });
+      }).catch((err) => {
+          console.error(err);
+      });
+    };
+
+    const renderFloorQuotePage = (pageTitle: string, pageTotals: any, currentBeamType: 'flat' | 'tbeam') => {
+      addLogoToPdf(doc, primaryColor);
+      
+      const BLOCK_PRICE = currentBeamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
+      const BEAM_PRICE_PER_METER = currentBeamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
+      
+      const blocksTotal = pageTotals.totalBlocks * BLOCK_PRICE;
+      const beamsTotal = pageTotals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
+      
+      let cementTotal = 0;
+      let sandTotal = 0;
+      let ballastTotal = 0;
+      let brcTotal = 0;
+      let propsTotal = 0;
+      
+      if (costEstimationEnabled) {
+        cementTotal = pageTotals.totalCementBags * pricingRates.cementRate;
+        sandTotal = pageTotals.totalSandTonnes * pricingRates.sandRate;
+        ballastTotal = pageTotals.totalBallastTonnes * pricingRates.ballastRate;
+        brcTotal = (pageTotals.brc?.rollsNeeded || 0) * pricingRates.brcRate;
+        propsTotal = (pageTotals.timber?.totalProps || 0) * pricingRates.propRate;
+      }
+      
+      const grandTotal = blocksTotal + beamsTotal + cementTotal + sandTotal + ballastTotal + brcTotal + propsTotal;
+
+      // --- Header ---
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(primaryColor);
+      doc.text(pageTitle, 75, 22);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text('Head Office: Juja, Kenya', 140, 22);
+      doc.text('Tel: +254 141 981 315', 140, 27);
+      doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38);
+
+      let currentY = 60;
+      const invoiceToX = 14;
+      const shipToX = 110;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('QUOTE TO', invoiceToX, currentY);
+      doc.text('SHIP / SITE TO', shipToX, currentY);
+      currentY += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`Client Name: ${clientInfo.clientName}`, invoiceToX, currentY);
+      doc.text(`Site Name: ${clientInfo.projectName}`, shipToX, currentY);
+      currentY += 5;
+      doc.text(`Project Name: ${clientInfo.projectName}`, invoiceToX, currentY);
+      doc.text(`Address: ${clientInfo.projectLocation}`, shipToX, currentY);
+      currentY += 5;
+      doc.text(`Location: ${clientInfo.projectLocation}`, invoiceToX, currentY);
+      doc.text(`Contact Person: ${clientInfo.contactPerson}`, shipToX, currentY);
+      currentY += 5;
+      doc.text(`Contact: ${clientInfo.clientContact}`, invoiceToX, currentY);
+      
+      const metaY = currentY + 10;
+      doc.text(`Quote No.:`, 14, metaY);
+      doc.text(`Date:`, 14, metaY + 5);
+      
+      doc.setFont('helvetica', 'bold');
+      const displayInvoiceNumber = `${baseInvoiceNumber}-${currentBeamType.toUpperCase()}`;
+      doc.text(`${displayInvoiceNumber}`, 44, metaY);
+      doc.text(`${invoiceDate}`, 44, metaY + 5);
+
+      const tableRows = [
+        [
+          currentBeamType === 'tbeam' ? 'Total Invoiced T-Beams (m)' : 'Total Invoiced Beams (m)',
+          pageTotals.totalInvoiceBeamLength.toFixed(2),
+          BEAM_PRICE_PER_METER.toFixed(2),
+          beamsTotal.toFixed(2)
+        ],
+        [
+          currentBeamType === 'tbeam' ? 'Total Blocks for T-Beams (pcs)' : 'Total Blocks (pcs)',
+          pageTotals.totalBlocks.toString(),
+          BLOCK_PRICE.toFixed(2),
+          blocksTotal.toFixed(2)
+        ]
+      ];
+
+      if (costEstimationEnabled) {
+        tableRows.push([
+          'Cement Bags (50kg)',
+          pageTotals.totalCementBags.toString(),
+          pricingRates.cementRate.toFixed(2),
+          cementTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'River Sand (Tonnes)',
+          pageTotals.totalSandTonnes.toFixed(1),
+          pricingRates.sandRate.toFixed(2),
+          sandTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'Ballast Aggregate (Tonnes)',
+          pageTotals.totalBallastTonnes.toFixed(1),
+          pricingRates.ballastRate.toFixed(2),
+          ballastTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'BRC Mesh Rolls',
+          (pageTotals.brc?.rollsNeeded || 0).toString(),
+          pricingRates.brcRate.toFixed(2),
+          brcTotal.toFixed(2)
+        ]);
+        tableRows.push([
+          'Timber Support Props',
+          (pageTotals.timber?.totalProps || 0).toString(),
+          pricingRates.propRate.toFixed(2),
+          propsTotal.toFixed(2)
+        ]);
+      }
+
+      (doc as any).autoTable({
+        head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
+        body: tableRows,
+        startY: metaY + 15,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, fontStyle: 'bold' },
+        columnStyles: {
+          1: { halign: 'right' },
+          2: { halign: 'right' },
+          3: { halign: 'right' },
+        }
+      });
+
+      let finalY = (doc as any).lastAutoTable.finalY;
+      const totalsX = 145;
+      const totalsValueX = 200;
+      
+      finalY += 10;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor('#D32F2F');
+      doc.text('NB: Transportation of all materials is to be paid for by the customer.', 14, finalY);
+
+      finalY += 10;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(50);
+      doc.setFillColor(240,240,240);
+      doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
+      doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
+      doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
+
+      finalY += 15;
+
+      let notesY = finalY + 15;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('NOTES', 14, notesY);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      notesY += 5;
+      if (costEstimationEnabled) {
+        doc.text('1. Material Estimates: Cement, sand, ballast, BRC mesh, and support props costs have been included in the estimated grand total.', 14, notesY);
+      } else {
+        doc.text(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+      }
+      notesY += 5;
+      doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
+      notesY += 5;
+      doc.text('3. We provide a technician paid by the client.', 14, notesY);
+      notesY += 5;
+      doc.text('4. Disclaimer: This quote was generated by an AI assistant based on the provided plan.', 14, notesY);
+      notesY += 5;
+      doc.text('It may contain errors. Please countercheck with a SI-LATECH technician for an official quote.', 14, notesY);
+    };
+
+    const selectedFloor = clientInfo.selectedFloor || 'all';
+
+    const uniqueFloors = Array.from(new Set(rooms.map(r => {
+      if (r.name.includes(':')) {
+        return r.name.split(':')[0].trim();
+      }
+      return '';
+    }).filter(Boolean)));
+
+    const renderFullQuoteForBeamType = (beamType: 'flat' | 'tbeam') => {
+      const activeSettings = { ...settings, beamType };
+      let activeTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
+
+      if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
+        uniqueFloors.forEach((floor, idx) => {
+          if (idx > 0 || beamType === 'tbeam') {
+            doc.addPage();
+          }
+          const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
+          const floorTotals = calculateProjectTotals(floorRooms, activeSettings, 0, isOptimized);
+          renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()}) - ${floor.toUpperCase()}`, floorTotals, beamType);
+        });
+
+        // Add combined summary page at the end
+        doc.addPage();
+        const combinedTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
+        renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()}) - COMBINED SUMMARY`, combinedTotals, beamType);
+        activeTotals = combinedTotals;
+      } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
+        if (beamType === 'tbeam') doc.addPage();
+        const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
+        const floorTotals = calculateProjectTotals(floorRooms, activeSettings, 0, isOptimized);
+        renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()}) - ${selectedFloor.toUpperCase()}`, floorTotals, beamType);
+        activeTotals = floorTotals;
+      } else {
+        if (beamType === 'tbeam') doc.addPage();
+        const combinedTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
+        renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()})`, combinedTotals, beamType);
+        activeTotals = combinedTotals;
+      }
+
+      const BLOCK_PRICE = beamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
+      const BEAM_PRICE_PER_METER = beamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
+      const blocksTotal = activeTotals.totalBlocks * BLOCK_PRICE;
+      const beamsTotal = activeTotals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
+      
+      let cementTotal = 0;
+      let sandTotal = 0;
+      let ballastTotal = 0;
+      let brcTotal = 0;
+      let propsTotal = 0;
+      if (costEstimationEnabled) {
+        cementTotal = activeTotals.totalCementBags * pricingRates.cementRate;
+        sandTotal = activeTotals.totalSandTonnes * pricingRates.sandRate;
+        ballastTotal = activeTotals.totalBallastTonnes * pricingRates.ballastRate;
+        brcTotal = (activeTotals.brc?.rollsNeeded || 0) * pricingRates.brcRate;
+        propsTotal = (activeTotals.timber?.totalProps || 0) * pricingRates.propRate;
+      }
+      const grandTotal = blocksTotal + beamsTotal + cementTotal + sandTotal + ballastTotal + brcTotal + propsTotal;
+
+      saveQuoteToDatabase(beamType, grandTotal, activeTotals);
+    };
+
+    // Render Flat Beam first
+    renderFullQuoteForBeamType('flat');
+    // Render T-Beam second
+    renderFullQuoteForBeamType('tbeam');
+
+    addPdfBackground(doc);
+    doc.save(`SI-LATECH-Quote-Combined-${baseInvoiceNumber}.pdf`);
     
     setBothInvoiceDialogOpen(false);
   };
