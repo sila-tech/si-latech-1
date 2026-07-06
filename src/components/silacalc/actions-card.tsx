@@ -470,6 +470,7 @@ export function ActionsCard() {
 
 
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [isBothInvoiceDialogOpen, setBothInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
   const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
@@ -529,14 +530,18 @@ export function ActionsCard() {
     clearCalculator();
   }
 
-  const handleDownloadInvoice = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
+  const handleDownloadInvoice = (clientInfo: ClientInfo, isOptimized: boolean = false, overrideBeamType?: 'flat' | 'tbeam') => {
     const doc = new jsPDF();
     const primaryColor = '#095388';
     const invoiceDate = new Date().toLocaleDateString('en-GB');
-    const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
+    const suffix = overrideBeamType ? `-${overrideBeamType.toUpperCase()}` : '';
+    const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}${suffix}`;
     
-    const BLOCK_PRICE = settings.beamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
-    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
+    const activeBeamType = overrideBeamType || settings.beamType;
+    const activeSettings = overrideBeamType ? { ...settings, beamType: overrideBeamType } : settings;
+    
+    const BLOCK_PRICE = activeBeamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
+    const BEAM_PRICE_PER_METER = activeBeamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
 
     const renderFloorQuotePage = (pageTitle: string, pageTotals: any) => {
       addLogoToPdf(doc, primaryColor);
@@ -611,13 +616,13 @@ export function ActionsCard() {
 
       const tableRows = [
         [
-          settings.beamType === 'tbeam' ? 'Total Invoiced T-Beams (m)' : 'Total Invoiced Beams (m)',
+          activeBeamType === 'tbeam' ? 'Total Invoiced T-Beams (m)' : 'Total Invoiced Beams (m)',
           pageTotals.totalInvoiceBeamLength.toFixed(2),
           BEAM_PRICE_PER_METER.toFixed(2),
           beamsTotal.toFixed(2)
         ],
         [
-          settings.beamType === 'tbeam' ? 'Total Blocks for T-Beams (pcs)' : 'Total Blocks (pcs)',
+          activeBeamType === 'tbeam' ? 'Total Blocks for T-Beams (pcs)' : 'Total Blocks (pcs)',
           pageTotals.totalBlocks.toString(),
           BLOCK_PRICE.toFixed(2),
           blocksTotal.toFixed(2)
@@ -723,7 +728,7 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
-    let activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+    let activeTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
     let activeRooms = rooms;
 
     if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
@@ -732,26 +737,26 @@ export function ActionsCard() {
           doc.addPage();
         }
         const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
+        const floorTotals = calculateProjectTotals(floorRooms, activeSettings, 0, isOptimized);
         renderFloorQuotePage(`OFFICIAL QUOTE - ${floor.toUpperCase()}`, floorTotals);
       });
 
       // Add combined summary page at the end
       doc.addPage();
-      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      const combinedTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
       renderFloorQuotePage('OFFICIAL QUOTE - COMBINED SUMMARY', combinedTotals);
       activeTotals = combinedTotals;
       activeRooms = rooms;
     } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
       // Single specific floor
       const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
+      const floorTotals = calculateProjectTotals(floorRooms, activeSettings, 0, isOptimized);
       renderFloorQuotePage(`OFFICIAL QUOTE - ${selectedFloor.toUpperCase()}`, floorTotals);
       activeTotals = floorTotals;
       activeRooms = floorRooms;
     } else {
       // Combined quote (single page)
-      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+      const combinedTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
       renderFloorQuotePage('OFFICIAL QUOTE', combinedTotals);
       activeTotals = combinedTotals;
       activeRooms = rooms;
@@ -764,7 +769,9 @@ export function ActionsCard() {
     const grandTotal = blocksTotal + beamsTotal;
 
     doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
-    setInvoiceDialogOpen(false);
+    if (!overrideBeamType) {
+      setInvoiceDialogOpen(false);
+    }
 
 
     // Save to Admin section
@@ -799,6 +806,24 @@ export function ActionsCard() {
             variant: "destructive",
         });
     });
+  };
+
+  const handleDownloadBothQuotes = async (clientInfo: ClientInfo, isOptimized: boolean = false) => {
+    toast({
+      title: "Generating Quotes",
+      description: "Downloading separate PDFs for Flat Beam and T-Beam systems...",
+    });
+    
+    // Download Flat Beam first
+    handleDownloadInvoice(clientInfo, isOptimized, 'flat');
+    
+    // Wait a brief moment to ensure downloads don't block each other
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    
+    // Download T-Beam second
+    handleDownloadInvoice(clientInfo, isOptimized, 'tbeam');
+    
+    setBothInvoiceDialogOpen(false);
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
@@ -1334,10 +1359,11 @@ export function ActionsCard() {
   }
 
   const handleDocumentDownload = (
-    docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber'
+    docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber' | 'both'
   ) => {
     // We always open the dialogs so that the user can confirm client details AND choose the floor scope!
     if (docType === 'invoice') setInvoiceDialogOpen(true);
+    else if (docType === 'both') setBothInvoiceDialogOpen(true);
     else if (docType === 'material') setScheduleDialogOpen(true);
     else if (docType === 'promax') setBreakdownDialogOpen(true);
     else if (docType === 'aggregated') setAggregatedDialogOpen(true);
@@ -1373,6 +1399,10 @@ export function ActionsCard() {
           
           <Button id="real-invoice-btn" className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
             <Download className="mr-2 h-4 w-4" /> Download Quote
+          </Button>
+
+          <Button id="download-both-btn" className="w-full bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('both')}>
+            <Download className="mr-2 h-4 w-4" /> Download Both (Flat & T-Beam)
           </Button>
 
 
@@ -1452,6 +1482,13 @@ export function ActionsCard() {
         onGenerateClick={(clientInfo) => handleDownloadInvoice(clientInfo, true)}
         title="Download Customer Quote"
         description="Please confirm or update the client details for the quote."
+      />
+      <ClientInfoDialog
+        open={isBothInvoiceDialogOpen}
+        onOpenChange={setBothInvoiceDialogOpen}
+        onGenerateClick={(clientInfo) => handleDownloadBothQuotes(clientInfo, true)}
+        title="Download Both Quotes"
+        description="This will download two separate PDF quotes: one for Flat Beam and one for T-Beam."
       />
       <ClientInfoDialog
         open={isScheduleDialogOpen}
