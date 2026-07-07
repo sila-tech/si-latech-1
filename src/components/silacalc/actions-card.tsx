@@ -73,6 +73,7 @@ type ClientInfo = {
   clientContact: string;
   contactPerson: string;
   selectedFloor?: string;
+  beamSystemScope?: 'active' | 'flat' | 'tbeam' | 'both';
 };
 
 function SubmitButton({
@@ -88,8 +89,8 @@ function SubmitButton({
   );
 }
 
-const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenChange }: { onGenerateClick: (clientInfo: ClientInfo) => void; title: string; description: string; open: boolean, onOpenChange: (open: boolean) => void; }) => {
-  const { projectName, clientName, clientContact, projectLocation, contactPerson, rooms } = useCalculator();
+const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenChange, showBeamSelector = false }: { onGenerateClick: (clientInfo: ClientInfo) => void; title: string; description: string; open: boolean, onOpenChange: (open: boolean) => void; showBeamSelector?: boolean; }) => {
+  const { projectName, clientName, clientContact, projectLocation, contactPerson, rooms, settings } = useCalculator();
 
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     clientName: clientName || '',
@@ -98,6 +99,7 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
     clientContact: clientContact || '',
     contactPerson: contactPerson || '',
     selectedFloor: 'all',
+    beamSystemScope: 'active',
   });
 
   const [size, setSize] = useState<{ width: number; height: number }>({ width: 512, height: 580 });
@@ -180,6 +182,7 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
         clientContact: clientContact || '',
         contactPerson: contactPerson || '',
         selectedFloor: uniqueFloors.length > 0 ? 'separate' : 'all',
+        beamSystemScope: 'active',
     });
   }, [projectName, clientName, clientContact, projectLocation, contactPerson, open, uniqueFloors]);
 
@@ -235,6 +238,23 @@ const ClientInfoDialog = ({ onGenerateClick, title, description, open, onOpenCha
             <Label htmlFor="contactPerson">Site Contact Person</Label>
             <Input id="contactPerson" value={clientInfo.contactPerson} onChange={handleChange} placeholder="e.g., Site Foreman" />
           </div>
+          
+          {showBeamSelector && (
+            <div className="space-y-1.5">
+              <Label htmlFor="beamSystemScope" className="text-xs text-muted-foreground font-bold">Choose Beam System Quote</Label>
+              <select
+                id="beamSystemScope"
+                value={clientInfo.beamSystemScope || 'active'}
+                onChange={(e) => setClientInfo(prev => ({ ...prev, beamSystemScope: e.target.value as any }))}
+                className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="active">Currently Active System ({settings.beamType === 'tbeam' ? 'T-Beam' : 'Flat Beam'})</option>
+                <option value="flat">Flat Beam System Only</option>
+                <option value="tbeam">T-Beam System Only</option>
+                <option value="both">Both Systems (Combined PDF)</option>
+              </select>
+            </div>
+          )}
           
           {uniqueFloors.length > 0 && (
             <div className="space-y-3 p-3.5 border border-amber-500/20 bg-amber-500/5 rounded-lg shadow-inner">
@@ -470,7 +490,6 @@ export function ActionsCard() {
 
 
   const [isInvoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const [isBothInvoiceDialogOpen, setBothInvoiceDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [isBreakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
   const [isAggregatedDialogOpen, setAggregatedDialogOpen] = useState(false);
@@ -531,14 +550,20 @@ export function ActionsCard() {
   }
 
   const handleDownloadInvoice = (clientInfo: ClientInfo, isOptimized: boolean = false, overrideBeamType?: 'flat' | 'tbeam') => {
+    if (clientInfo.beamSystemScope === 'both' && !overrideBeamType) {
+      handleDownloadBothQuotes(clientInfo, isOptimized);
+      return;
+    }
+
     const doc = new jsPDF();
     const primaryColor = '#095388';
     const invoiceDate = new Date().toLocaleDateString('en-GB');
-    const suffix = overrideBeamType ? `-${overrideBeamType.toUpperCase()}` : '';
-    const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}${suffix}`;
     
-    const activeBeamType = overrideBeamType || settings.beamType;
-    const activeSettings = overrideBeamType ? { ...settings, beamType: overrideBeamType } : settings;
+    const activeBeamType = overrideBeamType || (clientInfo.beamSystemScope === 'flat' ? 'flat' : clientInfo.beamSystemScope === 'tbeam' ? 'tbeam' : settings.beamType) || 'flat';
+    const activeSettings = activeBeamType !== settings.beamType ? { ...settings, beamType: activeBeamType } : settings;
+    
+    const suffix = overrideBeamType || clientInfo.beamSystemScope === 'flat' || clientInfo.beamSystemScope === 'tbeam' ? `-${activeBeamType.toUpperCase()}` : '';
+    const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}${suffix}`;
     
     const BLOCK_PRICE = activeBeamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
     const BEAM_PRICE_PER_METER = activeBeamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
@@ -1100,7 +1125,7 @@ export function ActionsCard() {
     addPdfBackground(doc);
     doc.save(`SI-LATECH-Quote-Combined-${baseInvoiceNumber}.pdf`);
     
-    setBothInvoiceDialogOpen(false);
+    setInvoiceDialogOpen(false);
   };
 
   const handleDownloadMaterialSchedule = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
@@ -1636,11 +1661,10 @@ export function ActionsCard() {
   }
 
   const handleDocumentDownload = (
-    docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber' | 'both'
+    docType: 'invoice' | 'material' | 'promax' | 'aggregated' | 'timber'
   ) => {
     // We always open the dialogs so that the user can confirm client details AND choose the floor scope!
     if (docType === 'invoice') setInvoiceDialogOpen(true);
-    else if (docType === 'both') setBothInvoiceDialogOpen(true);
     else if (docType === 'material') setScheduleDialogOpen(true);
     else if (docType === 'promax') setBreakdownDialogOpen(true);
     else if (docType === 'aggregated') setAggregatedDialogOpen(true);
@@ -1676,10 +1700,6 @@ export function ActionsCard() {
           
           <Button id="real-invoice-btn" className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
             <Download className="mr-2 h-4 w-4" /> Download Quote
-          </Button>
-
-          <Button id="download-both-btn" className="w-full bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('both')}>
-            <Download className="mr-2 h-4 w-4" /> Download Both (Flat & T-Beam)
           </Button>
 
 
@@ -1759,13 +1779,7 @@ export function ActionsCard() {
         onGenerateClick={(clientInfo) => handleDownloadInvoice(clientInfo, true)}
         title="Download Customer Quote"
         description="Please confirm or update the client details for the quote."
-      />
-      <ClientInfoDialog
-        open={isBothInvoiceDialogOpen}
-        onOpenChange={setBothInvoiceDialogOpen}
-        onGenerateClick={(clientInfo) => handleDownloadBothQuotes(clientInfo, true)}
-        title="Download Both Quotes"
-        description="This will download two separate PDF quotes: one for Flat Beam and one for T-Beam."
+        showBeamSelector={true}
       />
       <ClientInfoDialog
         open={isScheduleDialogOpen}
