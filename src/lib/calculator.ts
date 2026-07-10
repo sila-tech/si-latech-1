@@ -260,8 +260,9 @@ export function calcRoomBlocksAndBeams(
 
   let beamMultiplier = 1;
   const spanLengthForBeams = isBalcony ? longer : shorter;
+  const isAreaMode = roomName.toLowerCase().includes('project area');
 
-  if (C.beamType === 'tbeam') {
+  if (C.beamType === 'tbeam' && !isAreaMode) {
     if (spanLengthForBeams <= 4.2) {
       beamMultiplier = 1;
     } else if (spanLengthForBeams <= 5.2) {
@@ -344,7 +345,6 @@ export function calcRoomBlocksAndBeams(
   let invoiceBeamCount: number;
   
   // Detect if this is a "Quick Quote" (Meter Square) or a manual "Room"
-  const isAreaMode = roomName.toLowerCase().includes('project area');
 
   if (isAreaMode) {
     // METRE SQUARE MODE: Multiply Area by 2.4

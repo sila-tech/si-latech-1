@@ -720,6 +720,9 @@ export function ActionsCard() {
       doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
       doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
 
+      const approxTonnage = ((pageTotals.totalInvoiceBeamLength * 18) + (pageTotals.totalBlocks * 12)) / 1000;
+      doc.text(`Approx. Weight: ~${approxTonnage.toFixed(2)} tonnes`, 14, finalY + 5);
+
       finalY += 15;
 
       let notesY = finalY + 15;
@@ -1029,6 +1032,9 @@ export function ActionsCard() {
       doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
       doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
       doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
+
+      const approxTonnage = ((pageTotals.totalInvoiceBeamLength * 18) + (pageTotals.totalBlocks * 12)) / 1000;
+      doc.text(`Approx. Weight: ~${approxTonnage.toFixed(2)} tonnes`, 14, finalY + 5);
 
       finalY += 15;
 

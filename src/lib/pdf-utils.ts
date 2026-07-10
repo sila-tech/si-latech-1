@@ -173,6 +173,15 @@ export const generateQuotePdf = (data: {
     doc.text('GRAND TOTAL: ', totalsX, finalY, { align: 'right' });
     doc.text(`Ksh ${grandTotal.toLocaleString()}`, totalsValueX, finalY, { align: 'right' });
 
+    const beamWeight = (safeTotals.totalInvoiceBeamLength || 0) * 18;
+    const blockWeight = (safeTotals.totalBlocks || 0) * 12;
+    const approxTonnage = (beamWeight + blockWeight) / 1000;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Approx. Weight: ~${approxTonnage.toFixed(2)} tonnes`, totalsValueX, finalY + 8, { align: 'right' });
+
     doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
     return true;
 };

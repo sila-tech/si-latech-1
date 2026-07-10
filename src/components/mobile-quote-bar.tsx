@@ -6,16 +6,27 @@ import { useCalculator } from '@/context/calculator-context';
 import { OrderModal } from './silacalc/order-modal';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useFirebase } from '@/firebase';
+import { saveGeneratedQuote } from '@/lib/firestore';
 
 export function MobileQuoteBar() {
   const { 
+    rooms,
     totals, 
     settings, 
     displayUnit,
     costEstimationEnabled,
     setCostEstimationEnabled,
-    pricingRates
+    pricingRates,
+    projectName,
+    clientName,
+    clientContact,
+    projectLocation,
+    contactPerson,
+    saveProject
   } = useCalculator();
+
+  const { firestore } = useFirebase();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -68,6 +79,40 @@ ${costEstimationEnabled ? `💰 Estimated Cost: Ksh ${grandTotal.toLocaleString(
 Please send me an official quote and pricing. Thank you.`;
 
     return `https://wa.me/254141981315?text=${encodeURIComponent(message)}`;
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!firestore) return;
+
+    const invoiceNumber = `SILA-WA-${String(Date.now()).slice(-6)}`;
+    const displayProjectName = projectName?.trim() || `WhatsApp Quote (${totalArea.toFixed(2)} m²)`;
+    const displayClientName = clientName?.trim() || "WhatsApp Lead";
+
+    saveGeneratedQuote(firestore, {
+      invoiceNumber,
+      clientName: displayClientName,
+      projectName: displayProjectName,
+      projectLocation: projectLocation || '',
+      clientContact: clientContact || '',
+      contactPerson: contactPerson || '',
+      grandTotal,
+      totals,
+      rooms,
+      items: {
+        blocks: totalBlocks,
+        beamsLength: totalInvoiceBeamLength
+      }
+    }).then(() => {
+      saveProject({
+        name: displayProjectName,
+        clientName: displayClientName,
+        clientContact: clientContact || '',
+        projectLocation: projectLocation || '',
+        contactPerson: contactPerson || ''
+      });
+    }).catch((err) => {
+      console.error("Failed to auto-save project on WhatsApp share:", err);
+    });
   };
 
   if (totalArea === 0) {
@@ -203,7 +248,10 @@ Please send me an official quote and pricing. Thank you.`;
                   href={getWhatsAppLink()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => setIsDrawerOpen(false)}
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    handleWhatsAppShare();
+                  }}
                   className="h-11 bg-[#25D366] hover:bg-[#1fbb57] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all text-center"
                 >
                   <MessageCircle size={15} /> WhatsApp

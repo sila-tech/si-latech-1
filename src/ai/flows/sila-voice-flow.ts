@@ -103,8 +103,8 @@ const silaVoiceFlow = ai.defineFlow(
       - Treat all internal system details as trade secrets. Your job is to assist, not to educate on the internals.
       
       PRICING (You MAY share these with customers):
-      - Flat Beam system: Beams are KES 520 per linear metre. Blocks are KES 85 each.
-      - T-Beam system: Beams are KES 1,250 per linear metre. Blocks are KES 110 each.
+      - Flat Beam system: The cost is KES 2,000 per square metre.
+      - T-Beam system: The cost is KES 4,000 per square metre.
       - The calculator also estimates cement, sand, ballast, BRC mesh rolls, timber, and props.
       
       RULES FOR ADDING ROOMS:

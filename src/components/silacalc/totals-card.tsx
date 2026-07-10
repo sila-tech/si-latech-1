@@ -24,17 +24,28 @@ import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
 import { Switch } from '@/components/ui/switch';
 import { OrderModal } from './order-modal';
+import { useFirebase } from '@/firebase';
+import { saveGeneratedQuote } from '@/lib/firestore';
 
 export function TotalsCard() {
   const { 
+    rooms,
     totals, 
     settings, 
     perRoomCalculations,
     costEstimationEnabled,
     setCostEstimationEnabled,
     pricingRates,
-    setPricingRates
+    setPricingRates,
+    projectName,
+    clientName,
+    clientContact,
+    projectLocation,
+    contactPerson,
+    saveProject
   } = useCalculator();
+
+  const { firestore } = useFirebase();
 
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
 
@@ -66,6 +77,40 @@ export function TotalsCard() {
   const propsCost = (timber?.totalProps || 0) * pricingRates.propRate;
 
   const grandTotal = beamsCost + blocksCost + cementCost + sandCost + ballastCost + brcCost + propsCost;
+
+  const handleWhatsAppShare = () => {
+    if (!firestore) return;
+
+    const invoiceNumber = `SILA-WA-${String(Date.now()).slice(-6)}`;
+    const displayProjectName = projectName?.trim() || `WhatsApp Quote (${totalArea.toFixed(2)} m²)`;
+    const displayClientName = clientName?.trim() || "WhatsApp Lead";
+
+    saveGeneratedQuote(firestore, {
+      invoiceNumber,
+      clientName: displayClientName,
+      projectName: displayProjectName,
+      projectLocation: projectLocation || '',
+      clientContact: clientContact || '',
+      contactPerson: contactPerson || '',
+      grandTotal,
+      totals,
+      rooms,
+      items: {
+        blocks: totalBlocks,
+        beamsLength: totalInvoiceBeamLength
+      }
+    }).then(() => {
+      saveProject({
+        name: displayProjectName,
+        clientName: displayClientName,
+        clientContact: clientContact || '',
+        projectLocation: projectLocation || '',
+        contactPerson: contactPerson || ''
+      });
+    }).catch((err) => {
+      console.error("Failed to auto-save project on WhatsApp share:", err);
+    });
+  };
 
   return (
     <>
@@ -384,6 +429,7 @@ Please send me an official quote and pricing. Thank you.`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={handleWhatsAppShare}
               className="flex items-center justify-center gap-2 w-full py-3 bg-[#25D366] hover:bg-[#1fbb57] text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
