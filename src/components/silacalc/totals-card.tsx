@@ -18,7 +18,8 @@ import {
   FolderSync, 
   Info,
   ShoppingCart,
-  Coins
+  Coins,
+  Hammer
 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { useCalculator } from '@/context/calculator-context';
@@ -59,6 +60,7 @@ export function TotalsCard() {
     brc,
     timber,
     totalLintelLength,
+    lintelSteel,
   } = totals;
 
   const rawLintelLength = (totals as any).rawLintelLength || totalLintelLength;
@@ -348,6 +350,34 @@ export function TotalsCard() {
                   </div>
                 )}
               </div>
+
+              {/* Lintel Steel (Longitudinal) */}
+              <div className="flex flex-col p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-xs hover:border-slate-200 transition-colors animate-in fade-in duration-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600 flex items-center gap-2 font-medium">
+                    <Hammer size={16} className="text-amber-600" /> Longitudinal Steel (D{lintelSteel?.longitudinal?.diameter || 12})
+                  </span>
+                  <strong className="text-slate-900 font-bold">{lintelSteel?.longitudinal?.barsToOrder || 0} pcs</strong>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100/60">
+                  <span>Standard 12m length bars</span>
+                  <span>{lintelSteel?.longitudinal?.linearMetersRequired?.toFixed(1) || 0}m required</span>
+                </div>
+              </div>
+
+              {/* Lintel Steel (Stirrups) */}
+              <div className="flex flex-col p-3 bg-white border border-slate-100 rounded-lg text-sm shadow-xs hover:border-slate-200 transition-colors animate-in fade-in duration-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600 flex items-center gap-2 font-medium">
+                    <Hammer size={16} className="text-amber-700" /> Stirrup Steel (D{lintelSteel?.stirrups?.diameter || 8})
+                  </span>
+                  <strong className="text-slate-900 font-bold">{lintelSteel?.stirrups?.barsToOrder || 0} pcs</strong>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100/60">
+                  <span>Standard 12m length bars</span>
+                  <span>{lintelSteel?.stirrups?.linearMetersRequired?.toFixed(1) || 0}m required</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -423,6 +453,8 @@ export function TotalsCard() {
 🪨 Sand: ${totalSandTonnes.toFixed(1)}t | Ballast: ${totalBallastTonnes.toFixed(1)}t
 📦 BRC Mesh: ${brc?.rollsNeeded || 0} rolls
 🛠️ Props: ${timber?.totalProps || 0} pcs
+🔩 Longitudinal Steel: ${lintelSteel?.longitudinal?.barsToOrder || 0} pcs (D${lintelSteel?.longitudinal?.diameter || 12} @ 12m)
+🔩 Stirrups Steel: ${lintelSteel?.stirrups?.barsToOrder || 0} pcs (D${lintelSteel?.stirrups?.diameter || 8} @ 12m)
 ${costEstimationEnabled ? `💰 Estimated Cost: KSh ${grandTotal.toLocaleString()}` : ''}
 
 Please send me an official quote and pricing. Thank you.`
