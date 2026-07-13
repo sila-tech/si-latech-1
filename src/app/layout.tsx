@@ -1,5 +1,6 @@
 
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { CalculatorProvider } from '@/context/calculator-context';
@@ -129,6 +130,19 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=AW-18319525008"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+
+            gtag('config', 'AW-18319525008');
+          `}
+        </Script>
         <FirebaseClientProvider>
           <CalculatorProvider>
             {children}
