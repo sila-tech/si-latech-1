@@ -9,6 +9,11 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Portfolio collection
+    match /portfolio/{projectId} {
+      allow read, write: if true;
+    }
+
     // Quotes collection
     match /quotes/{quoteId} {
       allow read, write: if true;

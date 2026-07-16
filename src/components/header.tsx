@@ -11,6 +11,7 @@ const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hel
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/#calculator', label: 'Calculator' },
+  { href: '/portfolio', label: 'Our Projects' },
   { href: '/contact', label: 'Contact' },
 ];
 

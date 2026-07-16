@@ -89,7 +89,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="text-xs font-black uppercase tracking-wider text-amber-600 mb-0.5">Location</p>
-                        <p className="text-lg font-bold text-slate-900">Nairobi, Kenya</p>
+                        <p className="text-lg font-bold text-slate-900">Ruiru, behind Rubis petrol station</p>
                         <p className="text-sm text-slate-500">Serving Nairobi, Mombasa & across Kenya</p>
                       </div>
                     </div>

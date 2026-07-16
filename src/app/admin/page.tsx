@@ -37,6 +37,7 @@ import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualiz
 import { StaffManagement } from '@/components/admin/staff-management';
 import { FinanceManagement } from '@/components/admin/finance-management';
 import { InvestorManagement } from '@/components/admin/investor-management';
+import { PortfolioManagement } from '@/components/admin/portfolio-management';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
@@ -287,6 +288,9 @@ export default function AdminDashboardPage() {
                     <TabsTrigger value="projects" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Project Management
                     </TabsTrigger>
+                    <TabsTrigger value="portfolio" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                        Projects Gallery
+                    </TabsTrigger>
                     <TabsTrigger value="invoices" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
                         Quote History
                     </TabsTrigger>
@@ -302,6 +306,10 @@ export default function AdminDashboardPage() {
                         </TabsTrigger>
                     )}
                 </TabsList>
+
+                <TabsContent value="portfolio">
+                    <PortfolioManagement />
+                </TabsContent>
 
                 <TabsContent value="finances">
                     <FinanceManagement isSuperAdmin={isSuperAdmin} />

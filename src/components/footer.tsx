@@ -58,7 +58,7 @@ export function Footer() {
               {[
                 { href: '/', label: 'Home' },
                 { href: '/#calculator', label: 'Beam & Block Calculator' },
-                { href: '/', label: 'Concrete Slab Calculator' },
+                { href: '/portfolio', label: 'Our Projects' },
                 { href: '/contact', label: 'Contact Us' },
               ].map(({ href, label }) => (
                 <li key={label}>
@@ -92,7 +92,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-2.5 text-sm text-slate-400">
                 <MapPin size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                <span>Nairobi, Kenya<br/>Serving Kenya-wide</span>
+                <span>Ruiru, behind Rubis petrol station<br/>Serving Kenya-wide</span>
               </li>
               <li className="flex items-start gap-2.5 text-sm text-slate-400">
                 <Clock size={15} className="text-emerald-400 shrink-0 mt-0.5" />

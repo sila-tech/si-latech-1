@@ -90,7 +90,8 @@ export default function RootLayout({
         address: {
           '@type': 'PostalAddress',
           addressCountry: 'KE',
-          addressRegion: 'Nairobi',
+          addressRegion: 'Ruiru, Kiambu',
+          streetAddress: 'Behind Rubis Petrol Station',
         },
         contactPoint: {
           '@type': 'ContactPoint',

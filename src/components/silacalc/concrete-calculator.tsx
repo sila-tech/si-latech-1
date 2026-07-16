@@ -400,7 +400,7 @@ export function ConcreteCalculator() {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text('Head Office: Juja, Kenya', 140, 16);
+    doc.text('Head Office: Ruiru, behind Rubis petrol station', 140, 16);
     doc.text('Tel: +254 141 981 315', 140, 21);
     doc.text('Email: info.silatechsolutions@gmail.com', 140, 26);
 

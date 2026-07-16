@@ -32,7 +32,7 @@ export function SilaAssistant() {
   const [inputVal, setInputVal] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [language, setLanguage] = useState<'sw' | 'en'>('sw'); // 'sw' for Swahili/Sheng, 'en' for English
-  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
