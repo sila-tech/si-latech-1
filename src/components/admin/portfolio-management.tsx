@@ -12,7 +12,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,6 +75,7 @@ interface PortfolioProject {
 export function PortfolioManagement() {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { firebaseApp } = useFirebase();
 
   // Dialog State
   const [isOpen, setIsOpen] = useState(false);
@@ -137,7 +138,7 @@ export function PortfolioManagement() {
     setUploadProgress(0);
 
     try {
-      const storage = getStorage();
+      const storage = getStorage(firebaseApp);
       const storageRef = ref(storage, `portfolio/${Date.now()}_${file.name}`);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
