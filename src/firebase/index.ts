@@ -11,7 +11,7 @@ export function initializeFirebase() {
     apiKey: "AIzaSyAFGP49gapYCyHkJhyqKhQXKy8gxs_KLT0",
     authDomain: "si-latech.firebaseapp.com",
     projectId: "si-latech",
-    storageBucket: "si-latech.appspot.com",
+    storageBucket: "si-latech.firebasestorage.app",
     messagingSenderId: "930374267549",
     appId: "1:930374267549:web:6d1bd560e7bdd549069a74"
   };
