@@ -21,11 +21,13 @@ import { SocialProof } from './social-proof';
 
 function TechAdvantages() {
   const advantages = [
-    "Cost Effective: Save up to 30% compared to traditional solid slabs.",
-    "Fast Construction: No curing time required before continuing work above.",
-    "No Formwork: Eliminates the need for expensive timber shuttering.",
-    "Superior Insulation: Hollow blocks provide excellent thermal and acoustic insulation.",
-    "Clean & Safe Site: Less messy concrete pouring, resulting in a cleaner and safer workspace."
+    "Reduced Dead Load: Replaces heavy solid concrete with hollow blocks, creating a lighter slab and overall structure.",
+    "Fast Construction: Speedy installation that eliminates curing delays; continue building walls above immediately.",
+    "Level Ceilings: Precast beams and blocks create a flush, level soffit that can be plastered directly.",
+    "Thermal Comfort: Hollow spaces in the blocks act as natural air insulators, enhancing slab thermal performance.",
+    "Acoustic Insulation: Air cavities inside the hollow blocks act as excellent sound dampening barriers between floors.",
+    "Manual Handling: Lightweight components can be installed by hand, requiring no cranes or heavy site machinery.",
+    "Eco-Friendly: Minimizes timber deforestation and on-site material waste."
   ];
 
   return (

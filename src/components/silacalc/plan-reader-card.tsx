@@ -26,6 +26,48 @@ import { useCalculator } from '@/context/calculator-context';
 import { analyzePlan } from '@/ai/flows/analyze-plan-flow';
 import { BuildingBlock, ApartmentGroup } from '@/lib/calculator';
 
+const compressImage = (dataUri: string, maxWidth = 1600, maxHeight = 1600, quality = 0.85): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = dataUri;
+    img.onload = () => {
+      // If it's a PDF, we don't compress via canvas (canvas only supports images)
+      if (dataUri.startsWith('data:application/pdf')) {
+        resolve(dataUri);
+        return;
+      }
+
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate new dimensions to maintain aspect ratio
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(dataUri);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressedDataUri = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUri);
+    };
+
+    img.onerror = () => {
+      resolve(dataUri);
+    };
+  });
+};
+
 export function PlanReaderCard() {
   const { setRooms, setBuildingBlocks } = useCalculator();
   const [file, setFile] = useState<File | null>(null);
@@ -74,7 +116,9 @@ export function PlanReaderCard() {
     });
 
     try {
-      const result = await analyzePlan({ photoDataUri: imageUri });
+      // Compress the image client-side to prevent Next.js Server Action body limit errors (1MB)
+      const compressedUri = await compressImage(imageUri);
+      const result = await analyzePlan({ photoDataUri: compressedUri });
 
       if (result.success && result.rooms && result.rooms.length > 0) {
         setParsedRooms(result.rooms);
@@ -90,7 +134,7 @@ export function PlanReaderCard() {
       console.error('Plan analysis failed:', err);
       toast({
         title: 'Blueprint Analysis Failed',
-        description: err instanceof Error ? err.message : 'An unknown error occurred.',
+        description: err instanceof Error ? err.message : 'An unexpected response was received from the server.',
         variant: 'destructive',
       });
     } finally {

@@ -5,8 +5,9 @@ import { Footer } from '@/components/footer';
 import { MobileQuoteBar } from '@/components/mobile-quote-bar';
 import { CalculatorShell } from '@/components/silacalc/calculator-shell';
 import { ConcreteCalculator } from '@/components/silacalc/concrete-calculator';
+import { ComparisonTab } from '@/components/silacalc/comparison-tab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Layers, Construction } from 'lucide-react';
+import { Layers, Construction, TrendingUp } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -29,6 +30,12 @@ export default function Home() {
                 >
                   <Construction className="h-4 w-4" /> Concrete Slab
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="savings-compare" 
+                  className="rounded-lg px-6 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm flex items-center gap-2"
+                >
+                  <TrendingUp className="h-4 w-4" /> Compare & Savings
+                </TabsTrigger>
               </TabsList>
             </div>
             
@@ -38,6 +45,10 @@ export default function Home() {
             
             <TabsContent value="concrete-slab" className="mt-0 outline-none">
               <ConcreteCalculator />
+            </TabsContent>
+
+            <TabsContent value="savings-compare" className="mt-0 outline-none">
+              <ComparisonTab />
             </TabsContent>
           </Tabs>
         </div>

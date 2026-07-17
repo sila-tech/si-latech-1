@@ -16,16 +16,82 @@ import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { useFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { CheckCircle2, Loader2, Send } from 'lucide-react';
+import { CheckCircle2, Loader2, Send, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface OrderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+const addLogoToPdf = (doc: jsPDF, color: string) => {
+    try {
+        doc.addImage('/logo.png', 'PNG', 14, 5, 18, 18);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(color);
+        doc.text('SI-LATECH', 35, 18);
+    } catch (e) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.setTextColor(color);
+        doc.text('SI-LATECH', 14, 22);
+    }
+};
+
+let fadedLogoBase64 = '';
+
+if (typeof window !== 'undefined') {
+  const img = new window.Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.globalAlpha = 0.025; // 2.5% opacity for perfect faded watermark look
+        ctx.drawImage(img, 0, 0);
+        fadedLogoBase64 = canvas.toDataURL('image/png');
+      }
+    } catch (e) {
+      console.error('Failed to pre-fade watermark logo:', e);
+    }
+  };
+  img.src = '/logo.png';
+}
+
+const addPdfBackground = (doc: jsPDF) => {
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        
+        try {
+            if (fadedLogoBase64) {
+                doc.addImage(fadedLogoBase64, 'PNG', 45, 90, 120, 120, undefined, 'FAST');
+            } else {
+                if ((doc as any).setGState) {
+                    const gState = new (doc as any).GState({ opacity: 0.03 });
+                    (doc as any).setGState(gState);
+                }
+                doc.addImage('/logo.png', 'PNG', 45, 90, 120, 120, undefined, 'FAST');
+                if ((doc as any).setGState) {
+                    const gStateReset = new (doc as any).GState({ opacity: 1.0 });
+                    (doc as any).setGState(gStateReset);
+                }
+            }
+        } catch (e) {
+            // Skip watermark if image or GState is missing
+        }
+    }
+};
+
 export function OrderModal({ open, onOpenChange }: OrderModalProps) {
-  const { totals, settings, clientName, clientContact, projectLocation, contactPerson } = useCalculator();
+  const { totals, settings, clientName, clientContact, projectLocation, contactPerson, pricingRates } = useCalculator();
   const { firestore } = useFirebase();
   const { toast } = useToast();
 
@@ -47,6 +113,145 @@ export function OrderModal({ open, onOpenChange }: OrderModalProps) {
     }
   }, [open, clientName, clientContact, projectLocation]);
 
+  const generatePDFQuote = (clientInfo: { name: string; phone: string; location: string; notes: string }) => {
+    const doc = new jsPDF();
+    const primaryColor = '#095388';
+    const invoiceDate = new Date().toLocaleDateString('en-GB');
+    const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
+
+    const BLOCK_PRICE = settings.beamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? pricingRates.beamTbeamRate : pricingRates.beamFlatRate;
+
+    const blocksTotal = totals.totalBlocks * BLOCK_PRICE;
+    const beamsTotal = totals.totalInvoiceBeamLength * BEAM_PRICE_PER_METER;
+    const grandTotal = blocksTotal + beamsTotal;
+
+    // --- Header ---
+    addLogoToPdf(doc, primaryColor);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(primaryColor);
+    doc.text('OFFICIAL QUOTE', 75, 22);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('Head Office: Ruiru, behind Rubis petrol station', 140, 22);
+    doc.text('Tel: +254 141 981 315', 140, 27);
+    doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38);
+
+    let currentY = 60;
+    const invoiceToX = 14;
+    const shipToX = 110;
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('QUOTE TO', invoiceToX, currentY);
+    doc.text('SHIP / SITE TO', shipToX, currentY);
+    currentY += 6;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
+    doc.text(`Client Name: ${clientInfo.name}`, invoiceToX, currentY);
+    doc.text(`Site Name: ${clientInfo.location}`, shipToX, currentY);
+    currentY += 5;
+    doc.text(`Project Name: ${clientInfo.notes || 'Slab Project'}`, invoiceToX, currentY);
+    doc.text(`Address: ${clientInfo.location}`, shipToX, currentY);
+    currentY += 5;
+    doc.text(`Location: ${clientInfo.location}`, invoiceToX, currentY);
+    doc.text(`Contact Person: ${clientInfo.name}`, shipToX, currentY);
+    currentY += 5;
+    doc.text(`Contact: ${clientInfo.phone}`, invoiceToX, currentY);
+    
+    const metaY = currentY + 10;
+    doc.text(`Quote No.:`, 14, metaY);
+    doc.text(`Date:`, 14, metaY + 5);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${invoiceNumber}`, 44, metaY);
+    doc.text(`${invoiceDate}`, 44, metaY + 5);
+
+    const tableRows = [
+      [
+        settings.beamType === 'tbeam' ? 'Total Invoiced T-Beams (m)' : 'Total Invoiced Beams (m)',
+        totals.totalInvoiceBeamLength.toFixed(2),
+        BEAM_PRICE_PER_METER.toFixed(2),
+        beamsTotal.toFixed(2)
+      ],
+      [
+        settings.beamType === 'tbeam' ? 'Total Blocks for T-Beams (pcs)' : 'Total Blocks (pcs)',
+        totals.totalBlocks.toString(),
+        BLOCK_PRICE.toFixed(2),
+        blocksTotal.toFixed(2)
+      ]
+    ];
+
+    (doc as any).autoTable({
+      head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
+      body: tableRows,
+      startY: metaY + 15,
+      theme: 'grid',
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9, fontStyle: 'bold' },
+      columnStyles: {
+        1: { halign: 'right' },
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+      }
+    });
+
+    let finalY = (doc as any).lastAutoTable.finalY || 160;
+    const totalsX = 145;
+    const totalsValueX = 200;
+    
+    finalY += 10;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor('#D32F2F');
+    doc.text('NB: Transportation of all materials is to be paid for by the customer.', 14, finalY);
+
+    finalY += 10;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(50);
+    doc.setFillColor(240,240,240);
+    doc.roundedRect(totalsX - 60, finalY - 1, 85, 10, 3, 3, 'F');
+    doc.text('BALANCE DUE: ', totalsX, finalY + 5, { align: 'right' });
+    doc.text(`Ksh ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, totalsValueX, finalY + 5, { align: 'right' });
+
+    const approxTonnage = ((totals.totalInvoiceBeamLength * 18) + (totals.totalBlocks * 12)) / 1000;
+    doc.text(`Approx. Weight: ~${approxTonnage.toFixed(2)} tonnes`, 14, finalY + 5);
+
+    finalY += 15;
+
+    let notesY = finalY + 15;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('NOTES', 14, notesY);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
+    notesY += 5;
+    doc.text(`1. BRC Mesh: Based on your calculations, you may require ${totals.brc?.rollsNeeded || 0} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+    notesY += 5;
+    doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
+    notesY += 5;
+    doc.text('3. We provide a technician paid by the client.', 14, notesY);
+    notesY += 5;
+    doc.text('4. Disclaimer: This quote was generated by an AI assistant based on the provided plan.', 14, notesY);
+    notesY += 5;
+    doc.text('It may contain errors. Please countercheck with a SI-LATECH technician for an official quote.', 14, notesY);
+
+    addPdfBackground(doc);
+
+    doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !location.trim()) {
@@ -60,7 +265,7 @@ export function OrderModal({ open, onOpenChange }: OrderModalProps) {
 
     setIsSubmitting(true);
 
-    const orderData = {
+    const quoteRequestData = {
       clientName: name,
       clientContact: phone,
       deliveryLocation: location,
@@ -76,34 +281,39 @@ export function OrderModal({ open, onOpenChange }: OrderModalProps) {
         brcMeshRolls: totals.brc?.rollsNeeded || 0,
         supportProps: totals.timber?.totalProps || 0,
       },
-      status: 'pending',
+      status: 'quote_generated',
       createdAt: serverTimestamp(),
     };
 
     try {
       if (firestore) {
-        await addDoc(collection(firestore, 'material_orders'), orderData);
+        await addDoc(collection(firestore, 'material_quotes'), quoteRequestData);
       }
+      
+      // Trigger PDF Quote generation instantly
+      generatePDFQuote({ name, phone, location, notes });
+      
       setIsSuccess(true);
       toast({
-        title: 'Order Submitted',
-        description: 'Your material order request has been received by SI-LATECH.',
+        title: 'Quote Downloaded',
+        description: 'Your official Beam & Block quote PDF has been generated and downloaded.',
       });
     } catch (error) {
-      console.error('Error saving order:', error);
+      console.error('Error saving quote request:', error);
+      // Still trigger PDF Quote generation even if network is failing
+      generatePDFQuote({ name, phone, location, notes });
+      setIsSuccess(true);
       toast({
-        title: 'Submission Failed',
-        description: 'We saved your details locally. You can still send via WhatsApp.',
-        variant: 'destructive',
+        title: 'Quote Downloaded',
+        description: 'We downloaded the quote. Storing detail locally.',
       });
-      setIsSuccess(true); // Proceed to WhatsApp anyway to avoid blocking user flow
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const getWhatsAppLink = () => {
-    const message = `Hello SI-LATECH, I would like to order materials for my slab project:
+    const message = `Hello SI-LATECH, I have generated a Beam & Block quote for my slab project:
 
 👤 Name: ${name}
 📞 Contact: ${phone}
@@ -113,16 +323,7 @@ export function OrderModal({ open, onOpenChange }: OrderModalProps) {
 📐 Slab Area: ${totals.totalArea.toFixed(2)} m²
 🏗️ Beam System: ${settings.beamType === 'tbeam' ? 'T-Beam System' : 'Flat Beam System'}
 
-📋 Materials Summary:
-- Beams: ${totals.totalInvoiceBeamLength.toFixed(1)} m
-- Blocks: ${totals.totalBlocks.toLocaleString()} pcs
-- Cement: ${totals.totalCementBags} bags (50kg)
-- Sand: ${totals.totalSandTonnes.toFixed(1)} tonnes
-- Ballast: ${totals.totalBallastTonnes.toFixed(1)} tonnes
-- BRC Mesh: ${totals.brc?.rollsNeeded || 0} rolls
-- Support Props: ${totals.timber?.totalProps || 0} pcs
-
-Please review my request and send an official quote with transport costs. Thank you!`;
+I have downloaded the quote PDF and would like to discuss delivery scheduling. Thank you!`;
 
     return `https://wa.me/254141981315?text=${encodeURIComponent(message)}`;
   };
@@ -133,11 +334,11 @@ Please review my request and send an official quote with transport costs. Thank 
         {!isSuccess ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <DialogHeader>
-              <DialogTitle className="font-headline text-2xl font-black text-slate-900">
-                Order Slab Materials
+              <DialogTitle className="font-headline text-2xl font-black text-slate-900 flex items-center gap-2">
+                <Download className="text-[#095388] h-5 w-5" /> Download Slab Quote
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500">
-                Submit your project metrics to the SI-LATECH production team. We will contact you with transport pricing and delivery schedules.
+                Provide your details below to instantly generate and download your customized SI-LATECH Beam & Block slab quote.
               </DialogDescription>
             </DialogHeader>
 
@@ -210,15 +411,15 @@ Please review my request and send an official quote with transport costs. Thank 
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary hover:bg-primary/95 text-white font-bold px-6 rounded-xl flex items-center gap-1.5 shadow-md"
+                className="bg-[#095388] hover:bg-[#07426d] text-white font-bold px-6 rounded-xl flex items-center gap-1.5 shadow-md"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Submitting...
+                    <Loader2 size={16} className="animate-spin" /> Generating...
                   </>
                 ) : (
                   <>
-                    <Send size={16} /> Submit Order Request
+                    <Download size={16} /> Download Quote PDF
                   </>
                 )}
               </Button>
@@ -231,16 +432,16 @@ Please review my request and send an official quote with transport costs. Thank 
             </div>
             <div>
               <h3 className="text-xl font-black text-slate-900 font-headline mb-1">
-                Request Submitted Successfully!
+                Quote Generated Successfully!
               </h3>
               <p className="text-sm text-slate-500 px-4">
-                We have registered your request in our systems. To speed up review and get transport rates immediately, click the WhatsApp button to start chatting with our technician.
+                Your official Beam & Block quote PDF has been downloaded. To verify delivery transport rates or book a site visit, click below to chat with our engineer on WhatsApp.
               </p>
             </div>
 
             <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs text-left max-w-sm space-y-2">
               <p className="font-bold text-slate-800 border-b pb-1 text-[10px] uppercase tracking-wider">
-                Inquiry Summary
+                Quote Summary
               </p>
               <div className="flex justify-between">
                 <span className="text-slate-500">Client:</span>
