@@ -280,17 +280,26 @@ export function calcRoomBlocksAndBeams(
   let actualBeamCount = 0;
   let endGap = 0;
 
+  // Owner's beam count rule: divide span by 0.55 — only add an extra beam if the
+  // decimal remainder is 0.10 or above. Below 0.10 the last beam fits close enough
+  // to the wall and no extra beam is needed.
+  const countBeams = (span: number): number => {
+    const raw = span / unitSpan;
+    const decimal = raw - Math.floor(raw);
+    return decimal >= 0.10 ? Math.ceil(raw) : Math.floor(raw);
+  };
+
   if (longer > 0) {
     if (isBalcony) {
       // Balcony / Verandah: Beams run parallel to the longer side, laid across the shorter side
-      actualBeamGroupCount = Math.ceil(shorter / unitSpan);
-      
+      actualBeamGroupCount = countBeams(shorter);
+
       const lastBeamEnd = (actualBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier);
       endGap = Math.max(0, shorter - lastBeamEnd);
     } else {
       // Standard rooms: Beams run parallel to the shorter side, laid across the longer side
-      actualBeamGroupCount = Math.ceil(longer / unitSpan);
-      
+      actualBeamGroupCount = countBeams(longer);
+
       const lastBeamEnd = (actualBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier);
       endGap = Math.max(0, longer - lastBeamEnd);
     }
@@ -309,7 +318,8 @@ export function calcRoomBlocksAndBeams(
 
   const clearBeamLength = isBalcony ? longer : shorter;
   const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
-  const blocksPerBeamRow = (individualBeamLength > 0 && C.blockWidth > 0) ? Math.ceil(individualBeamLength / C.blockWidth) : 0;
+  // Owner's block formula: (actual cast beam metres × 4) + 1 block per row.
+  const blocksPerBeamRow = individualBeamLength > 0 ? (individualBeamLength * 4) + 1 : 0;
   const excessBlockCount = optimizeExcess ? 0 : excessBeamGroupCount * blocksPerBeamRow;
 
   const lastPhysicalBeamEnd = physicalBeamGroupCount > 0 ? (physicalBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier) : 0;
@@ -667,6 +677,7 @@ export function calculateProjectTotals(
   const lintel = calcLintelConcrete(totalLintelLength, settings);
   const lintelSteel = calcLintelSteel(totalLintelLength, settings);
   aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
+  aggregated.totalBlocks = Math.ceil(aggregated.totalBlocks);
 
   return {
     ...aggregated,
