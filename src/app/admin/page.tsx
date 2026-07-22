@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
     };
 
     const handleDownloadPromax = (proj: any) => {
-        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? 1250 : 520; // Dynamic price
+        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? 950 : 520; // Dynamic price
         const settings = {
             ...(proj.settings || {
                 beamSpacing: 0.55,
@@ -520,7 +520,7 @@ export default function AdminDashboardPage() {
                         if (!selectedProject) return null;
                         
                         // Re-calculate details for the selected project to avoid zero values
-                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 1250 : 520;
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 520;
                         const settings = {
                             ...(selectedProject.settings || {
                                 beamSpacing: 0.55,
@@ -711,7 +711,7 @@ export default function AdminDashboardPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
                                 // Recalculate room layout
-                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 1250 : 520;
+                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 520;
                                 const settings = selectedProject.settings || {
                                     beamSpacing: 0.55,
                                     blockWidth: 0.2,

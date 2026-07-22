@@ -246,7 +246,7 @@ export function calcRoomBlocksAndBeams(
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
-  const beamPrice = C.beamType === 'tbeam' ? 1250 : (beamPricePerMeter === 520 ? 520 : beamPricePerMeter);
+  const beamPrice = C.beamType === 'tbeam' ? 950 : (beamPricePerMeter === 520 ? 520 : beamPricePerMeter);
 
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
@@ -536,7 +536,7 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults, optimizeExcess: boolean = true): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
   rooms.forEach(room => {
-      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 1250 : 520, room.name, optimizeExcess);
+      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 950 : 520, room.name, optimizeExcess);
       const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
       if (!roomGroups.has(sizeKey)) roomGroups.set(sizeKey, { rooms: [], calcs });
       roomGroups.get(sizeKey)!.rooms.push(room);
@@ -627,7 +627,7 @@ export function calculateProjectTotals(
   };
 
   const perRoomCalculations = rooms.map((r) => {
-    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 520, r.name, optimizeExcess);
+    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 950 : 520, r.name, optimizeExcess);
     const concreteCalcs = calcConcrete(roomCalcs, settings);
     const brcCalcs = calcBRC(concreteCalcs.area, settings);
     const timberCalcs = calcTimberAndProps(r, settings);

@@ -9,8 +9,8 @@ export async function generateQuotePdfBuffer(clientInfo: any, rooms: any[]): Pro
   const invoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
   
   const isTBeam = clientInfo?.beamType === 'tbeam';
-  const BLOCK_PRICE = isTBeam ? 110 : 85;
-  const BEAM_PRICE_PER_METER = isTBeam ? 1250 : 520;
+  const BLOCK_PRICE = isTBeam ? 95 : 85;
+  const BEAM_PRICE_PER_METER = isTBeam ? 950 : 520;
 
   const defaultsWithBeamType = { ...DEFAULTS, beamType: clientInfo?.beamType || 'flat' };
   const totals = calculateProjectTotals(rooms, defaultsWithBeamType);

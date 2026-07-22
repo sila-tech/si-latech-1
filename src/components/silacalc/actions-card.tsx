@@ -1260,7 +1260,7 @@ export function ActionsCard() {
       addLogoToPdf(doc, primaryColor);
       
       const activePerRoomCalcs = pageRooms.map((r) => {
-        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 520, r.name, isOptimized);
+        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 950 : 520, r.name, isOptimized);
         return { room: r, roomCalcs };
       });
 
@@ -1519,7 +1519,7 @@ export function ActionsCard() {
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     
     const activePerRoomCalcs = rooms.map((r) => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1250 : 520, r.name, isOptimized);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 950 : 520, r.name, isOptimized);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
       const timberCalcs = calcTimberAndProps(r, settings);

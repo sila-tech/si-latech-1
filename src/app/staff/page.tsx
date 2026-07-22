@@ -271,7 +271,7 @@ export default function StaffDashboardPage() {
                     <div className="flex-1 overflow-y-auto pr-2 print:overflow-visible print:h-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
-                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 1250 : 520;
+                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 520;
                                 const settings = selectedProject.settings || {
                                     beamSpacing: 0.55,
                                     blockWidth: 0.2,
