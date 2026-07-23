@@ -838,16 +838,15 @@ export function ActionsCard() {
 
   const handleDownloadBothQuotes = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     toast({
-      title: "Generating Combined Quote",
-      description: "Creating a single combined PDF for Flat Beam and T-Beam systems...",
+      title: "Generating Separate Quotes",
+      description: "Creating separate PDF quotes and profit records for Flat Beam and T-Beam systems...",
     });
     
-    const doc = new jsPDF();
     const primaryColor = '#095388';
     const invoiceDate = new Date().toLocaleDateString('en-GB');
     const baseInvoiceNumber = `SILA-${String(Date.now()).slice(-6)}`;
 
-    // We will save records to Admin section for both systems
+    // Save records to database for both systems
     const saveQuoteToDatabase = (beamType: 'flat' | 'tbeam', grandTotal: number, activeTotals: any) => {
       const dbInvoiceNumber = `${baseInvoiceNumber}-${beamType.toUpperCase()}`;
       saveGeneratedQuote(firestore, {
@@ -877,7 +876,7 @@ export function ActionsCard() {
       });
     };
 
-    const renderFloorQuotePage = (pageTitle: string, pageTotals: any, currentBeamType: 'flat' | 'tbeam') => {
+    const renderFloorQuotePage = (doc: jsPDF, pageTitle: string, pageTotals: any, currentBeamType: 'flat' | 'tbeam') => {
       addLogoToPdf(doc, primaryColor);
       
       const BLOCK_PRICE = currentBeamType === 'tbeam' ? pricingRates.blockTbeamRate : pricingRates.blockFlatRate;
@@ -1069,35 +1068,34 @@ export function ActionsCard() {
       return '';
     }).filter(Boolean)));
 
-    const renderFullQuoteForBeamType = (beamType: 'flat' | 'tbeam') => {
+    const generateAndSavePDF = (beamType: 'flat' | 'tbeam') => {
+      const doc = new jsPDF();
       const activeSettings = { ...settings, beamType };
       let activeTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
 
       if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
         uniqueFloors.forEach((floor, idx) => {
-          if (idx > 0 || beamType === 'tbeam') {
+          if (idx > 0) {
             doc.addPage();
           }
           const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
           const floorTotals = calculateProjectTotals(floorRooms, activeSettings, 0, isOptimized);
-          renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()}) - ${floor.toUpperCase()}`, floorTotals, beamType);
+          renderFloorQuotePage(doc, `OFFICIAL QUOTE (${beamType.toUpperCase()}) - ${floor.toUpperCase()}`, floorTotals, beamType);
         });
 
         // Add combined summary page at the end
         doc.addPage();
         const combinedTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
-        renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()}) - COMBINED SUMMARY`, combinedTotals, beamType);
+        renderFloorQuotePage(doc, `OFFICIAL QUOTE (${beamType.toUpperCase()}) - COMBINED SUMMARY`, combinedTotals, beamType);
         activeTotals = combinedTotals;
       } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
-        if (beamType === 'tbeam') doc.addPage();
         const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
         const floorTotals = calculateProjectTotals(floorRooms, activeSettings, 0, isOptimized);
-        renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()}) - ${selectedFloor.toUpperCase()}`, floorTotals, beamType);
+        renderFloorQuotePage(doc, `OFFICIAL QUOTE (${beamType.toUpperCase()}) - ${selectedFloor.toUpperCase()}`, floorTotals, beamType);
         activeTotals = floorTotals;
       } else {
-        if (beamType === 'tbeam') doc.addPage();
         const combinedTotals = calculateProjectTotals(rooms, activeSettings, lintelLength, isOptimized);
-        renderFloorQuotePage(`OFFICIAL QUOTE (${beamType.toUpperCase()})`, combinedTotals, beamType);
+        renderFloorQuotePage(doc, `OFFICIAL QUOTE (${beamType.toUpperCase()})`, combinedTotals, beamType);
         activeTotals = combinedTotals;
       }
 
@@ -1120,16 +1118,16 @@ export function ActionsCard() {
       }
       const grandTotal = blocksTotal + beamsTotal + cementTotal + sandTotal + ballastTotal + brcTotal + propsTotal;
 
+      addPdfBackground(doc);
+      doc.save(`SI-LATECH-Quote-${beamType.toUpperCase()}-${baseInvoiceNumber}.pdf`);
+
       saveQuoteToDatabase(beamType, grandTotal, activeTotals);
     };
 
-    // Render Flat Beam first
-    renderFullQuoteForBeamType('flat');
-    // Render T-Beam second
-    renderFullQuoteForBeamType('tbeam');
-
-    addPdfBackground(doc);
-    doc.save(`SI-LATECH-Quote-Combined-${baseInvoiceNumber}.pdf`);
+    // Generate separate Flat Beam PDF
+    generateAndSavePDF('flat');
+    // Generate separate T-Beam PDF
+    generateAndSavePDF('tbeam');
     
     setInvoiceDialogOpen(false);
   };
