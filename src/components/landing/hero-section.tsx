@@ -34,7 +34,7 @@ export function HeroSection() {
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15]">
-              Cut Floor Slab Costs by <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">30%</span> — No Heavy Machinery Needed
+              Cut Floor Slab Costs by <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">30%</span> with Our Eco-Friendly Beams & Blocks System
             </h1>
 
             {/* Subheadline */}
