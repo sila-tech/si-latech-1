@@ -45,7 +45,7 @@ export function WhatsAppButton() {
       >
         <div className="flex flex-col">
           <span className="text-[10px] font-bold uppercase tracking-wider text-[#25D366]">Online Support</span>
-          <span className="text-sm font-medium text-slate-700">How can we help you today?</span>
+          <span className="text-sm font-medium text-slate-700">Hi! Need help with your slab estimate? Chat with us on WhatsApp.</span>
         </div>
         <button 
           onClick={() => setShowTooltip(false)}

@@ -171,7 +171,14 @@ const CalculatorContext = createContext<CalculatorContextType | undefined>(undef
 const LOGO_STORAGE_KEY = 'silacalc-logo';
 
 export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([
+    {
+      id: 'demo-living-room',
+      name: 'Living Room (Demo)',
+      length: 6,
+      width: 4,
+    },
+  ]);
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [buildingBlocks, setBuildingBlocks] = useState<BuildingBlock[]>([]);

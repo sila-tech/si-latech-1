@@ -250,10 +250,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
 
 
   return (
-    <div id="calculator" className="container mx-auto max-w-7xl mt-8 px-4">
-      <SocialProofBanner />
-      <TechAdvantages />
-      <HowItWorks />
+    <div id="calculator-builder" className="container mx-auto max-w-7xl px-2 sm:px-4">
 
       {/* Mode Toggle Control Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-xs mb-6">
