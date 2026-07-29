@@ -1258,7 +1258,7 @@ export function ActionsCard() {
       addLogoToPdf(doc, primaryColor);
       
       const activePerRoomCalcs = pageRooms.map((r) => {
-        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 950 : 520, r.name, isOptimized);
+        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1100 : 520, r.name, isOptimized);
         return { room: r, roomCalcs };
       });
 
@@ -1517,7 +1517,7 @@ export function ActionsCard() {
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     
     const activePerRoomCalcs = rooms.map((r) => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 950 : 520, r.name, isOptimized);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1100 : 520, r.name, isOptimized);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
       const timberCalcs = calcTimberAndProps(r, settings);
@@ -1873,8 +1873,8 @@ export function ActionsCard() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-                <Label htmlFor="projectName">Project Name</Label>
-                <Input id="projectName" value={projectDetails.name} onChange={e => setProjectDetails(prev => ({...prev, name: e.target.value}))} placeholder="e.g., Karen Residential"/>
+                <Label htmlFor="projectName">Project Name <span className="text-red-500">*</span></Label>
+                <Input id="projectName" required value={projectDetails.name} onChange={e => setProjectDetails(prev => ({...prev, name: e.target.value}))} placeholder="e.g., Karen Residential"/>
             </div>
              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -1887,8 +1887,8 @@ export function ActionsCard() {
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="projectLocation">Project Location</Label>
-                <Input id="projectLocation" value={projectDetails.projectLocation} onChange={e => setProjectDetails(prev => ({...prev, projectLocation: e.target.value}))} placeholder="e.g., Karen, Nairobi" />
+                <Label htmlFor="projectLocation">Project Location <span className="text-red-500">*</span></Label>
+                <Input id="projectLocation" required value={projectDetails.projectLocation} onChange={e => setProjectDetails(prev => ({...prev, projectLocation: e.target.value}))} placeholder="e.g., Karen, Nairobi" />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="contactPerson">Site Contact Person</Label>
@@ -1900,15 +1900,15 @@ export function ActionsCard() {
               <Button type="button" variant="secondary">Cancel</Button>
             </DialogClose>
             <Button onClick={async () => {
-                if (projectDetails.name.trim()) {
-                    const newId = await saveProject(projectDetails);
-                    if (newId && !loadedProjectId) {
-                      router.push(`/project/${newId}`);
-                    }
-                    setSaveDialogOpen(false);
-                } else {
-                    toast({ title: 'Error', description: 'Project name is required.', variant: 'destructive' });
+                if (!projectDetails.name.trim() || !projectDetails.projectLocation.trim()) {
+                    toast({ title: 'Validation Error', description: 'Both Project Name and Location are required.', variant: 'destructive' });
+                    return;
                 }
+                const newId = await saveProject(projectDetails);
+                if (newId && !loadedProjectId) {
+                  router.push(`/project/${newId}`);
+                }
+                setSaveDialogOpen(false);
             }}>
               {loadedProjectId ? 'Update Project' : 'Save Project'}
             </Button>

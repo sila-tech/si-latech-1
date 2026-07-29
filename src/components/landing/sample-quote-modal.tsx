@@ -89,8 +89,8 @@ export function SampleQuoteModal({ open, onOpenChange }: SampleQuoteModalProps) 
                     <tr>
                       <td className="p-2 font-medium">Hollow Concrete Infill Blocks</td>
                       <td className="p-2 text-right">1,200 pcs</td>
-                      <td className="p-2 text-right">95.00</td>
-                      <td className="p-2 text-right font-semibold">114,000.00</td>
+                      <td className="p-2 text-right">100.00</td>
+                      <td className="p-2 text-right font-semibold">120,000.00</td>
                     </tr>
                     <tr>
                       <td className="p-2 font-medium">BRC Mesh (A142 6x2.4m)</td>

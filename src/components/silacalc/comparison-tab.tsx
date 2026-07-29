@@ -74,10 +74,10 @@ export function ComparisonTab() {
     ballastRate: pricingRates?.ballastRate || 3200,
     brcRate: pricingRates?.brcRate || 25000,
     beamRate: settings?.beamType === 'tbeam' 
-      ? (pricingRates?.beamTbeamRate || 950) 
+      ? (pricingRates?.beamTbeamRate || 1100) 
       : (pricingRates?.beamFlatRate || 520),
     blockRate: settings?.beamType === 'tbeam' 
-      ? (pricingRates?.blockTbeamRate || 95) 
+      ? (pricingRates?.blockTbeamRate || 100) 
       : (pricingRates?.blockFlatRate || 85),
     
     // Traditional-specific rates (Kenyan averages)

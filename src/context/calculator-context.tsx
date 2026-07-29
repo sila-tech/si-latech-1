@@ -36,6 +36,7 @@ import {
   addDoc,
   serverTimestamp,
   Timestamp,
+  onSnapshot,
 } from 'firebase/firestore';
 import { updateProjectData } from '@/firebase/data-manager';
 
@@ -164,6 +165,17 @@ interface CalculatorContextType {
     brcRate: number;
     propRate: number;
   }>>;
+  updatePricingRates: (newRates: Partial<{
+    beamFlatRate: number;
+    beamTbeamRate: number;
+    blockFlatRate: number;
+    blockTbeamRate: number;
+    cementRate: number;
+    sandRate: number;
+    ballastRate: number;
+    brcRate: number;
+    propRate: number;
+  }>) => Promise<void>;
 }
 
 const CalculatorContext = createContext<CalculatorContextType | undefined>(undefined);
@@ -193,9 +205,9 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [costEstimationEnabled, setCostEstimationEnabled] = useState<boolean>(false);
   const [pricingRates, setPricingRates] = useState({
     beamFlatRate: 520,
-    beamTbeamRate: 950,
+    beamTbeamRate: 1100,
     blockFlatRate: 85,
-    blockTbeamRate: 95,
+    blockTbeamRate: 100,
     cementRate: 800,
     sandRate: 3000,
     ballastRate: 3200,
@@ -204,6 +216,39 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   });
   const { toast } = useToast();
   const { firestore } = useFirebase();
+
+  // Real-time Firestore Pricing Listener & Sync
+  useEffect(() => {
+    if (!firestore) return;
+    const pricingRef = doc(firestore, 'settings', 'pricing');
+    const unsubscribe = onSnapshot(pricingRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setPricingRates(prev => ({
+          ...prev,
+          ...data
+        }));
+      }
+    }, (error) => {
+      console.warn("Pricing listener error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [firestore]);
+
+  const updatePricingRates = useCallback(async (newRates: any) => {
+    setPricingRates(prev => ({ ...prev, ...newRates }));
+    if (firestore) {
+      try {
+        const pricingRef = doc(firestore, 'settings', 'pricing');
+        await setDoc(pricingRef, newRates, { merge: true });
+        toast({ title: "Pricing Updated", description: "Rates updated and synced live across all clients." });
+      } catch (err) {
+        console.error("Error updating pricing rates in Firestore:", err);
+        toast({ title: "Sync Warning", description: "Local rates updated, but Firestore sync failed.", variant: "destructive" });
+      }
+    }
+  }, [firestore, toast]);
 
   // Auto-saving effect for Firestore
   useEffect(() => {
@@ -536,6 +581,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         setCostEstimationEnabled,
         pricingRates,
         setPricingRates,
+        updatePricingRates,
       }}
     >
       {children}

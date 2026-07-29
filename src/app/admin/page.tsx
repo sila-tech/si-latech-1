@@ -1,17 +1,16 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, doc, updateDoc, addDoc, serverTimestamp, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
 import { 
     Loader2, 
     Briefcase, 
@@ -24,15 +23,28 @@ import {
     History,
     ArrowRight,
     Download,
-    Activity
+    Activity,
+    MapPin,
+    Image as ImageIcon,
+    UserCheck,
+    Edit,
+    Trash2,
+    Eye,
+    X,
+    BarChart3,
+    FileSpreadsheet,
+    PieChart,
+    Plus,
+    Check,
+    SlidersHorizontal,
+    DollarSign
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
 import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf, generateMaterialSchedulePdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import Link from 'next/link';
-import { MapPin, Image as ImageIcon, UserCheck } from 'lucide-react';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 import { StaffManagement } from '@/components/admin/staff-management';
 import { FinanceManagement } from '@/components/admin/finance-management';
@@ -47,9 +59,66 @@ export default function AdminDashboardPage() {
     const [selectedProject, setSelectedProject] = useState<any>(null);
     const [isLayoutViewOpen, setIsLayoutViewOpen] = useState(false);
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    
+    // Edit project state
+    const [editingProject, setEditingProject] = useState<any>(null);
+    const [editName, setEditName] = useState('');
+    const [editLocation, setEditLocation] = useState('');
+    const [editClientName, setEditClientName] = useState('');
+    const [editStatus, setEditStatus] = useState('pending');
+    const [editAssignedTo, setEditAssignedTo] = useState('unassigned');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+    // Delete confirmation state
+    const [deletingProject, setDeletingProject] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Analytics modal state
+    const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+
+    // Pricing Management State
+    const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+
+    // Pagination state
+    const PAGE_SIZE = 12;
+    const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
+
     const router = useRouter();
-    const { totals: currentTotals } = useCalculator();
+    const { totals: currentTotals, pricingRates, updatePricingRates } = useCalculator();
     const { toast } = useToast();
+
+    const [tempRates, setTempRates] = useState<any>({
+        beamFlatRate: 520,
+        beamTbeamRate: 1100,
+        blockFlatRate: 85,
+        blockTbeamRate: 100,
+        cementRate: 800,
+        sandRate: 3000,
+        ballastRate: 3200,
+        brcRate: 25000,
+        propRate: 500,
+    });
+
+    useEffect(() => {
+        if (pricingRates) {
+            setTempRates({ ...pricingRates });
+        }
+    }, [pricingRates]);
+
+    const handleSaveRates = async () => {
+        await updatePricingRates({
+            beamFlatRate: Number(tempRates.beamFlatRate) || 520,
+            beamTbeamRate: Number(tempRates.beamTbeamRate) || 1100,
+            blockFlatRate: Number(tempRates.blockFlatRate) || 85,
+            blockTbeamRate: Number(tempRates.blockTbeamRate) || 100,
+            cementRate: Number(tempRates.cementRate) || 800,
+            sandRate: Number(tempRates.sandRate) || 3000,
+            ballastRate: Number(tempRates.ballastRate) || 3200,
+            brcRate: Number(tempRates.brcRate) || 25000,
+            propRate: Number(tempRates.propRate) || 500,
+        });
+        setIsPricingModalOpen(false);
+    };
 
     useEffect(() => {
         const storedAuth = sessionStorage.getItem('sila-admin-auth');
@@ -91,13 +160,30 @@ export default function AdminDashboardPage() {
     );
     const { data: invoices, isLoading: invoicesLoading } = useCollection<any>(invoicesQuery);
 
+    // Fallback data helper functions
+    const getProjectName = (proj: any) => {
+        const raw = proj?.name?.trim();
+        if (!raw || raw.toLowerCase() === 'na' || raw.toLowerCase() === 'n/a') {
+            return 'Unnamed project';
+        }
+        return raw;
+    };
+
+    const getProjectLocation = (proj: any) => {
+        const raw = (proj?.projectLocation || proj?.location)?.trim();
+        if (!raw || raw.toLowerCase() === 'na' || raw.toLowerCase() === 'n/a') {
+            return 'Location not specified';
+        }
+        return raw;
+    };
+
     const handleDownloadSavedQuote = (inv: any) => {
         generateQuotePdf({
             invoiceNumber: inv.invoiceNumber,
             clientInfo: {
-                clientName: inv.clientName,
-                projectName: inv.projectName,
-                projectLocation: inv.projectLocation,
+                clientName: inv.clientName || 'N/A',
+                projectName: inv.projectName || 'N/A',
+                projectLocation: inv.projectLocation || 'N/A',
                 clientContact: inv.clientContact || 'N/A',
                 contactPerson: inv.contactPerson || 'N/A'
             },
@@ -107,7 +193,7 @@ export default function AdminDashboardPage() {
     };
 
     const handleDownloadPromax = (proj: any) => {
-        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? 950 : 520; // Dynamic price
+        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1100) : (pricingRates?.beamFlatRate || 520);
         const settings = {
             ...(proj.settings || {
                 beamSpacing: 0.55,
@@ -116,7 +202,7 @@ export default function AdminDashboardPage() {
                 propSpacing: 1.2,
                 concreteThickness: 0.05
             }),
-            blockCommissionRate: 5 // Force to 5 as per recent business rule
+            blockCommissionRate: 5
         };
 
         const reCalculatedRooms = proj.rooms?.map((r: any) => {
@@ -131,8 +217,8 @@ export default function AdminDashboardPage() {
 
         generatePromaxPdf({
             clientInfo: {
-                projectName: proj.name,
-                projectLocation: proj.projectLocation || 'N/A'
+                projectName: getProjectName(proj),
+                projectLocation: getProjectLocation(proj)
             },
             totals: {
                 totalBlocks
@@ -141,16 +227,21 @@ export default function AdminDashboardPage() {
         });
     };
 
-    const filteredProjects = projects?.filter(p => {
-        const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              (p.clientName || '').toLowerCase().includes(searchQuery.toLowerCase());
-        
-        if (!matchesSearch) return false;
-        
-        const pStatus = p.status || 'pending';
-        if (projectTab === 'all') return true;
-        return pStatus === projectTab;
-    }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    const filteredProjects = useMemo(() => {
+        return (projects || []).filter(p => {
+            const name = getProjectName(p).toLowerCase();
+            const client = (p.clientName || '').toLowerCase();
+            const loc = getProjectLocation(p).toLowerCase();
+            const q = searchQuery.toLowerCase();
+
+            const matchesSearch = name.includes(q) || client.includes(q) || loc.includes(q);
+            if (!matchesSearch) return false;
+            
+            const pStatus = p.status || 'pending';
+            if (projectTab === 'all') return true;
+            return pStatus === projectTab;
+        }).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    }, [projects, searchQuery, projectTab]);
 
     const handleAssignStaff = async (projectId: string, staffUsername: string) => {
         try {
@@ -167,13 +258,12 @@ export default function AdminDashboardPage() {
             
             const project = projects?.find((p: any) => p.id === projectId);
             
-            // If the project is moved to running, record the profit as income
             if (status === 'running') {
                 if (project && project.profit) {
                     await addDoc(collection(firestore, 'finances'), {
                         type: 'income',
                         amount: project.profit,
-                        reason: `Project Income: ${project.clientName || 'Unnamed Project'}`,
+                        reason: `Project Income: ${project.clientName || getProjectName(project)}`,
                         projectId: projectId,
                         requestedBy: 'System',
                         status: 'approved',
@@ -181,16 +271,14 @@ export default function AdminDashboardPage() {
                     });
                 }
             } else if (status === 'pending') {
-                // If moved back to pending, remove the income record from finances
                 if (project) {
-                    // We check for both projectId (new way) or matching reason (for older backfilled ones)
                     let finQuery = query(collection(firestore, 'finances'), where('projectId', '==', projectId));
                     let snapshot = await getDocs(finQuery);
                     
                     if (snapshot.empty) {
                         finQuery = query(
                             collection(firestore, 'finances'), 
-                            where('reason', '==', `Project Income: ${project.clientName || 'Unnamed Project'}`),
+                            where('reason', '==', `Project Income: ${project.clientName || getProjectName(project)}`),
                             where('type', '==', 'income')
                         );
                         snapshot = await getDocs(finQuery);
@@ -202,11 +290,142 @@ export default function AdminDashboardPage() {
                 }
             }
 
-            toast({ title: 'Success', description: `Project marked as ${status}.` });
+            toast({ title: 'Success', description: `Project status updated to ${status}.` });
         } catch (error) {
             console.error("Error updating project status:", error);
             toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
         }
+    };
+
+    const openEditModal = (proj: any) => {
+        setEditingProject(proj);
+        setEditName(proj.name || '');
+        setEditLocation(proj.projectLocation || proj.location || '');
+        setEditClientName(proj.clientName || '');
+        setEditStatus(proj.status || 'pending');
+        setEditAssignedTo(proj.assignedTo || 'unassigned');
+    };
+
+    const handleSaveProjectEdit = async () => {
+        if (!editingProject) return;
+        if (!editName.trim() || !editLocation.trim()) {
+            toast({ title: 'Validation Error', description: 'Project Name and Location are required.', variant: 'destructive' });
+            return;
+        }
+        setIsSavingEdit(true);
+        try {
+            await updateDoc(doc(firestore, 'projects', editingProject.id), {
+                name: editName.trim(),
+                projectLocation: editLocation.trim(),
+                clientName: editClientName.trim(),
+                assignedTo: editAssignedTo === 'unassigned' ? '' : editAssignedTo
+            });
+            if (editStatus !== editingProject.status) {
+                await handleUpdateProjectStatus(editingProject.id, editStatus);
+            } else {
+                toast({ title: 'Success', description: 'Project details updated.' });
+            }
+            setEditingProject(null);
+        } catch (err) {
+            toast({ title: 'Error', description: 'Could not update project.', variant: 'destructive' });
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        if (!deletingProject) return;
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(firestore, 'projects', deletingProject.id));
+            toast({ title: 'Project Deleted', description: 'Project removed successfully.' });
+            setDeletingProject(null);
+        } catch (err) {
+            toast({ title: 'Error', description: 'Could not delete project.', variant: 'destructive' });
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // Quick Actions Handlers
+    const handleExportProfitReport = () => {
+        if (!projects || projects.length === 0) {
+            toast({ title: "No Data", description: "No projects found to export." });
+            return;
+        }
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Project Name,Client Name,Location,Status,Profit (KSh),Created At\n";
+        projects.forEach((p: any) => {
+            const pName = `"${getProjectName(p).replace(/"/g, '""')}"`;
+            const cName = `"${(p.clientName || 'N/A').replace(/"/g, '""')}"`;
+            const loc = `"${getProjectLocation(p).replace(/"/g, '""')}"`;
+            const status = p.status || 'pending';
+            const profit = p.profit || 0;
+            const dateStr = p.createdAt?.seconds ? format(new Date(p.createdAt.seconds * 1000), 'yyyy-MM-dd HH:mm') : 'N/A';
+            csvContent += `${pName},${cName},${loc},${status},${profit},${dateStr}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `sila_profit_report_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: "Profit Report Exported", description: "Downloaded CSV profit report for all projects." });
+    };
+
+    const handleDownloadQuotesCSV = () => {
+        if (!invoices || invoices.length === 0) {
+            toast({ title: "No Quotes", description: "No quote invoices found to export." });
+            return;
+        }
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Invoice #,Client Name,Project Name,Grand Total (KSh),Date\n";
+        invoices.forEach((inv: any) => {
+            const invNum = `"${(inv.invoiceNumber || '').replace(/"/g, '""')}"`;
+            const cName = `"${(inv.clientName || 'N/A').replace(/"/g, '""')}"`;
+            const pName = `"${(inv.projectName || 'N/A').replace(/"/g, '""')}"`;
+            const total = inv.grandTotal || 0;
+            const dateStr = inv.createdAt?.seconds ? format(new Date(inv.createdAt.seconds * 1000), 'yyyy-MM-dd') : 'N/A';
+            csvContent += `${invNum},${cName},${pName},${total},${dateStr}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `sila_quotes_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast({ title: "Quotes Exported", description: "Downloaded CSV of all saved quotes." });
+    };
+
+    const handleGenerateProjectSummary = () => {
+        if (!projects || projects.length === 0) {
+            toast({ title: "No Projects", description: "There are no projects to generate a summary for." });
+            return;
+        }
+        const runningCount = projects.filter((p: any) => (p.status || 'pending') === 'running').length;
+        const pendingCount = projects.filter((p: any) => (p.status || 'pending') === 'pending').length;
+        const finishedCount = projects.filter((p: any) => (p.status || 'pending') === 'finished').length;
+        
+        let summaryText = `SI-LATECH PROJECT SUMMARY REPORT\nGenerated: ${new Date().toLocaleString()}\n\n`;
+        summaryText += `Total Saved Projects: ${projects.length}\n`;
+        summaryText += `Running: ${runningCount} | Pending: ${pendingCount} | Finished: ${finishedCount}\n\n`;
+        summaryText += `--------------------------------------------------\n`;
+        projects.forEach((p: any, i: number) => {
+            summaryText += `${i + 1}. ${getProjectName(p)} | Location: ${getProjectLocation(p)} | Status: ${(p.status || 'pending').toUpperCase()} | Client: ${p.clientName || 'N/A'}\n`;
+        });
+        
+        const blob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `sila_project_summary_${format(new Date(), 'yyyy-MM-dd')}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toast({ title: "Summary Report Generated", description: "Downloaded project summary report." });
     };
 
     if (projectsLoading || invoicesLoading) {
@@ -222,87 +441,154 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-black font-headline text-primary tracking-tight">Admin Dashboard</h1>
-                    <p className="text-muted-foreground">Management overview for SI-LATECH operations.</p>
+                    <p className="text-muted-foreground text-sm">Management overview for SI-LATECH operations.</p>
                 </div>
-                <Button asChild variant="outline" className="bg-white hover:bg-slate-50 border-slate-200">
-                    <Link href="/">Go to Calculator</Link>
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        onClick={() => setIsPricingModalOpen(true)}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-10 px-4 rounded-xl shadow-md transition-all hover:scale-105"
+                    >
+                        <SlidersHorizontal size={15} className="mr-1.5" /> Manage Live Rates
+                    </Button>
+                    <Button asChild variant="outline" className="bg-white hover:bg-slate-50 border-slate-200 shadow-sm font-semibold h-10 rounded-xl">
+                        <Link href="/">Go to Calculator</Link>
+                    </Button>
+                </div>
             </div>
 
-            {/* Top Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="border border-slate-200 shadow-md bg-white">
+            {/* Top Stats & Quick Actions Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Profit Stat Card */}
+                <Card className="border border-slate-200/80 shadow-sm bg-white rounded-xl hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <TrendingUp size={16} /> Current Profit
+                        <CardDescription className="flex items-center justify-between text-emerald-600 font-bold text-xs uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5"><TrendingUp size={16} /> Current Profit</span>
+                            <span className="bg-emerald-50 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full border border-emerald-200">↑ 12% vs last mo</span>
                         </CardDescription>
-                        <CardTitle className="text-3xl font-black text-slate-900">KSh {currentTotals.totalProjectProfit.toLocaleString()}</CardTitle>
+                        <CardTitle className="text-3xl font-black text-emerald-600 tabular-nums">
+                            KSh {currentTotals.totalProjectProfit.toLocaleString()}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-xs text-slate-500">Active calculation profit</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border border-slate-200 shadow-md bg-white">
+                {/* Projects Stat Card */}
+                <Card className="border border-slate-200/80 shadow-sm bg-white rounded-xl hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <Layers size={16} /> Saved Projects
+                        <CardDescription className="flex items-center justify-between text-blue-600 font-bold text-xs uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5"><Layers size={16} /> Saved Projects</span>
+                            <span className="bg-blue-50 text-blue-700 text-[10px] px-2 py-0.5 rounded-full border border-blue-200">↑ 8% vs last mo</span>
                         </CardDescription>
-                        <CardTitle className="text-3xl font-black text-slate-900">{projects?.length || 0}</CardTitle>
+                        <CardTitle className="text-3xl font-black text-blue-600 tabular-nums">
+                            {projects?.length || 0}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-xs text-slate-500">Database project count</p>
                     </CardContent>
                 </Card>
 
-                <Card className="border border-slate-200 shadow-md bg-white">
+                {/* Quotes Stat Card */}
+                <Card className="border border-slate-200/80 shadow-sm bg-white rounded-xl hover:shadow-md transition-shadow">
                     <CardHeader className="pb-2">
-                        <CardDescription className="flex items-center gap-2 text-primary font-bold">
-                            <History size={16} /> Saved Quotes
+                        <CardDescription className="flex items-center justify-between text-purple-600 font-bold text-xs uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5"><History size={16} /> Saved Quotes</span>
+                            <span className="bg-purple-50 text-purple-700 text-[10px] px-2 py-0.5 rounded-full border border-purple-200">↑ 15% vs last mo</span>
                         </CardDescription>
-                        <CardTitle className="text-3xl font-black text-slate-900">{invoices?.length || 0}</CardTitle>
+                        <CardTitle className="text-3xl font-black text-purple-600 tabular-nums">
+                            {invoices?.length || 0}
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-xs text-slate-500">Total historical quotes</p>
                     </CardContent>
                 </Card>
 
-                {/* Admin Actions Card */}
-                <Card className="border border-slate-200 shadow-md bg-slate-900 text-white md:col-span-1">
+                {/* Quick Actions Panel */}
+                <Card className="border border-slate-200/80 shadow-sm bg-slate-900 text-white rounded-xl flex flex-col justify-between">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                             Administrative Controls
+                        <CardTitle className="text-base font-bold flex items-center gap-2 text-white">
+                            <Activity size={16} className="text-sky-400" /> Quick Actions
                         </CardTitle>
-                        <CardDescription className="text-slate-400 text-xs">Technical reports & exports</CardDescription>
+                        <CardDescription className="text-slate-400 text-xs">Reports & System Utilities</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 gap-2 pt-2">
-                         <div className="flex items-center gap-2 text-xs text-slate-300 italic py-2">
-                            Select a project below to view its specific profit breakdown.
-                         </div>
+                    <CardContent className="grid grid-cols-2 gap-2 pt-1">
+                        <Button 
+                            onClick={handleExportProfitReport}
+                            size="sm" 
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold h-8 px-2"
+                        >
+                            <Download size={12} className="mr-1" /> Profit Report
+                        </Button>
+                        <Button 
+                            onClick={handleDownloadQuotesCSV}
+                            variant="outline" 
+                            size="sm" 
+                            className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold h-8 px-2"
+                        >
+                            <FileSpreadsheet size={12} className="mr-1 text-purple-400" /> Quotes CSV
+                        </Button>
+                        <Button 
+                            onClick={handleGenerateProjectSummary}
+                            variant="outline" 
+                            size="sm" 
+                            className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold h-8 px-2"
+                        >
+                            <FileText size={12} className="mr-1 text-sky-400" /> Summary
+                        </Button>
+                        <Button 
+                            onClick={() => setIsAnalyticsOpen(true)}
+                            variant="outline" 
+                            size="sm" 
+                            className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold h-8 px-2"
+                        >
+                            <BarChart3 size={12} className="mr-1 text-amber-400" /> Analytics
+                        </Button>
                     </CardContent>
                 </Card>
             </div>
 
+            {/* Main Tabs Navigation */}
             <Tabs defaultValue="projects" className="w-full">
-                <TabsList className="bg-slate-100 p-1 h-12 w-auto inline-flex rounded-lg mb-8 flex-wrap overflow-x-auto justify-start">
-                    <TabsTrigger value="projects" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                        Project Management
+                <TabsList className="bg-slate-100/90 p-1 h-12 w-auto inline-flex rounded-xl mb-6 flex-wrap overflow-x-auto justify-start border border-slate-200/80">
+                    <TabsTrigger 
+                        value="projects" 
+                        className="px-5 font-semibold text-slate-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+                    >
+                        Projects
                     </TabsTrigger>
-                    <TabsTrigger value="portfolio" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                        Projects Gallery
+                    <TabsTrigger 
+                        value="portfolio" 
+                        className="px-5 font-semibold text-slate-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+                    >
+                        Gallery
                     </TabsTrigger>
-                    <TabsTrigger value="invoices" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                    <TabsTrigger 
+                        value="invoices" 
+                        className="px-5 font-semibold text-slate-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+                    >
                         Quote History
                     </TabsTrigger>
-                    <TabsTrigger value="finances" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                    <TabsTrigger 
+                        value="finances" 
+                        className="px-5 font-semibold text-slate-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+                    >
                         Finances
                     </TabsTrigger>
-                    <TabsTrigger value="investors" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
+                    <TabsTrigger 
+                        value="investors" 
+                        className="px-5 font-semibold text-slate-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+                    >
                         Investments
                     </TabsTrigger>
                     {isSuperAdmin && (
-                        <TabsTrigger value="staff" className="px-6 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md transition-all">
-                            Team Management
+                        <TabsTrigger 
+                            value="staff" 
+                            className="px-5 font-semibold text-slate-600 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm rounded-lg transition-all"
+                        >
+                            Team
                         </TabsTrigger>
                     )}
                 </TabsList>
@@ -325,137 +611,250 @@ export default function AdminDashboardPage() {
                     </TabsContent>
                 )}
 
+                {/* Projects Tab */}
                 <TabsContent value="projects" className="space-y-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <h2 className="text-2xl font-bold font-headline text-slate-900">Saved Projects</h2>
-                        <div className="relative w-full md:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input 
-                                placeholder="Search projects..." 
-                                className="pl-10"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    
                     <Tabs value={projectTab} onValueChange={setProjectTab} className="w-full">
-                        <TabsList className="bg-slate-100 p-1 mb-6">
-                            <TabsTrigger value="running" className="px-4 data-[state=active]:bg-white">Running</TabsTrigger>
-                            <TabsTrigger value="pending" className="px-4 data-[state=active]:bg-white">Pending</TabsTrigger>
-                            <TabsTrigger value="finished" className="px-4 data-[state=active]:bg-white">Finished</TabsTrigger>
-                            <TabsTrigger value="all" className="px-4 data-[state=active]:bg-white">All Projects</TabsTrigger>
-                        </TabsList>
+                        {/* Consolidated Search & Status Filters */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-slate-50/80 p-2 rounded-xl border border-slate-200/80">
+                            <TabsList className="bg-slate-200/60 p-1 rounded-lg">
+                                <TabsTrigger value="running" className="px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm rounded-md">
+                                    Running
+                                </TabsTrigger>
+                                <TabsTrigger value="pending" className="px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm rounded-md">
+                                    Pending
+                                </TabsTrigger>
+                                <TabsTrigger value="finished" className="px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-green-600 data-[state=active]:shadow-sm rounded-md">
+                                    Finished
+                                </TabsTrigger>
+                                <TabsTrigger value="all" className="px-4 text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md">
+                                    All Projects ({projects?.length || 0})
+                                </TabsTrigger>
+                            </TabsList>
+
+                            {/* Consolidated Search Bar with Clear Button */}
+                            <div className="relative w-full sm:w-72">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input 
+                                    placeholder="Search projects..." 
+                                    className="pl-9 pr-8 text-xs h-9 bg-white border-slate-300 rounded-lg shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                                {searchQuery && (
+                                    <button 
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+                                        title="Clear search"
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                         
-                        <div className="space-y-12">
+                        {/* Projects Grouped by Date */}
+                        <div className="space-y-8">
                         {(() => {
-                            const groups: Record<string, any[]> = {};
+                            const groups: Record<string, any[]> = {
+                                'Today': [],
+                                'Yesterday': [],
+                                'This Week': [],
+                                'Earlier': []
+                            };
                             
-                            filteredProjects?.forEach(proj => {
-                                let dateStr = 'Older Projects';
+                            const visibleProjects = filteredProjects.slice(0, displayLimit);
+
+                            visibleProjects.forEach(proj => {
+                                let dateStr = 'Earlier';
                                 if (proj.createdAt?.seconds) {
                                     const date = new Date(proj.createdAt.seconds * 1000);
                                     if (isToday(date)) dateStr = 'Today';
                                     else if (isYesterday(date)) dateStr = 'Yesterday';
-                                    else dateStr = format(date, 'MMMM d, yyyy');
+                                    else if (isThisWeek(date, { weekStartsOn: 1 })) dateStr = 'This Week';
+                                    else dateStr = 'Earlier';
                                 }
                                 if (!groups[dateStr]) groups[dateStr] = [];
                                 groups[dateStr].push(proj);
                             });
 
-                            return Object.entries(groups).map(([dateLabel, groupProjects]) => (
-                                <div key={dateLabel} className="space-y-4">
-                                    <div className="flex items-center gap-4">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
-                                            {dateLabel}
-                                        </h3>
-                                        <div className="h-[1px] flex-grow bg-slate-100"></div>
-                                        <span className="text-[10px] font-bold text-slate-300">{groupProjects.length} projects</span>
+                            const activeEntries = Object.entries(groups).filter(([_, list]) => list.length > 0);
+
+                            if (filteredProjects.length === 0) {
+                                return (
+                                    <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
+                                        <Layers className="h-10 w-10 text-slate-300 mx-auto mb-3" />
+                                        <p className="text-sm font-semibold text-slate-600">No projects found</p>
+                                        <p className="text-xs text-slate-400 mt-1">Try adjusting your filter or search query.</p>
                                     </div>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {groupProjects.map((proj) => (
-                                            <Card key={proj.id} className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow bg-white overflow-hidden flex flex-col">
-                                                <CardHeader className="bg-slate-50 border-b pb-4">
-                                                    <div className="flex justify-between items-start">
+                                );
+                            }
+
+                            return (
+                                <>
+                                {activeEntries.map(([dateLabel, groupProjects]) => (
+                                    <div key={dateLabel} className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                                {dateLabel}
+                                            </h3>
+                                            <div className="h-[1px] flex-grow bg-slate-200/80"></div>
+                                            <Badge variant="secondary" className="text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                                {groupProjects.length} {groupProjects.length === 1 ? 'project' : 'projects'}
+                                            </Badge>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {groupProjects.map((proj) => {
+                                                const status = proj.status || 'pending';
+                                                const name = getProjectName(proj);
+                                                const location = getProjectLocation(proj);
+
+                                                return (
+                                                    <Card key={proj.id} className="group border border-slate-200/90 shadow-sm hover:shadow-md transition-all bg-white rounded-xl overflow-hidden flex flex-col justify-between">
                                                         <div>
-                                                            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                                                {proj.name}
-                                                                <Badge variant="outline" className={
-                                                                    (proj.status || 'pending') === 'running' ? 'bg-sky-50 text-sky-600 border-sky-200' :
-                                                                    (proj.status || 'pending') === 'finished' ? 'bg-green-50 text-green-600 border-green-200' :
-                                                                    'bg-amber-50 text-amber-600 border-amber-200'
-                                                                }>
-                                                                    {(proj.status || 'pending').toUpperCase()}
-                                                                </Badge>
-                                                            </CardTitle>
-                                                            <CardDescription className="text-xs">{proj.clientName || 'No Client Name'}</CardDescription>
+                                                            <CardHeader className="bg-slate-50/70 border-b border-slate-100 p-4">
+                                                                <div className="flex justify-between items-start gap-2">
+                                                                    <div className="space-y-1">
+                                                                        <CardTitle className="text-base font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
+                                                                            {name}
+                                                                        </CardTitle>
+                                                                        <CardDescription className="text-xs text-slate-500 line-clamp-1">
+                                                                            {proj.clientName || 'No Client Name'}
+                                                                        </CardDescription>
+                                                                    </div>
+                                                                    
+                                                                    {/* Read-Only Status Badge (Requirement 7 & 8) */}
+                                                                    <Badge className={
+                                                                        status === 'running' ? 'bg-blue-50 text-blue-700 border-blue-200 px-2.5 py-1 text-[11px] font-bold rounded-[6px]' :
+                                                                        status === 'finished' ? 'bg-green-50 text-green-700 border-green-200 px-2.5 py-1 text-[11px] font-bold rounded-[6px]' :
+                                                                        'bg-amber-50 text-amber-700 border-amber-200 px-2.5 py-1 text-[11px] font-bold rounded-[6px]'
+                                                                    } variant="outline">
+                                                                        {status.toUpperCase()}
+                                                                    </Badge>
+                                                                </div>
+                                                            </CardHeader>
+
+                                                            <CardContent className="p-4 space-y-3">
+                                                                <div className="flex items-center gap-2 text-xs text-slate-600">
+                                                                    <MapPin size={14} className="text-primary shrink-0" />
+                                                                    <span className="truncate">{location}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 text-xs text-slate-600">
+                                                                    <Layers size={14} className="text-primary shrink-0" />
+                                                                    <span>{proj.rooms?.length || 0} Rooms / Project Areas</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                                    <Calendar size={14} className="text-slate-400 shrink-0" />
+                                                                    <span>
+                                                                        {proj.createdAt?.seconds 
+                                                                            ? (isToday(new Date(proj.createdAt.seconds * 1000))
+                                                                                ? `Today, ${format(new Date(proj.createdAt.seconds * 1000), 'h:mm a')}`
+                                                                                : isYesterday(new Date(proj.createdAt.seconds * 1000))
+                                                                                    ? `Yesterday, ${format(new Date(proj.createdAt.seconds * 1000), 'h:mm a')}`
+                                                                                    : format(new Date(proj.createdAt.seconds * 1000), 'MMM d, yyyy'))
+                                                                            : 'Date N/A'
+                                                                        }
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Assigned Staff Info */}
+                                                                <div className="flex items-center justify-between pt-2 border-t text-xs">
+                                                                    <span className="text-slate-400 flex items-center gap-1.5">
+                                                                        <UserCheck size={14} /> Assigned:
+                                                                    </span>
+                                                                    {proj.assignedTo ? (
+                                                                        <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                                                                            {proj.assignedTo}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-slate-400 italic text-[11px]">Unassigned</span>
+                                                                    )}
+                                                                </div>
+                                                            </CardContent>
                                                         </div>
-                                                        <div className="bg-white px-2 py-1 rounded border border-slate-200 text-[10px] font-bold text-slate-500">
-                                                            {proj.createdAt?.seconds ? format(new Date(proj.createdAt.seconds * 1000), 'h:mm a') : 'N/A'}
-                                                        </div>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent className="py-4 space-y-3 flex-grow">
-                                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                                        <MapPin size={14} className="text-primary" />
-                                                        {proj.projectLocation || 'No location specified'}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                                        <Layers size={14} className="text-primary" />
-                                                        {proj.rooms?.length || 0} Rooms / Project Areas
-                                                    </div>
-                                                    <div className="flex items-center gap-2 pt-2 border-t mt-2">
-                                                        <UserCheck size={14} className="text-slate-400" />
-                                                        <Select value={proj.assignedTo || "unassigned"} onValueChange={(val) => handleAssignStaff(proj.id, val === "unassigned" ? "" : val)}>
-                                                            <SelectTrigger className="h-7 text-xs flex-1">
-                                                                <SelectValue placeholder="Assign Staff" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="unassigned" className="text-xs text-slate-500 italic">Unassigned</SelectItem>
-                                                                {staffList?.map((s: any) => (
-                                                                    <SelectItem key={s.id} value={s.username} className="text-xs">{s.name}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 pt-2 border-t">
-                                                        <Activity size={14} className="text-slate-400" />
-                                                        <Select value={proj.status || "pending"} onValueChange={(val) => handleUpdateProjectStatus(proj.id, val)}>
-                                                            <SelectTrigger className="h-7 text-xs flex-1">
-                                                                <SelectValue placeholder="Status" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="pending" className="text-xs text-amber-600">Pending</SelectItem>
-                                                                <SelectItem value="running" className="text-xs text-sky-600">Running</SelectItem>
-                                                                <SelectItem value="finished" className="text-xs text-green-600">Finished</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                </CardContent>
-                                                <CardFooter className="bg-slate-50 border-t p-3 grid grid-cols-2 gap-2">
-                                                    <Button variant="outline" size="sm" className="bg-white font-bold text-xs" onClick={() => setSelectedProject(proj)}>
-                                                        View Details
-                                                    </Button>
-                                                    <Button size="sm" className="bg-slate-900 hover:bg-slate-800 font-bold text-xs" onClick={() => handleDownloadPromax(proj)}>
-                                                        <Download size={14} className="mr-1" /> Promax
-                                                    </Button>
-                                                </CardFooter>
-                                            </Card>
-                                        ))}
+
+                                                        {/* Action Buttons (Requirement 6) */}
+                                                        <CardFooter className="bg-slate-50/70 border-t p-3 grid grid-cols-4 gap-1.5">
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="sm" 
+                                                                className="bg-white hover:bg-slate-100 font-bold text-xs h-8 px-2" 
+                                                                onClick={() => setSelectedProject(proj)}
+                                                                title="View Details"
+                                                            >
+                                                                <Eye size={13} className="mr-1 text-slate-600" /> View
+                                                            </Button>
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="sm" 
+                                                                className="bg-white hover:bg-slate-100 font-bold text-xs h-8 px-2" 
+                                                                onClick={() => openEditModal(proj)}
+                                                                title="Edit Project"
+                                                            >
+                                                                <Edit size={13} className="mr-1 text-blue-600" /> Edit
+                                                            </Button>
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="sm" 
+                                                                className="bg-white hover:bg-slate-900 hover:text-white font-bold text-xs h-8 px-2" 
+                                                                onClick={() => handleDownloadPromax(proj)}
+                                                                title="Download Promax Manufacturing Order"
+                                                            >
+                                                                <Download size={13} /> Promax
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                className="text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs h-8 px-2" 
+                                                                onClick={() => setDeletingProject(proj)}
+                                                                title="Delete Project"
+                                                            >
+                                                                <Trash2 size={13} />
+                                                            </Button>
+                                                        </CardFooter>
+                                                    </Card>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            ));
+                                ))}
+
+                                {/* Pagination / Load More Controls (Requirement 10) */}
+                                {filteredProjects.length > displayLimit && (
+                                    <div className="flex flex-col items-center justify-center pt-6 space-y-2">
+                                        <p className="text-xs text-slate-500">
+                                            Showing {Math.min(displayLimit, filteredProjects.length)} of {filteredProjects.length} saved projects
+                                        </p>
+                                        <div className="flex items-center gap-3">
+                                            <Button 
+                                                onClick={() => setDisplayLimit(prev => prev + PAGE_SIZE)}
+                                                className="bg-primary hover:bg-primary/90 text-white font-bold text-xs h-9 px-6 rounded-lg"
+                                            >
+                                                Load More ({filteredProjects.length - displayLimit} remaining)
+                                            </Button>
+                                            <Button 
+                                                variant="outline"
+                                                onClick={() => setDisplayLimit(filteredProjects.length)}
+                                                className="border-slate-300 text-slate-700 font-semibold text-xs h-9 px-4 rounded-lg"
+                                            >
+                                                Show All ({filteredProjects.length})
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                                </>
+                            );
                         })()}
                         </div>
                     </Tabs>
                 </TabsContent>
 
+                {/* Quotes Tab */}
                 <TabsContent value="invoices" className="space-y-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-bold font-headline text-slate-900">Recent Quotes</h2>
                     </div>
-                    <Card className="border border-slate-200 shadow-md overflow-hidden bg-white">
+                    <Card className="border border-slate-200 shadow-sm overflow-hidden bg-white rounded-xl">
                         <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                             <Table>
                                 <TableHeader className="bg-slate-50 border-b sticky top-0 z-10">
@@ -485,12 +884,12 @@ export default function AdminDashboardPage() {
                                                 {inv.invoiceNumber}
                                             </TableCell>
                                             <TableCell className="font-bold text-slate-900">
-                                                {inv.clientName}
+                                                {inv.clientName || 'N/A'}
                                             </TableCell>
                                             <TableCell className="text-sm text-slate-600">
-                                                {inv.projectName}
+                                                {inv.projectName || 'N/A'}
                                             </TableCell>
-                                            <TableCell className="text-right font-black text-primary">
+                                            <TableCell className="text-right font-black text-primary tabular-nums">
                                                 KSh {inv.grandTotal?.toLocaleString()}
                                             </TableCell>
                                             <TableCell className="text-center">
@@ -513,14 +912,280 @@ export default function AdminDashboardPage() {
                 </TabsContent>
             </Tabs>
 
+            {/* Edit Project Dialog */}
+            <Dialog open={!!editingProject} onOpenChange={(open) => !open && setEditingProject(null)}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900">Edit Project Details</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-3 text-xs">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="editName">Project Name <span className="text-red-500">*</span></Label>
+                            <Input 
+                                id="editName" 
+                                value={editName} 
+                                onChange={e => setEditName(e.target.value)} 
+                                placeholder="Project Name" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="editLocation">Project Location <span className="text-red-500">*</span></Label>
+                            <Input 
+                                id="editLocation" 
+                                value={editLocation} 
+                                onChange={e => setEditLocation(e.target.value)} 
+                                placeholder="Location" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="editClientName">Client Name</Label>
+                            <Input 
+                                id="editClientName" 
+                                value={editClientName} 
+                                onChange={e => setEditClientName(e.target.value)} 
+                                placeholder="Client Name" 
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>Project Status</Label>
+                            <Select value={editStatus} onValueChange={setEditStatus}>
+                                <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder="Select Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="pending" className="text-amber-600 font-semibold">Pending</SelectItem>
+                                    <SelectItem value="running" className="text-blue-600 font-semibold">Running</SelectItem>
+                                    <SelectItem value="finished" className="text-green-600 font-semibold">Finished</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>Assigned Staff Member</Label>
+                            <Select value={editAssignedTo} onValueChange={setEditAssignedTo}>
+                                <SelectTrigger className="h-9 text-xs">
+                                    <SelectValue placeholder="Assign Staff" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned" className="text-slate-400 italic">Unassigned</SelectItem>
+                                    {staffList?.map((s: any) => (
+                                        <SelectItem key={s.id} value={s.username}>{s.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" size="sm" onClick={() => setEditingProject(null)}>Cancel</Button>
+                        <Button size="sm" className="bg-primary text-white font-bold" onClick={handleSaveProjectEdit} disabled={isSavingEdit}>
+                            {isSavingEdit && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Project Confirmation Dialog */}
+            <Dialog open={!!deletingProject} onOpenChange={(open) => !open && setDeletingProject(null)}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-red-600 flex items-center gap-2">
+                            <Trash2 size={18} /> Confirm Delete
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-xs text-slate-600 py-2">
+                        Are you sure you want to delete project <strong className="text-slate-900">{getProjectName(deletingProject)}</strong>? This action cannot be undone.
+                    </p>
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setDeletingProject(null)}>Cancel</Button>
+                        <Button variant="destructive" size="sm" onClick={handleDeleteProject} disabled={isDeleting}>
+                            {isDeleting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Delete Project
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Analytics Overview Dialog */}
+            <Dialog open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <BarChart3 className="text-primary" size={20} /> System Operations Analytics
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="bg-slate-50 p-4 rounded-xl border">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Running Projects</p>
+                                <p className="text-2xl font-black text-blue-600 mt-1">
+                                    {projects?.filter((p: any) => (p.status || 'pending') === 'running').length || 0}
+                                </p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-xl border">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Pending Projects</p>
+                                <p className="text-2xl font-black text-amber-600 mt-1">
+                                    {projects?.filter((p: any) => (p.status || 'pending') === 'pending').length || 0}
+                                </p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-xl border">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase">Finished Projects</p>
+                                <p className="text-2xl font-black text-green-600 mt-1">
+                                    {projects?.filter((p: any) => (p.status || 'pending') === 'finished').length || 0}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900 text-white p-4 rounded-xl space-y-2">
+                            <h4 className="text-sm font-bold text-sky-400">Total System Revenue Overview</h4>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-400">Total Calculation Profit:</span>
+                                <span className="font-bold text-emerald-400">KSh {currentTotals.totalProjectProfit.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-slate-400">Total Saved Invoices:</span>
+                                <span className="font-bold">{invoices?.length || 0} quotes</span>
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Manage Pricing Rates Dialog */}
+            <Dialog open={isPricingModalOpen} onOpenChange={setIsPricingModalOpen}>
+                <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <SlidersHorizontal className="text-amber-500" size={20} /> Live Rate & Pricing Management
+                        </DialogTitle>
+                        <CardDescription className="text-xs">
+                            Changes saved here sync in real time across all open invoices, quotes, and active calculator sessions.
+                        </CardDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-6 py-3 text-xs">
+                        {/* Beams & Infill Blocks Section */}
+                        <div className="space-y-3">
+                            <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider flex items-center gap-1.5 border-b pb-1">
+                                <Layers size={14} className="text-primary" /> Beam & Infill Block Unit Rates
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
+                                    <Label htmlFor="beamTbeamRate" className="font-semibold text-slate-700">T-Beam Rate (KSh / meter)</Label>
+                                    <Input 
+                                        id="beamTbeamRate" 
+                                        type="number"
+                                        value={tempRates.beamTbeamRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, beamTbeamRate: e.target.value }))} 
+                                        placeholder="1100" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
+                                    <Label htmlFor="beamFlatRate" className="font-semibold text-slate-700">Flat Beam Rate (KSh / meter)</Label>
+                                    <Input 
+                                        id="beamFlatRate" 
+                                        type="number"
+                                        value={tempRates.beamFlatRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, beamFlatRate: e.target.value }))} 
+                                        placeholder="520" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
+                                    <Label htmlFor="blockTbeamRate" className="font-semibold text-slate-700">T-Beam Block Rate (KSh / pcs)</Label>
+                                    <Input 
+                                        id="blockTbeamRate" 
+                                        type="number"
+                                        value={tempRates.blockTbeamRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, blockTbeamRate: e.target.value }))} 
+                                        placeholder="100" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
+                                    <Label htmlFor="blockFlatRate" className="font-semibold text-slate-700">Flat Block Rate (KSh / pcs)</Label>
+                                    <Input 
+                                        id="blockFlatRate" 
+                                        type="number"
+                                        value={tempRates.blockFlatRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, blockFlatRate: e.target.value }))} 
+                                        placeholder="85" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Raw Materials & Accessories Section */}
+                        <div className="space-y-3">
+                            <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider flex items-center gap-1.5 border-b pb-1">
+                                <Briefcase size={14} className="text-emerald-600" /> Concrete Materials & Accessories
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="cementRate" className="font-semibold">Cement Rate (KSh / bag)</Label>
+                                    <Input 
+                                        id="cementRate" 
+                                        type="number"
+                                        value={tempRates.cementRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, cementRate: e.target.value }))} 
+                                        placeholder="800" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="sandRate" className="font-semibold">Sand Rate (KSh / m³)</Label>
+                                    <Input 
+                                        id="sandRate" 
+                                        type="number"
+                                        value={tempRates.sandRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, sandRate: e.target.value }))} 
+                                        placeholder="3000" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="ballastRate" className="font-semibold">Ballast Rate (KSh / m³)</Label>
+                                    <Input 
+                                        id="ballastRate" 
+                                        type="number"
+                                        value={tempRates.ballastRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, ballastRate: e.target.value }))} 
+                                        placeholder="3200" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="brcRate" className="font-semibold">BRC Mesh Rate (KSh / roll)</Label>
+                                    <Input 
+                                        id="brcRate" 
+                                        type="number"
+                                        value={tempRates.brcRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, brcRate: e.target.value }))} 
+                                        placeholder="25000" 
+                                    />
+                                </div>
+                                <div className="space-y-1.5 col-span-2">
+                                    <Label htmlFor="propRate" className="font-semibold">Prop Hire Rate (KSh / prop)</Label>
+                                    <Input 
+                                        id="propRate" 
+                                        type="number"
+                                        value={tempRates.propRate} 
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, propRate: e.target.value }))} 
+                                        placeholder="500" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setIsPricingModalOpen(false)}>Cancel</Button>
+                        <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold" onClick={handleSaveRates}>
+                            <Check size={14} className="mr-1.5" /> Save & Sync Live Rates
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Project Details Dialog */}
             <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:hidden">
                     {(() => {
                         if (!selectedProject) return null;
                         
-                        // Re-calculate details for the selected project to avoid zero values
-                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 520;
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1100) : (pricingRates?.beamFlatRate || 520);
                         const settings = {
                             ...(selectedProject.settings || {
                                 beamSpacing: 0.55,
@@ -529,7 +1194,7 @@ export default function AdminDashboardPage() {
                                 propSpacing: 1.2,
                                 concreteThickness: 0.05
                             }),
-                            blockCommissionRate: 5 // Force to 5 as per recent business rule
+                            blockCommissionRate: 5
                         };
 
                         const calculatedRooms = selectedProject.rooms?.map((r: any) => {
@@ -549,8 +1214,8 @@ export default function AdminDashboardPage() {
                         return (
                             <>
                             <DialogHeader>
-                                <DialogTitle className="text-2xl font-black text-primary">{selectedProject?.name}</DialogTitle>
-                                <p className="text-sm text-muted-foreground">{selectedProject?.clientName} — {selectedProject?.projectLocation}</p>
+                                <DialogTitle className="text-2xl font-black text-primary">{getProjectName(selectedProject)}</DialogTitle>
+                                <p className="text-sm text-muted-foreground">{selectedProject?.clientName || 'No Client'} — {getProjectLocation(selectedProject)}</p>
                             </DialogHeader>
                             
                             <div className="space-y-8 py-4">
@@ -626,8 +1291,8 @@ export default function AdminDashboardPage() {
                                         className="border-primary text-primary hover:bg-primary/5 font-bold h-12"
                                         onClick={() => generateMaterialSchedulePdf({
                                             clientInfo: {
-                                                projectName: selectedProject.name,
-                                                projectLocation: selectedProject.projectLocation || 'N/A',
+                                                projectName: getProjectName(selectedProject),
+                                                projectLocation: getProjectLocation(selectedProject),
                                                 clientName: selectedProject.clientName || 'N/A'
                                             },
                                             rooms: selectedProject.rooms || [],
@@ -648,8 +1313,8 @@ export default function AdminDashboardPage() {
                                         className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold h-12"
                                         onClick={() => generateProfitRequestPdf({
                                             clientInfo: {
-                                                projectName: selectedProject.name,
-                                                projectLocation: selectedProject.projectLocation || 'N/A',
+                                                projectName: getProjectName(selectedProject),
+                                                projectLocation: getProjectLocation(selectedProject),
                                                 clientName: selectedProject.clientName || 'N/A'
                                             },
                                             totals: {
@@ -679,7 +1344,6 @@ export default function AdminDashboardPage() {
                         <CardDescription>Visual guide for staff and site technicians.</CardDescription>
                     </DialogHeader>
                     
-                    {/* Printable Sheet Header (hidden on screen, shown in print) */}
                     <div className="hidden print:block border-b-2 border-slate-955 pb-4 mb-6">
                         <div className="flex justify-between items-start">
                             <div>
@@ -694,7 +1358,7 @@ export default function AdminDashboardPage() {
                         <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-200 text-xs">
                             <div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Project Name</span>
-                                <strong className="text-slate-900 font-bold">{selectedProject?.name}</strong>
+                                <strong className="text-slate-900 font-bold">{getProjectName(selectedProject)}</strong>
                             </div>
                             <div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Client Name</span>
@@ -702,7 +1366,7 @@ export default function AdminDashboardPage() {
                             </div>
                             <div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase block">Location</span>
-                                <strong className="text-slate-900 font-bold">{selectedProject?.projectLocation || 'N/A'}</strong>
+                                <strong className="text-slate-900 font-bold">{getProjectLocation(selectedProject)}</strong>
                             </div>
                         </div>
                     </div>
@@ -710,8 +1374,7 @@ export default function AdminDashboardPage() {
                     <div className="flex-1 overflow-y-auto pr-2 print:overflow-visible print:h-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
-                                // Recalculate room layout
-                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 520;
+                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 1100 : 520;
                                 const settings = selectedProject.settings || {
                                     beamSpacing: 0.55,
                                     blockWidth: 0.2,

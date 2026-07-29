@@ -197,8 +197,8 @@ export function SilaAssistant() {
     setIsLoading(true);
 
     // Calculate details to pass as current state
-    const BEAM_PRICE = settings.beamType === 'tbeam' ? 950 : 520;
-    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 95 : 85;
+    const BEAM_PRICE = settings.beamType === 'tbeam' ? 1100 : 520;
+    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 100 : 85;
     
     const calculatorState = {
       beamType: settings.beamType || 'flat',
@@ -333,7 +333,7 @@ export function SilaAssistant() {
   if (!mounted) return null;
 
   return (
-    <div className="fixed bottom-[108px] md:bottom-6 left-6 z-[10001] flex flex-col items-start pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-[10001] flex flex-col items-end pointer-events-none">
       
       {/* Floating Chat Panel */}
       {isOpen && (
@@ -525,7 +525,7 @@ export function SilaAssistant() {
       {/* Floating Activation Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-sky-400 text-white shadow-xl shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border border-white/20 relative pointer-events-auto"
+        className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-sky-400 text-white shadow-xl shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border border-white/20 relative pointer-events-auto"
       >
         {isOpen ? (
           <X size={22} className="rotate-90 transition-transform duration-300" />

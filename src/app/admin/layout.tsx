@@ -51,9 +51,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Header />
             <div className="flex flex-col flex-1">
                 <header className="bg-white border-b px-8 h-14 flex items-center justify-between shadow-sm sticky top-20 z-40">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
                         <ShieldCheck className="text-[#095388] h-5 w-5" />
-                        <span className="font-black tracking-tight text-[#095388]">Administrative Gated Section</span>
+                        <span className="font-semibold text-slate-800 text-sm">Welcome back, Admin</span>
                     </div>
                     <Button onClick={handleLogout} variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                         <LogOut className="mr-2 h-4 w-4" />

@@ -104,7 +104,7 @@ const silaVoiceFlow = ai.defineFlow(
       
       PRICING (You MAY share these with customers):
       - Flat Beam system: The cost is KES 2,000 per square metre.
-      - T-Beam system: The cost is KES 4,000 per square metre.
+      - T-Beam system: The cost is KES 3,100 per square metre.
       - The calculator also estimates cement, sand, ballast, BRC mesh rolls, timber, and props.
       
       RULES FOR ADDING ROOMS:
