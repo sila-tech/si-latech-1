@@ -11,15 +11,46 @@ import {
 import { updateDocumentNonBlocking } from './non-blocking-updates';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
 
+export interface PlanRoomData {
+  name: string;
+  length: number;
+  width: number;
+  blockName?: string;
+  apartmentName?: string;
+  sequenceInApartment?: number;
+  boundingBox?: [number, number, number, number];
+}
+
+export interface PlanData {
+  imageUri?: string;
+  parsedRooms?: PlanRoomData[];
+}
+
 export interface ProjectData {
   id?: string;
   name: string;
+  clientName?: string;
+  clientContact?: string;
+  projectLocation?: string;
+  contactPerson?: string;
   rooms: Room[];
   settings: CalculationDefaults;
   lintelLength: number;
-  status: 'pending' | 'purchased';
-  createdAt: string;
-  updatedAt?: string;
+  buildingBlocks?: any[];
+  planData?: PlanData;
+  displayUnit?: 'm' | 'ft';
+  costEstimationEnabled?: boolean;
+  pricingRates?: Record<string, number>;
+  calculatedTotals?: Record<string, any>;
+  status?: 'pending' | 'running' | 'finished' | 'purchased';
+  assignedTo?: string;
+  discountType?: 'none' | 'percent' | 'amount';
+  discountValue?: number;
+  paymentMethods?: string[];
+  customPaymentNotes?: string;
+  clientChangeRequestNotes?: string;
+  createdAt?: any;
+  updatedAt?: any;
   purchasedAt?: string;
 }
 

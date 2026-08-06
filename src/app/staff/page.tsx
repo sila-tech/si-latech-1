@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { generateMaterialSchedulePdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
+import { StaffAiAssistant } from '@/components/staff/staff-ai-assistant';
 
 const STAFF_SESSION_KEY = 'sila-staff-auth';
 
@@ -161,6 +162,16 @@ export default function StaffDashboardPage() {
                             <Wallet className="text-amber-600" /> Site Facilitation
                         </h2>
                         
+                        <StaffAiAssistant 
+                            staffName={user?.name}
+                            assignedProjects={projects?.map(p => ({ name: p.name, projectLocation: p.projectLocation, roomsCount: p.rooms?.length }))}
+                            onApplyFacilitation={(amt, rsn) => {
+                                setFacAmount(amt.toString());
+                                setFacReason(rsn);
+                                toast({ title: 'AI Recommendation Applied', description: 'Form populated with suggested amount and reason.' });
+                            }}
+                        />
+
                         <Card className="border-slate-200 shadow-sm">
                             <CardHeader className="bg-slate-900 text-white rounded-t-xl pb-4">
                                 <CardTitle className="text-lg">Request Funds</CardTitle>

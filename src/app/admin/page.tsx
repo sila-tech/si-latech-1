@@ -52,6 +52,7 @@ import { InvestorManagement } from '@/components/admin/investor-management';
 import { PortfolioManagement } from '@/components/admin/portfolio-management';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { AdminProjectEditorModal } from '@/components/admin/admin-project-editor-modal';
 
 export default function AdminDashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -68,6 +69,10 @@ export default function AdminDashboardPage() {
     const [editStatus, setEditStatus] = useState('pending');
     const [editAssignedTo, setEditAssignedTo] = useState('unassigned');
     const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+    // Admin Full Project & Quote Editor Modal State
+    const [isAdminEditorOpen, setIsAdminEditorOpen] = useState(false);
+    const [adminEditorProject, setAdminEditorProject] = useState<any>(null);
 
     // Delete confirmation state
     const [deletingProject, setDeletingProject] = useState<any>(null);
@@ -188,7 +193,12 @@ export default function AdminDashboardPage() {
                 contactPerson: inv.contactPerson || 'N/A'
             },
             totals: inv.totals,
-            perRoomCalculations: inv.rooms || []
+            perRoomCalculations: inv.rooms || [],
+            discountType: inv.discountType || 'none',
+            discountValue: inv.discountValue || 0,
+            paymentMethods: inv.paymentMethods || [],
+            customPaymentNotes: inv.customPaymentNotes || '',
+            clientChangeRequestNotes: inv.clientChangeRequestNotes || ''
         });
     };
 
@@ -631,24 +641,32 @@ export default function AdminDashboardPage() {
                                 </TabsTrigger>
                             </TabsList>
 
-                            {/* Consolidated Search Bar with Clear Button */}
-                            <div className="relative w-full sm:w-72">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                <Input 
-                                    placeholder="Search projects..." 
-                                    className="pl-9 pr-8 text-xs h-9 bg-white border-slate-300 rounded-lg shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                {searchQuery && (
-                                    <button 
-                                        onClick={() => setSearchQuery('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
-                                        title="Clear search"
-                                    >
-                                        <X className="h-3.5 w-3.5" />
-                                    </button>
-                                )}
+                            {/* Consolidated Search Bar & New Project Button */}
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
+                                <div className="relative w-full sm:w-64">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Input 
+                                        placeholder="Search projects..." 
+                                        className="pl-9 pr-8 text-xs h-9 bg-white border-slate-300 rounded-lg shadow-sm focus-visible:ring-1 focus-visible:ring-primary"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                    {searchQuery && (
+                                        <button 
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+                                            title="Clear search"
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                                <Button 
+                                    onClick={() => { setAdminEditorProject(null); setIsAdminEditorOpen(true); }}
+                                    className="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs h-9 px-3 rounded-lg flex items-center gap-1.5 shadow-sm shrink-0"
+                                >
+                                    <Plus size={14} /> New Quote & AI Plan Reader
+                                </Button>
                             </div>
                         </div>
                         
@@ -743,6 +761,12 @@ export default function AdminDashboardPage() {
                                                                     <Layers size={14} className="text-primary shrink-0" />
                                                                     <span>{proj.rooms?.length || 0} Rooms / Project Areas</span>
                                                                 </div>
+                                                                {proj.planData?.imageUri && (
+                                                                    <div className="flex items-center gap-1.5 text-xs text-sky-600 font-bold bg-sky-50 px-2.5 py-1 rounded-lg border border-sky-200/80 w-fit">
+                                                                        <ImageIcon size={14} className="text-sky-500 shrink-0" />
+                                                                        <span>CAD Blueprint Attached</span>
+                                                                    </div>
+                                                                )}
                                                                 <div className="flex items-center gap-2 text-xs text-slate-500">
                                                                     <Calendar size={14} className="text-slate-400 shrink-0" />
                                                                     <span>
@@ -773,43 +797,55 @@ export default function AdminDashboardPage() {
                                                             </CardContent>
                                                         </div>
 
-                                                        {/* Action Buttons (Requirement 6) */}
-                                                        <CardFooter className="bg-slate-50/70 border-t p-3 grid grid-cols-4 gap-1.5">
+                                                        {/* Action Buttons */}
+                                                        <CardFooter className="bg-slate-50/70 border-t p-3 grid grid-cols-5 gap-1">
                                                             <Button 
                                                                 variant="outline" 
                                                                 size="sm" 
-                                                                className="bg-white hover:bg-slate-100 font-bold text-xs h-8 px-2" 
+                                                                className="bg-white hover:bg-slate-100 font-bold text-[11px] h-8 px-1" 
                                                                 onClick={() => setSelectedProject(proj)}
-                                                                title="View Details"
+                                                                title="View Details & Plan"
                                                             >
-                                                                <Eye size={13} className="mr-1 text-slate-600" /> View
+                                                                <Eye size={12} className="mr-1 text-slate-600" /> View
                                                             </Button>
                                                             <Button 
                                                                 variant="outline" 
                                                                 size="sm" 
-                                                                className="bg-white hover:bg-slate-100 font-bold text-xs h-8 px-2" 
+                                                                className="bg-sky-50 hover:bg-sky-100 text-sky-700 border-sky-200 font-bold text-[11px] h-8 px-1" 
+                                                                onClick={() => {
+                                                                    setAdminEditorProject(proj);
+                                                                    setIsAdminEditorOpen(true);
+                                                                }}
+                                                                title="Edit Rooms, Bargain & AI Plan Reader"
+                                                            >
+                                                                <Edit size={12} className="mr-1 text-sky-600" /> Edit Quote
+                                                            </Button>
+                                                            <Button 
+                                                                variant="outline" 
+                                                                size="sm" 
+                                                                className="bg-white hover:bg-slate-100 font-bold text-[11px] h-8 px-1" 
                                                                 onClick={() => openEditModal(proj)}
-                                                                title="Edit Project"
+                                                                title="Edit Info"
                                                             >
-                                                                <Edit size={13} className="mr-1 text-blue-600" /> Edit
+                                                                Info
                                                             </Button>
                                                             <Button 
                                                                 variant="outline" 
                                                                 size="sm" 
-                                                                className="bg-white hover:bg-slate-900 hover:text-white font-bold text-xs h-8 px-2" 
+                                                                className="bg-white hover:bg-slate-900 hover:text-white font-bold text-[11px] h-8 px-1" 
                                                                 onClick={() => handleDownloadPromax(proj)}
                                                                 title="Download Promax Manufacturing Order"
                                                             >
-                                                                <Download size={13} /> Promax
+                                                                Promax
                                                             </Button>
                                                             <Button 
                                                                 variant="ghost" 
                                                                 size="sm" 
-                                                                className="text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-xs h-8 px-2" 
+                                                                className="text-red-600 hover:bg-red-50 hover:text-red-700 font-bold text-[11px] h-8 px-1" 
                                                                 onClick={() => setDeletingProject(proj)}
                                                                 title="Delete Project"
                                                             >
-                                                                <Trash2 size={13} />
+                                                                <Trash2 size={12} />
                                                             </Button>
                                                         </CardFooter>
                                                     </Card>
@@ -892,14 +928,27 @@ export default function AdminDashboardPage() {
                                             <TableCell className="text-right font-black text-primary tabular-nums">
                                                 KSh {inv.grandTotal?.toLocaleString()}
                                             </TableCell>
-                                            <TableCell className="text-center">
+                                            <TableCell className="text-center flex items-center justify-center gap-1">
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm" 
-                                                    className="text-slate-400 hover:text-primary"
+                                                    className="text-slate-400 hover:text-primary h-8 w-8 p-0"
                                                     onClick={() => handleDownloadSavedQuote(inv)}
+                                                    title="Download PDF"
                                                 >
                                                     <Download size={16} />
+                                                </Button>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    className="bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 font-bold text-[11px] h-8 px-2"
+                                                    onClick={() => {
+                                                        setAdminEditorProject(inv);
+                                                        setIsAdminEditorOpen(true);
+                                                    }}
+                                                    title="Edit Bargain & Payment Methods"
+                                                >
+                                                    Edit / Bargain
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
@@ -1261,6 +1310,54 @@ export default function AdminDashboardPage() {
                                     </Card>
                                 </div>
 
+                                {/* Saved Blueprint CAD Plan & Bounding Boxes */}
+                                 {selectedProject.planData?.imageUri && (
+                                     <div className="space-y-2 border border-slate-700 rounded-xl p-4 bg-slate-900 text-white shadow-lg">
+                                         <div className="flex items-center justify-between">
+                                             <h4 className="text-sm font-bold text-sky-400 flex items-center gap-2">
+                                                 <ImageIcon size={16} /> Saved Blueprint CAD Plan & AI Overlay
+                                             </h4>
+                                             <span className="text-[10px] bg-sky-500/20 text-sky-300 font-bold px-2 py-0.5 rounded-full border border-sky-500/30">
+                                                 {selectedProject.planData.parsedRooms?.length || selectedProject.rooms?.length || 0} Rooms Detected
+                                             </span>
+                                         </div>
+                                         <div className="relative w-full h-[340px] bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center border border-slate-800">
+                                             <img 
+                                                 src={selectedProject.planData.imageUri} 
+                                                 alt="Saved Blueprint Plan" 
+                                                 className="max-w-full max-h-full object-contain pointer-events-none select-none" 
+                                             />
+                                             {selectedProject.planData.parsedRooms && (
+                                                 <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                                                     {selectedProject.planData.parsedRooms.map((r: any, idx: number) => {
+                                                         if (!r.boundingBox) return null;
+                                                         const [ymin, xmin, ymax, xmax] = r.boundingBox;
+                                                         return (
+                                                             <g key={idx}>
+                                                                 <rect
+                                                                     x={xmin}
+                                                                     y={ymin}
+                                                                     width={xmax - xmin}
+                                                                     height={ymax - ymin}
+                                                                     fill="rgba(14, 165, 233, 0.18)"
+                                                                     stroke="#0ea5e9"
+                                                                     strokeWidth={2}
+                                                                     rx="6"
+                                                                 />
+                                                                 <foreignObject x={xmin + 4} y={ymin + 4} width={Math.max(90, xmax - xmin - 8)} height="24">
+                                                                     <div className="bg-sky-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded truncate w-fit shadow-sm">
+                                                                         {idx + 1}. {r.name}
+                                                                     </div>
+                                                                 </foreignObject>
+                                                             </g>
+                                                         );
+                                                     })}
+                                                 </svg>
+                                             )}
+                                         </div>
+                                     </div>
+                                 )}
+
                                 <div>
                                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                         <Layers size={18} className="text-primary" />
@@ -1283,6 +1380,15 @@ export default function AdminDashboardPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+                                     <Button 
+                                         className="bg-sky-600 hover:bg-sky-700 text-white font-bold h-12 col-span-1 sm:col-span-2 shadow-md text-base" 
+                                         onClick={() => {
+                                             router.push(`/project/${selectedProject.id}`);
+                                             setSelectedProject(null);
+                                         }}
+                                     >
+                                         <Edit className="mr-2 h-5 w-5" /> Open & Re-Edit in Calculator
+                                     </Button>
                                     <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold h-12" onClick={() => handleDownloadPromax(selectedProject)}>
                                         <Download className="mr-2 h-5 w-5" /> Manufacturing Order
                                     </Button>
@@ -1396,6 +1502,15 @@ export default function AdminDashboardPage() {
                     </CardFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Admin Full Project & Quote Editor Modal (Bargain, Payment Methods, Rooms & AI Plan Reader) */}
+            <AdminProjectEditorModal 
+                open={isAdminEditorOpen} 
+                onOpenChange={setIsAdminEditorOpen} 
+                project={adminEditorProject} 
+                staffList={staffList || []} 
+                pricingRates={pricingRates} 
+            />
         </div>
     );
 }

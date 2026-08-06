@@ -417,19 +417,35 @@ const LoadProjectDialog = () => {
                     <div className="space-y-2 py-4">
                         {isLoading && <p className="text-center text-muted-foreground">Loading projects...</p>}
                         {!isLoading && projects && projects.length > 0 ? (
-                            projects.map((proj) => (
-                                <div key={proj.id} className="group flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                    <div className="flex-1 cursor-pointer" onClick={() => handleLoad(proj.id)}>
-                                        <p className="font-semibold">{proj.name}</p>
-                                        {proj.createdAt && (
-                                            <p className="text-xs text-muted-foreground">
-                                                Created {formatDistanceToNow(proj.createdAt.toDate(), { addSuffix: true })}
-                                            </p>
-                                        )}
+                            projects.map((proj) => {
+                                const roomCount = proj.rooms?.length || 0;
+                                const hasPlan = !!proj.planData?.imageUri;
+                                const area = proj.calculatedTotals?.totalArea || proj.rooms?.reduce((acc, r) => acc + (r.length * r.width), 0) || 0;
+
+                                return (
+                                    <div key={proj.id} className="group flex items-center justify-between p-3 border border-slate-100 rounded-xl hover:bg-slate-50 hover:border-slate-200 transition-all cursor-pointer" onClick={() => handleLoad(proj.id)}>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-slate-900 text-sm">{proj.name}</p>
+                                                {hasPlan && (
+                                                    <span className="text-[9px] font-black uppercase tracking-wider bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded-full">
+                                                        🗺️ CAD Plan
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                                <span>{roomCount} room{roomCount !== 1 ? 's' : ''} ({area.toFixed(1)}m²)</span>
+                                                {proj.projectLocation && <span>• {proj.projectLocation}</span>}
+                                            </div>
+                                            {proj.createdAt && (
+                                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                                    Saved {formatDistanceToNow(proj.createdAt?.seconds ? new Date(proj.createdAt.seconds * 1000) : (typeof proj.createdAt?.toDate === 'function' ? proj.createdAt.toDate() : new Date()), { addSuffix: true })}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    {/* Optional: Add delete button here if needed in the future */}
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
                            !isLoading && <p className="text-center text-muted-foreground py-8">No saved projects found.</p>
                         )}
@@ -1059,6 +1075,85 @@ export function ActionsCard() {
       doc.text('It may contain errors. Please countercheck with a SI-LATECH technician for an official quote.', 14, notesY);
     };
 
+    const renderProfitVariationsPage = (
+      doc: jsPDF, 
+      flatTotals: any, 
+      tbeamTotals: any, 
+      flatGrandTotal: number, 
+      tbeamGrandTotal: number
+    ) => {
+      addLogoToPdf(doc, primaryColor);
+      let currentY = 50;
+
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('SYSTEM COMPARISON & PROFIT VARIATIONS REPORT', 14, currentY);
+
+      currentY += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80);
+      doc.text(`Client: ${clientInfo.clientName || 'Valued Client'}  |  Project: ${clientInfo.projectName || 'Slab Installation'}  |  Date: ${invoiceDate}`, 14, currentY);
+
+      currentY += 12;
+
+      const flatBeamPrice = pricingRates.beamFlatRate || 520;
+      const tbeamPrice = pricingRates.beamTbeamRate || 1100;
+      const flatBlockPrice = pricingRates.blockFlatRate || 85;
+      const tbeamBlockPrice = pricingRates.blockTbeamRate || 100;
+
+      const flatBeamsCost = flatTotals.totalInvoiceBeamLength * flatBeamPrice;
+      const tbeamBeamsCost = tbeamTotals.totalInvoiceBeamLength * tbeamPrice;
+
+      const flatBlocksCost = flatTotals.totalBlocks * flatBlockPrice;
+      const tbeamBlocksCost = tbeamTotals.totalBlocks * tbeamBlockPrice;
+
+      const priceDiff = tbeamGrandTotal - flatGrandTotal;
+      const profitDiff = tbeamTotals.totalProjectProfit - flatTotals.totalProjectProfit;
+
+      (doc as any).autoTable({
+        startY: currentY,
+        head: [['System Feature / Metric', 'Flat Beam System', 'T-Beam System (Heavy Duty)', 'Variation / Difference']],
+        body: [
+          ['Unit Beam Rate', `KSh ${flatBeamPrice.toLocaleString()} / m`, `KSh ${tbeamPrice.toLocaleString()} / m`, `+KSh ${(tbeamPrice - flatBeamPrice).toLocaleString()} / m`],
+          ['Unit Block Rate', `KSh ${flatBlockPrice.toLocaleString()} / pc`, `KSh ${tbeamBlockPrice.toLocaleString()} / pc`, `+KSh ${(tbeamBlockPrice - flatBlockPrice).toLocaleString()} / pc`],
+          ['Total Beam Length Required', `${flatTotals.totalInvoiceBeamLength.toFixed(1)} m`, `${tbeamTotals.totalInvoiceBeamLength.toFixed(1)} m`, `${(tbeamTotals.totalInvoiceBeamLength - flatTotals.totalInvoiceBeamLength).toFixed(1)} m`],
+          ['Total Hollow Blocks', `${Math.ceil(flatTotals.totalBlocks)} pcs`, `${Math.ceil(tbeamTotals.totalBlocks)} pcs`, `${(Math.ceil(tbeamTotals.totalBlocks) - Math.ceil(flatTotals.totalBlocks))} pcs`],
+          ['Total Beams Cost', `KSh ${flatBeamsCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamBeamsCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${(tbeamBeamsCost - flatBeamsCost).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+          ['Total Blocks Cost', `KSh ${flatBlocksCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamBlocksCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${(tbeamBlocksCost - flatBlocksCost).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+          ['ESTIMATED GRAND TOTAL', `KSh ${flatGrandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamGrandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${priceDiff >= 0 ? '+' : ''}${priceDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+          ['ESTIMATED PROJECT PROFIT', `KSh ${flatTotals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamTotals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${profitDiff >= 0 ? '+' : ''}${profitDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [9, 83, 136], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 4 },
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 55 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 45 },
+          3: { fontStyle: 'bold', cellWidth: 45 },
+        }
+      });
+
+      let finalY = (doc as any).lastAutoTable.finalY + 12;
+
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryColor);
+      doc.text('PROFIT & STRUCTURAL VARIATION ANALYSIS', 14, finalY);
+
+      finalY += 6;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50);
+      doc.text(`• Profit Variation: T-Beam system yields KSh ${profitDiff >= 0 ? '+' : ''}${profitDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })} additional profit margin compared to Flat Beam.`, 14, finalY);
+      finalY += 5;
+      doc.text(`• Cost Variation: Customer grand total variation is KSh ${priceDiff >= 0 ? '+' : ''}${priceDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })} between systems.`, 14, finalY);
+      finalY += 5;
+      doc.text(`• Structural Recommendation: T-Beam systems feature reinforced ribs suitable for longer spans (>4.2m) or heavier residential loads.`, 14, finalY);
+    };
+
     const selectedFloor = clientInfo.selectedFloor || 'all';
 
     const uniqueFloors = Array.from(new Set(rooms.map(r => {
@@ -1124,10 +1219,68 @@ export function ActionsCard() {
       saveQuoteToDatabase(beamType, grandTotal, activeTotals);
     };
 
-    // Generate separate Flat Beam PDF
-    generateAndSavePDF('flat');
-    // Generate separate T-Beam PDF
-    generateAndSavePDF('tbeam');
+    const chosenScope = clientInfo.beamSystemScope || 'active';
+
+    if (chosenScope === 'both') {
+      const doc = new jsPDF();
+
+      // 1. T-Beam Calculations & PDF Page
+      const tbeamSettings = { ...settings, beamType: 'tbeam' as const };
+      const tbeamTotals = calculateProjectTotals(rooms, tbeamSettings, lintelLength, isOptimized);
+      const tbeamBeamPrice = pricingRates.beamTbeamRate || 1100;
+      const tbeamBlockPrice = pricingRates.blockTbeamRate || 100;
+      const tbeamBeamsTotal = tbeamTotals.totalInvoiceBeamLength * tbeamBeamPrice;
+      const tbeamBlocksTotal = tbeamTotals.totalBlocks * tbeamBlockPrice;
+
+      let tbeamMatTotal = 0;
+      if (costEstimationEnabled) {
+        tbeamMatTotal = (tbeamTotals.totalCementBags * pricingRates.cementRate) +
+                        (tbeamTotals.totalSandTonnes * pricingRates.sandRate) +
+                        (tbeamTotals.totalBallastTonnes * pricingRates.ballastRate) +
+                        ((tbeamTotals.brc?.rollsNeeded || 0) * pricingRates.brcRate) +
+                        ((tbeamTotals.timber?.totalProps || 0) * pricingRates.propRate);
+      }
+      const tbeamGrandTotal = tbeamBeamsTotal + tbeamBlocksTotal + tbeamMatTotal;
+
+      // 2. Flat Beam Calculations & PDF Page
+      const flatSettings = { ...settings, beamType: 'flat' as const };
+      const flatTotals = calculateProjectTotals(rooms, flatSettings, lintelLength, isOptimized);
+      const flatBeamPrice = pricingRates.beamFlatRate || 520;
+      const flatBlockPrice = pricingRates.blockFlatRate || 85;
+      const flatBeamsTotal = flatTotals.totalInvoiceBeamLength * flatBeamPrice;
+      const flatBlocksTotal = flatTotals.totalBlocks * flatBlockPrice;
+
+      let flatMatTotal = 0;
+      if (costEstimationEnabled) {
+        flatMatTotal = (flatTotals.totalCementBags * pricingRates.cementRate) +
+                       (flatTotals.totalSandTonnes * pricingRates.sandRate) +
+                       (flatTotals.totalBallastTonnes * pricingRates.ballastRate) +
+                       ((flatTotals.brc?.rollsNeeded || 0) * pricingRates.brcRate) +
+                       ((flatTotals.timber?.totalProps || 0) * pricingRates.propRate);
+      }
+      const flatGrandTotal = flatBeamsTotal + flatBlocksTotal + flatMatTotal;
+
+      // Save both quotes to DB separately
+      saveQuoteToDatabase('tbeam', tbeamGrandTotal, tbeamTotals);
+      saveQuoteToDatabase('flat', flatGrandTotal, flatTotals);
+
+      // Render T-Beam Quote Page
+      renderFloorQuotePage(doc, `OFFICIAL QUOTE (T-BEAM SYSTEM)`, tbeamTotals, 'tbeam');
+
+      // Render Flat Beam Quote Page on a new page
+      doc.addPage();
+      renderFloorQuotePage(doc, `OFFICIAL QUOTE (FLAT BEAM SYSTEM)`, flatTotals, 'flat');
+
+      // Render Profit Variation & Comparison Summary on a new page
+      doc.addPage();
+      renderProfitVariationsPage(doc, flatTotals, tbeamTotals, flatGrandTotal, tbeamGrandTotal);
+
+      addPdfBackground(doc);
+      doc.save(`SI-LATECH-Quote-BOTH-${baseInvoiceNumber}.pdf`);
+    } else {
+      const targetType = chosenScope === 'active' ? (settings.beamType || 'flat') : chosenScope;
+      generateAndSavePDF(targetType as 'flat' | 'tbeam');
+    }
     
     setInvoiceDialogOpen(false);
   };

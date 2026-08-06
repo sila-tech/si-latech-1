@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { FinanceAiSmartFiller, FinanceAiAuditModal } from './finance-ai-helper';
 
 export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: boolean }) {
     const [amount, setAmount] = useState('');
@@ -278,6 +279,15 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                         <CardDescription>{isSuperAdmin ? 'Manually record income or expense.' : 'Submit a request for facilitation funds.'}</CardDescription>
                     </CardHeader>
                     <CardContent>
+                        {isSuperAdmin && (
+                            <FinanceAiSmartFiller
+                                onApplyParsedRecord={({ type: t, amount: a, reason: r }) => {
+                                    setType(t);
+                                    setAmount(a.toString());
+                                    setReason(r);
+                                }}
+                            />
+                        )}
                         <form onSubmit={handleAddRecord} className="space-y-4">
                             {isSuperAdmin && (
                                 <div className="space-y-2">
@@ -334,7 +344,10 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <div className="flex justify-end gap-2">
+                                    <div className="flex justify-end gap-2 flex-wrap">
+                                         {isSuperAdmin && (
+                                             <FinanceAiAuditModal pendingRequests={finances?.filter((f: any) => f.status === 'pending') || []} />
+                                         )}
                                         <Button variant="outline" size="sm" onClick={downloadCSV}>
                                             <Download size={16} className="mr-2"/> Excel (CSV)
                                         </Button>

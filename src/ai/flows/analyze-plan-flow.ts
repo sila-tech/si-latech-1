@@ -127,15 +127,15 @@ SilaCalc uses a beam-and-block slab system:
 • Prestressed concrete beams are placed at 0.55 m centre-to-centre intervals.
 • Hollow concrete blocks (400 mm × 200 mm face) fill the gaps between beams.
 • Each beam is 150 mm wide and extends 100 mm into each wall (individual beam length = clear span + 0.20 m).
-• Blocks per row = individual beam length × 4 (one block every 250 mm).
+• Blocks per row = (individual beam length × 4) + 1 extra block on each row.
 
 BEAM DIRECTION RULE — this is the most critical distinction:
 ▸ STANDARD ROOMS (Bedroom, Lounge, Kitchen, Bathroom, Corridor, Store, etc.):
   Beams span across the SHORTER dimension of the room.
-  Beam count = ceil(LONGER dimension / 0.55)
+  Beam count = LONGER dimension / 0.55 (add extra beam if remainder >= 0.09)
 ▸ BALCONY / VERANDAH rooms (including cantilevers/overhangs):
   Beams span across the LONGER dimension (parallel to building face).
-  Beam count = ceil(SHORTER dimension / 0.55)
+  Beam count = SHORTER dimension / 0.55 (add extra beam if remainder >= 0.09)
 
 The calculator detects balcony/verandah automatically if the room name contains ANY of these words (case-insensitive):
   balcony | verandah | veranda | velander | velanda | baraza

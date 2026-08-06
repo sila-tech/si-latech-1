@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -69,17 +69,26 @@ const compressImage = (dataUri: string, maxWidth = 1600, maxHeight = 1600, quali
 };
 
 export function PlanReaderCard() {
-  const { setRooms, setBuildingBlocks } = useCalculator();
+  const { setRooms, setBuildingBlocks, planData, setPlanData } = useCalculator();
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageUri, setImageUri] = useState<string | null>(planData?.imageUri || null);
   
   // Review Modal States
   const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [parsedRooms, setParsedRooms] = useState<any[]>([]);
+  const [parsedRooms, setParsedRooms] = useState<any[]>(planData?.parsedRooms || []);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (planData?.imageUri) {
+      setImageUri(planData.imageUri);
+    }
+    if (planData?.parsedRooms && planData.parsedRooms.length > 0) {
+      setParsedRooms(planData.parsedRooms);
+    }
+  }, [planData]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -94,7 +103,9 @@ export function PlanReaderCard() {
       const reader = new FileReader();
       reader.readAsDataURL(selectedFile);
       reader.onloadend = () => {
-        setImageUri(reader.result as string);
+        const uri = reader.result as string;
+        setImageUri(uri);
+        setPlanData(prev => ({ ...prev, imageUri: uri }));
       };
     }
   };
@@ -122,10 +133,14 @@ export function PlanReaderCard() {
 
       if (result.success && result.rooms && result.rooms.length > 0) {
         setParsedRooms(result.rooms);
+        setPlanData({
+          imageUri: compressedUri,
+          parsedRooms: result.rooms as any,
+        });
         setIsReviewOpen(true);
         toast({
-          title: 'Blueprint Parsed',
-          description: `Detected ${result.rooms.length} room spaces. Please review coordinates and dimensions.`,
+          title: 'Blueprint Parsed & Saved',
+          description: `Detected ${result.rooms.length} room spaces. Blueprint image and coordinates saved with project.`,
         });
       } else {
         throw new Error(result.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
@@ -264,6 +279,10 @@ export function PlanReaderCard() {
 
       setRooms(cleanedRooms);
       setBuildingBlocks(buildingBlocks);
+      setPlanData(prev => ({
+        imageUri: imageUri || prev?.imageUri,
+        parsedRooms: parsedRooms,
+      }));
       setIsReviewOpen(false);
       
       toast({
@@ -318,11 +337,11 @@ export function PlanReaderCard() {
           </div>
         </CardContent>
 
-        <CardFooter className="pt-2 relative z-10">
+        <CardFooter className="pt-2 relative z-10 flex flex-col sm:flex-row gap-3">
           <Button 
             onClick={handleAnalyze} 
             disabled={isProcessing || !file}
-            className={`w-full font-bold h-12 shadow-lg rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+            className={`flex-1 font-bold h-12 shadow-lg rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
               file 
                 ? 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white transform active:scale-[0.98]' 
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/40'
@@ -340,6 +359,17 @@ export function PlanReaderCard() {
               </>
             )}
           </Button>
+          {(imageUri || planData?.imageUri) && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsReviewOpen(true)}
+              className="h-12 px-4 border-sky-500/40 bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 font-bold rounded-xl flex items-center gap-2"
+            >
+              <Eye size={18} />
+              <span>View Saved Blueprint</span>
+            </Button>
+          )}
         </CardFooter>
       </Card>
 

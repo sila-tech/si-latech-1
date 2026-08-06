@@ -82,9 +82,24 @@ export const generateQuotePdf = (data: {
         contactPerson: string;
     };
     totals: any;
-    perRoomCalculations: any[];
+    perRoomCalculations?: any[];
+    discountType?: 'none' | 'percent' | 'amount';
+    discountValue?: number;
+    paymentMethods?: string[];
+    customPaymentNotes?: string;
+    clientChangeRequestNotes?: string;
 }) => {
-    const { invoiceNumber, clientInfo, totals, perRoomCalculations } = data;
+    const { 
+        invoiceNumber, 
+        clientInfo, 
+        totals, 
+        perRoomCalculations = [],
+        discountType = 'none',
+        discountValue = 0,
+        paymentMethods = [],
+        customPaymentNotes = '',
+        clientChangeRequestNotes = ''
+    } = data;
     const doc = new jsPDF();
     const primaryColor = '#0f172a'; // Slate-900 for text
     const accentColor = '#0ea5e9'; // Sky Blue
@@ -116,19 +131,19 @@ export const generateQuotePdf = (data: {
     doc.text('BILL TO:', 14, 50);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
-    doc.text(clientInfo.clientName, 14, 56);
-    doc.text(clientInfo.projectName, 14, 61);
-    doc.text(clientInfo.projectLocation, 14, 66);
-    doc.text(`Contact: ${clientInfo.clientContact}`, 14, 71);
+    doc.text(clientInfo.clientName || 'N/A', 14, 56);
+    doc.text(clientInfo.projectName || 'N/A', 14, 61);
+    doc.text(clientInfo.projectLocation || 'N/A', 14, 66);
+    doc.text(`Contact: ${clientInfo.clientContact || 'N/A'}`, 14, 71);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
     doc.text('SHIP TO:', 100, 50);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
-    doc.text(clientInfo.projectName, 100, 56);
-    doc.text(clientInfo.projectLocation, 100, 61);
-    doc.text(`Attn: ${clientInfo.contactPerson}`, 100, 66);
+    doc.text(clientInfo.projectName || 'N/A', 100, 56);
+    doc.text(clientInfo.projectLocation || 'N/A', 100, 61);
+    doc.text(`Attn: ${clientInfo.contactPerson || 'N/A'}`, 100, 66);
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
@@ -141,17 +156,29 @@ export const generateQuotePdf = (data: {
     const BEAM_PRICE = isTBeam ? 1100 : 520;
     const BLOCK_PRICE = isTBeam ? 100 : 85;
 
+    const beamsSubtotal = (safeTotals.totalInvoiceBeamLength || 0) * BEAM_PRICE;
+    const blocksSubtotal = (safeTotals.totalBlocks || 0) * BLOCK_PRICE;
+    const grossTotal = beamsSubtotal + blocksSubtotal;
+
+    let discountAmount = 0;
+    if (discountType === 'percent' && discountValue > 0) {
+        discountAmount = (grossTotal * discountValue) / 100;
+    } else if (discountType === 'amount' && discountValue > 0) {
+        discountAmount = discountValue;
+    }
+    const netGrandTotal = Math.max(0, grossTotal - discountAmount);
+
     // Table
     const tableColumn = ['DESCRIPTION', 'QTY', 'UNIT', 'RATE', 'AMOUNT'];
     const tableRows = [
-        [isTBeam ? 'Prestressed Concrete T-Beams' : 'Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', BEAM_PRICE.toFixed(2), ((safeTotals.totalInvoiceBeamLength || 0) * BEAM_PRICE).toLocaleString()],
-        [isTBeam ? 'Concrete Hollow Blocks for T-Beams (4x8x16)' : 'Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', BLOCK_PRICE.toFixed(2), ((safeTotals.totalBlocks || 0) * BLOCK_PRICE).toLocaleString()],
+        [isTBeam ? 'Prestressed Concrete T-Beams' : 'Prestressed Concrete Beams', (safeTotals.totalInvoiceBeamLength || 0).toFixed(2), 'm', BEAM_PRICE.toFixed(2), `Ksh ${beamsSubtotal.toLocaleString()}`],
+        [isTBeam ? 'Concrete Hollow Blocks for T-Beams (4x8x16)' : 'Concrete Hollow Blocks (4x8x16)', (safeTotals.totalBlocks || 0), 'pcs', BLOCK_PRICE.toFixed(2), `Ksh ${blocksSubtotal.toLocaleString()}`],
     ];
 
     (doc as any).autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 85,
+        startY: 82,
         theme: 'striped',
         headStyles: { fillColor: primaryColor, textColor: 255 },
         styles: { fontSize: 10 },
@@ -164,23 +191,82 @@ export const generateQuotePdf = (data: {
     });
 
     let finalY = (doc as any).lastAutoTable.finalY + 10;
-    const grandTotal = ((safeTotals.totalInvoiceBeamLength || 0) * BEAM_PRICE) + ((safeTotals.totalBlocks || 0) * BLOCK_PRICE);
-
-    // Totals Section
     const totalsX = 145;
     const totalsValueX = 196;
+
+    if (discountAmount > 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(80);
+        doc.text('Subtotal:', totalsX, finalY, { align: 'right' });
+        doc.text(`Ksh ${grossTotal.toLocaleString()}`, totalsValueX, finalY, { align: 'right' });
+        finalY += 6;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(220, 38, 38); // Red text for discount
+        const discountLabel = discountType === 'percent' ? `Bargain Discount (${discountValue}%):` : 'Bargain Discount:';
+        doc.text(discountLabel, totalsX, finalY, { align: 'right' });
+        doc.text(`- Ksh ${discountAmount.toLocaleString()}`, totalsValueX, finalY, { align: 'right' });
+        finalY += 8;
+    }
+
     doc.setFont('helvetica', 'bold');
-    doc.text('GRAND TOTAL: ', totalsX, finalY, { align: 'right' });
-    doc.text(`Ksh ${grandTotal.toLocaleString()}`, totalsValueX, finalY, { align: 'right' });
+    doc.setFontSize(11);
+    doc.setTextColor(primaryColor);
+    doc.text('NET GRAND TOTAL:', totalsX, finalY, { align: 'right' });
+    doc.text(`Ksh ${netGrandTotal.toLocaleString()}`, totalsValueX, finalY, { align: 'right' });
 
     const beamWeight = (safeTotals.totalInvoiceBeamLength || 0) * 18;
     const blockWeight = (safeTotals.totalBlocks || 0) * 12;
     const approxTonnage = (beamWeight + blockWeight) / 1000;
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(100);
-    doc.text(`Approx. Weight: ~${approxTonnage.toFixed(2)} tonnes`, totalsValueX, finalY + 8, { align: 'right' });
+    doc.text(`Approx. Weight: ~${approxTonnage.toFixed(2)} tonnes`, totalsValueX, finalY + 6, { align: 'right' });
+
+    // Payment Methods & Notes Section
+    let notesY = finalY + 18;
+    if (paymentMethods.length > 0 || customPaymentNotes || clientChangeRequestNotes) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(primaryColor);
+        doc.text('PAYMENT METHODS & INSTRUCTIONS:', 14, notesY);
+        notesY += 6;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(60);
+
+        if (paymentMethods.includes('mpesa')) {
+            doc.text('• M-PESA: Paybill 400200 | Acc: SI-LATECH / Project Name', 14, notesY);
+            notesY += 5;
+        }
+        if (paymentMethods.includes('bank')) {
+            doc.text('• BANK TRANSFER: NCBA Bank | Acc Name: SI-LATECH PRECAST LTD | Acc No: 7820193481', 14, notesY);
+            notesY += 5;
+        }
+        if (paymentMethods.includes('cash')) {
+            doc.text('• CASH / CHEQUE: Approved on delivery / site inspection.', 14, notesY);
+            notesY += 5;
+        }
+        if (paymentMethods.includes('installments')) {
+            doc.text('• INSTALLMENTS: 50% deposit before production, 50% prior to dispatch.', 14, notesY);
+            notesY += 5;
+        }
+        if (customPaymentNotes) {
+            doc.text(`• Note: ${customPaymentNotes}`, 14, notesY);
+            notesY += 5;
+        }
+        if (clientChangeRequestNotes) {
+            notesY += 2;
+            doc.setFont('helvetica', 'bold');
+            doc.text('SPECIAL AGREEMENT / REVISION NOTES:', 14, notesY);
+            notesY += 5;
+            doc.setFont('helvetica', 'normal');
+            doc.text(clientChangeRequestNotes, 14, notesY);
+        }
+    }
 
     doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
     return true;

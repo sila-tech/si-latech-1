@@ -69,6 +69,8 @@ export interface CalculationDefaults {
   steel_wastage_pct: number;
   standard_bar_length: number;
   beamType?: 'flat' | 'tbeam';
+  beamFlatRate?: number;
+  beamTbeamRate?: number;
 }
 
 export interface RoomCalculation {
@@ -231,6 +233,8 @@ export const DEFAULTS: CalculationDefaults = {
   steel_wastage_pct: 5,
   standard_bar_length: 12.0,
   beamType: 'flat',
+  beamFlatRate: 520,
+  beamTbeamRate: 1100,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -246,7 +250,8 @@ export function calcRoomBlocksAndBeams(
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
-  const beamPrice = C.beamType === 'tbeam' ? 950 : (beamPricePerMeter === 520 ? 520 : beamPricePerMeter);
+  const defaultPrice = C.beamType === 'tbeam' ? (C.beamTbeamRate || 1100) : (C.beamFlatRate || 520);
+  const beamPrice = (beamPricePerMeter && beamPricePerMeter !== 520) ? beamPricePerMeter : defaultPrice;
 
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
@@ -256,7 +261,8 @@ export function calcRoomBlocksAndBeams(
                     roomName.toLowerCase().includes('verandah') || 
                     roomName.toLowerCase().includes('velander') || 
                     roomName.toLowerCase().includes('veranda') || 
-                    roomName.toLowerCase().includes('velanda');
+                    roomName.toLowerCase().includes('velanda') ||
+                    roomName.toLowerCase().includes('baraza');
 
   let beamMultiplier = 1;
   const spanLengthForBeams = isBalcony ? longer : shorter;
@@ -280,13 +286,14 @@ export function calcRoomBlocksAndBeams(
   let actualBeamCount = 0;
   let endGap = 0;
 
-  // Owner's beam count rule: divide span by 0.55 — only add an extra beam if the
-  // decimal remainder is 0.10 or above. Below 0.10 the last beam fits close enough
+  // Owner's beam count rule: divide span by 0.55 — add an extra beam if the
+  // decimal remainder is 0.09 or above. Below 0.09 the last beam fits close enough
   // to the wall and no extra beam is needed.
   const countBeams = (span: number): number => {
     const raw = span / unitSpan;
-    const decimal = raw - Math.floor(raw);
-    return decimal >= 0.10 ? Math.ceil(raw) : Math.floor(raw);
+    const roundedRaw = Math.round(raw * 1e6) / 1e6;
+    const decimal = roundedRaw - Math.floor(roundedRaw);
+    return decimal >= 0.09 ? Math.ceil(roundedRaw) : Math.floor(roundedRaw);
   };
 
   if (longer > 0) {
@@ -318,8 +325,8 @@ export function calcRoomBlocksAndBeams(
 
   const clearBeamLength = isBalcony ? longer : shorter;
   const individualBeamLength = clearBeamLength > 0 ? clearBeamLength + 0.20 : 0;
-  // Owner's block formula: (actual cast beam metres × 4) + 1 block per row.
-  const blocksPerBeamRow = individualBeamLength > 0 ? (individualBeamLength * 4) + 1 : 0;
+  // Owner's block formula: (actual cast beam metres × 4).
+  const blocksPerBeamRow = individualBeamLength > 0 ? (individualBeamLength * 4) : 0;
   const excessBlockCount = optimizeExcess ? 0 : excessBeamGroupCount * blocksPerBeamRow;
 
   const lastPhysicalBeamEnd = physicalBeamGroupCount > 0 ? (physicalBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier) : 0;
@@ -350,7 +357,7 @@ export function calcRoomBlocksAndBeams(
   const actualTotalBlocks = effectiveBeamGroupCount * blocksPerBeamRow;
   const actualTotalBeamLength = effectiveBeamCount * individualBeamLength;
 
-  // --- 2. HARDCODED CONDITIONAL BILLING ---
+  // --- 2. CONDITIONAL BILLING ---
   let invoiceTotalBeamLength: number;
   let invoiceBeamCount: number;
   
@@ -366,8 +373,8 @@ export function calcRoomBlocksAndBeams(
     invoiceBeamCount = effectiveBeamCount + profitBeamsPerBalcony;
     invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
   } else {
-    // ROOM MODE: Actual Beams + 2 Beams
-    const profitBeamsPerRoom = 2;
+    // ROOM MODE: Actual Beams + Profit Beams
+    const profitBeamsPerRoom = C.profitBeamsPerRoom ?? 2;
     invoiceBeamCount = effectiveBeamCount + profitBeamsPerRoom;
     invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
   }
@@ -535,8 +542,9 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
 
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults, optimizeExcess: boolean = true): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
+  const beamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1100) : (settings.beamFlatRate || 520);
   rooms.forEach(room => {
-      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, settings.beamType === 'tbeam' ? 950 : 520, room.name, optimizeExcess);
+      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, beamPrice, room.name, optimizeExcess);
       const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
       if (!roomGroups.has(sizeKey)) roomGroups.set(sizeKey, { rooms: [], calcs });
       roomGroups.get(sizeKey)!.rooms.push(room);
@@ -626,8 +634,9 @@ export function calculateProjectTotals(
     }
   };
 
+  const projectBeamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1100) : (settings.beamFlatRate || 520);
   const perRoomCalculations = rooms.map((r) => {
-    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 950 : 520, r.name, optimizeExcess);
+    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, projectBeamPrice, r.name, optimizeExcess);
     const concreteCalcs = calcConcrete(roomCalcs, settings);
     const brcCalcs = calcBRC(concreteCalcs.area, settings);
     const timberCalcs = calcTimberAndProps(r, settings);

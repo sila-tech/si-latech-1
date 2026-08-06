@@ -38,8 +38,9 @@ import {
   Timestamp,
   onSnapshot,
 } from 'firebase/firestore';
-import { updateProjectData } from '@/firebase/data-manager';
+import { updateProjectData, PlanData } from '@/firebase/data-manager';
 
+export type { PlanData };
 
 export interface ProjectData {
   id: string;
@@ -52,7 +53,15 @@ export interface ProjectData {
   settings: CalculationDefaults;
   lintelLength: number;
   buildingBlocks?: BuildingBlock[];
-  createdAt: Timestamp;
+  planData?: PlanData;
+  displayUnit?: 'm' | 'ft';
+  costEstimationEnabled?: boolean;
+  pricingRates?: Record<string, number>;
+  calculatedTotals?: Record<string, any>;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+  status?: string;
+  assignedTo?: string;
 }
 
 export type ProjectDetails = {
@@ -127,6 +136,8 @@ interface CalculatorContextType {
   aggregatedBreakdown: AggregatedRoomGroup[];
   totals: ProjectTotals;
   clearCalculator: () => void;
+  planData: PlanData | null;
+  setPlanData: React.Dispatch<React.SetStateAction<PlanData | null>>;
   loadedProjectId: string | null;
   setLoadedProjectId: (id: string | null) => void;
   projectName: string;
@@ -194,6 +205,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [buildingBlocks, setBuildingBlocks] = useState<BuildingBlock[]>([]);
+  const [planData, setPlanData] = useState<PlanData | null>(null);
   const [loadedProjectId, setLoadedProjectId] = useState<string | null>(null);
   const [projectName, setProjectName] = useState<string>('');
   const [clientName, setClientName] = useState<string>('');
@@ -258,6 +270,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
 
     const projectRef = doc(firestore, 'projects', loadedProjectId);
 
+    const calculatedTotals = calculateProjectTotals(rooms, settings, lintelLength, true, buildingBlocks);
+
     const projectData = {
       name: projectName,
       clientName,
@@ -268,6 +282,12 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       settings,
       lintelLength,
       buildingBlocks,
+      planData: planData || undefined,
+      displayUnit,
+      costEstimationEnabled,
+      pricingRates,
+      calculatedTotals,
+      profit: calculatedTotals.totalProjectProfit,
     };
     
     const handler = setTimeout(() => {
@@ -277,13 +297,14 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       clearTimeout(handler);
     };
-  }, [rooms, settings, lintelLength, buildingBlocks, projectName, clientName, clientContact, projectLocation, contactPerson, loadedProjectId, firestore]);
+  }, [rooms, settings, lintelLength, buildingBlocks, planData, displayUnit, costEstimationEnabled, pricingRates, projectName, clientName, clientContact, projectLocation, contactPerson, loadedProjectId, firestore]);
 
   const clearCalculator = useCallback(() => {
     setRooms([]);
     setSettings(DEFAULTS);
     setLintelLength(0);
     setBuildingBlocks([]);
+    setPlanData(null);
     setLoadedProjectId(null);
     setProjectName('');
     setClientName('');
@@ -304,6 +325,18 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     setSettings(projectData.settings || DEFAULTS);
     setLintelLength(projectData.lintelLength || 0);
     setBuildingBlocks(projectData.buildingBlocks || []);
+    if (projectData.planData) {
+      setPlanData(projectData.planData);
+    }
+    if (projectData.displayUnit) {
+      setDisplayUnit(projectData.displayUnit);
+    }
+    if (typeof projectData.costEstimationEnabled === 'boolean') {
+      setCostEstimationEnabled(projectData.costEstimationEnabled);
+    }
+    if (projectData.pricingRates) {
+      setPricingRates(prev => ({ ...prev, ...projectData.pricingRates }));
+    }
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);
     setClientName(projectData.clientName || '');
@@ -437,6 +470,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    const calculatedTotals = calculateProjectTotals(rooms, settings, lintelLength, true, buildingBlocks);
     const projectDataToSave = {
         name,
         ...clientDetails,
@@ -444,7 +478,12 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         settings,
         lintelLength,
         buildingBlocks,
-        profit: calculateProjectTotals(rooms, settings, lintelLength, true, buildingBlocks).totalProjectProfit,
+        planData: planData || undefined,
+        displayUnit,
+        costEstimationEnabled,
+        pricingRates,
+        calculatedTotals,
+        profit: calculatedTotals.totalProjectProfit,
     };
     
     if (loadedProjectId) {
@@ -563,6 +602,8 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
         aggregatedBreakdown,
         totals,
         clearCalculator,
+        planData,
+        setPlanData,
         loadedProjectId,
         setLoadedProjectId,
         projectName,

@@ -333,7 +333,7 @@ export function SilaAssistant() {
   if (!mounted) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[10001] flex flex-col items-end pointer-events-none">
+    <div className="fixed bottom-[108px] md:bottom-6 left-6 z-[10001] flex flex-col items-start pointer-events-none">
       
       {/* Floating Chat Panel */}
       {isOpen && (
@@ -530,12 +530,7 @@ export function SilaAssistant() {
         {isOpen ? (
           <X size={22} className="rotate-90 transition-transform duration-300" />
         ) : (
-          <div className="flex items-center justify-center">
-            <Headphones size={22} className="group-hover:animate-bounce" />
-            <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-950 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider border border-slate-950">
-              Sila AI
-            </span>
-          </div>
+          <Headphones size={22} className="group-hover:animate-bounce" />
         )}
       </button>
 
