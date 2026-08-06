@@ -84,8 +84,18 @@ export function Header() {
           </Button>
         </div>
 
-        {/* Mobile Header Right: Prominent Calculate CTA + Hamburger */}
+        {/* Mobile Header Right: WhatsApp + Prominent Calculate CTA + Hamburger */}
         <div className="flex lg:hidden items-center gap-2">
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WhatsApp SI-LATECH"
+            className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366] text-white shadow-sm"
+          >
+            <MessageCircle size={16} />
+          </a>
+
           <Button
             asChild
             size="sm"
