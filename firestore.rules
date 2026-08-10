@@ -101,6 +101,14 @@ service cloud.firestore {
     match /kyc_documents/{document=**} {
       allow read, write: if true;
     }
+
+    // Settings collection (e.g. pricing rates)
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+    match /settings/{document=**} {
+      allow read, write: if true;
+    }
     
     // Deny all other access
     match /{document=**} {
