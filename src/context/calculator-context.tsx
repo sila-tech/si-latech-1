@@ -88,6 +88,10 @@ type ProjectTotals = {
   totalInvoiceBeamLength: number;
   totalProfitBeamLength: number;
   totalBeamProfitValue: number;
+  totalActualMetresProfit?: number;
+  totalGrossExtraMetresValue?: number;
+  totalExtraMetresVat?: number;
+  totalNetExtraMetresProfit?: number;
   totalBlockCommission: number;
   totalProjectProfit: number;
   totalLintelLength: number;
@@ -216,10 +220,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [displayUnit, setDisplayUnit] = useState<'m' | 'ft'>('m');
   const [costEstimationEnabled, setCostEstimationEnabled] = useState<boolean>(false);
   const [pricingRates, setPricingRates] = useState({
-    beamFlatRate: 520,
-    beamTbeamRate: 1100,
-    blockFlatRate: 85,
-    blockTbeamRate: 100,
+    beamFlatRate: 500,
+    beamTbeamRate: 950,
+    blockFlatRate: 80,
+    blockTbeamRate: 95,
     cementRate: 800,
     sandRate: 3000,
     ballastRate: 3200,
@@ -557,7 +561,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
-    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? 950 : 520; 
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? (pricingRates.beamTbeamRate || 950) : (pricingRates.beamFlatRate || 500); 
     return rooms.map((r) => {
       const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
       const concreteCalcs = calcConcrete(roomCalcs, settings);

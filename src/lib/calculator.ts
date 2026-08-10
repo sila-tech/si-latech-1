@@ -89,6 +89,10 @@ export interface RoomCalculation {
   invoiceTotalBeamLength: number;
   profitBeamLength: number;
   beamProfitValue: number;
+  actualMetresProfit: number;
+  grossExtraMetresValue: number;
+  extraMetresVat: number;
+  netExtraMetresProfit: number;
   blockCommission: number;
   totalRoomProfit: number;
   layout: {
@@ -233,8 +237,8 @@ export const DEFAULTS: CalculationDefaults = {
   steel_wastage_pct: 5,
   standard_bar_length: 12.0,
   beamType: 'flat',
-  beamFlatRate: 520,
-  beamTbeamRate: 1100,
+  beamFlatRate: 500,
+  beamTbeamRate: 950,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -244,14 +248,14 @@ export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
   opts: Partial<CalculationDefaults> = {},
-  beamPricePerMeter: number = 520,
+  beamPricePerMeter: number = 500,
   roomName: string = '',
   optimizeExcess: boolean = true
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
-  const defaultPrice = C.beamType === 'tbeam' ? (C.beamTbeamRate || 1100) : (C.beamFlatRate || 520);
-  const beamPrice = (beamPricePerMeter && beamPricePerMeter !== 520) ? beamPricePerMeter : defaultPrice;
+  const defaultPrice = C.beamType === 'tbeam' ? (C.beamTbeamRate || 950) : (C.beamFlatRate || 500);
+  const beamPrice = (beamPricePerMeter && beamPricePerMeter !== 500 && beamPricePerMeter !== 520) ? beamPricePerMeter : defaultPrice;
 
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
@@ -383,10 +387,15 @@ export function calcRoomBlocksAndBeams(
   const totalBlocks = actualTotalBlocks;
 
   // --- 3. PROFIT CALCULATION ---
-  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
-  const beamProfitValue = profitBeamLength * beamPrice;
-  const blockCommission = totalBlocks * C.blockCommissionRate;
-  const totalRoomProfit = beamProfitValue + blockCommission;
+  const isTBeam = C.beamType === 'tbeam';
+  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // Extra metres
+  const grossExtraMetresValue = profitBeamLength * beamPrice;
+  const extraMetresVat = grossExtraMetresValue * 0.16; // 16% VAT deducted on extra metres
+  const netExtraMetresProfit = grossExtraMetresValue * 0.84;
+  const actualMetresProfit = actualTotalBeamLength * (isTBeam ? 100 : 20);
+  const blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 0));
+  const beamProfitValue = actualMetresProfit + netExtraMetresProfit;
+  const totalRoomProfit = actualMetresProfit + blockCommission + netExtraMetresProfit;
   
   const startWithBlock = optimizeExcess && physicalEndGap >= 0.40;
 
@@ -406,6 +415,10 @@ export function calcRoomBlocksAndBeams(
     invoiceTotalBeamLength,
     profitBeamLength,
     beamProfitValue,
+    actualMetresProfit,
+    grossExtraMetresValue,
+    extraMetresVat,
+    netExtraMetresProfit,
     blockCommission,
     totalRoomProfit,
     layout: {
@@ -616,6 +629,10 @@ export function calculateProjectTotals(
     totalInvoiceBeamLength: 0,
     totalProfitBeamLength: 0,
     totalBeamProfitValue: 0,
+    totalActualMetresProfit: 0,
+    totalGrossExtraMetresValue: 0,
+    totalExtraMetresVat: 0,
+    totalNetExtraMetresProfit: 0,
     totalBlockCommission: 0,
     totalProjectProfit: 0,
     totalConcreteVolume: 0,
@@ -634,7 +651,7 @@ export function calculateProjectTotals(
     }
   };
 
-  const projectBeamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1100) : (settings.beamFlatRate || 520);
+  const projectBeamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 950) : (settings.beamFlatRate || 500);
   const perRoomCalculations = rooms.map((r) => {
     const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, projectBeamPrice, r.name, optimizeExcess);
     const concreteCalcs = calcConcrete(roomCalcs, settings);
@@ -664,6 +681,10 @@ export function calculateProjectTotals(
     acc.totalBallastTonnes += p.concreteCalcs.ballastTonnes;
     
     acc.totalBeamProfitValue += p.roomCalcs.beamProfitValue;
+    acc.totalActualMetresProfit += p.roomCalcs.actualMetresProfit;
+    acc.totalGrossExtraMetresValue += p.roomCalcs.grossExtraMetresValue;
+    acc.totalExtraMetresVat += p.roomCalcs.extraMetresVat;
+    acc.totalNetExtraMetresProfit += p.roomCalcs.netExtraMetresProfit;
     acc.totalBlockCommission += p.roomCalcs.blockCommission;
     acc.totalProjectProfit += p.roomCalcs.totalRoomProfit;
 

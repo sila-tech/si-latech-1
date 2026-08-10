@@ -153,8 +153,8 @@ export const generateQuotePdf = (data: {
     doc.text(invoiceDate, 145, 56);
 
     const isTBeam = safeTotals.beamType === 'tbeam';
-    const BEAM_PRICE = isTBeam ? 1100 : 520;
-    const BLOCK_PRICE = isTBeam ? 100 : 85;
+    const BEAM_PRICE = isTBeam ? 950 : 500;
+    const BLOCK_PRICE = isTBeam ? 95 : 80;
 
     const beamsSubtotal = (safeTotals.totalInvoiceBeamLength || 0) * BEAM_PRICE;
     const blocksSubtotal = (safeTotals.totalBlocks || 0) * BLOCK_PRICE;

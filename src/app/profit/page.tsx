@@ -65,7 +65,8 @@ function ProfitReportPage() {
             startY: 70,
             theme: 'plain',
             body: [
-                ['Total Beam Profit', `KSh ${totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Actual Metres Profit', `KSh ${(totals.totalActualMetresProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Extra Metres Net Profit (after 16% VAT)', `KSh ${(totals.totalNetExtraMetresProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
                 ['Total Block Commission', `KSh ${totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
                 [{ content: 'Total Project Profit', styles: { fontStyle: 'bold' } }, { content: `KSh ${totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, styles: { fontStyle: 'bold' } }],
             ],
@@ -200,18 +201,23 @@ function ProfitReportPage() {
                                 <CardHeader>
                                     <CardTitle className="text-sky-600">Project Profit Summary</CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                                <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
                                     <div className="p-4 bg-muted rounded-lg">
-                                        <p className="text-sm font-medium text-muted-foreground">Total Beam Profit</p>
-                                        <p className="text-2xl font-bold">KSh {totals.totalBeamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-xs font-medium text-muted-foreground">Actual Metres Profit</p>
+                                        <p className="text-xl font-bold">KSh {(totals.totalActualMetresProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     <div className="p-4 bg-muted rounded-lg">
-                                        <p className="text-sm font-medium text-muted-foreground">Total Block Commission</p>
-                                        <p className="text-2xl font-bold">KSh {totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-xs font-medium text-muted-foreground">Extra Metres Net (after 16% VAT)</p>
+                                        <p className="text-xl font-bold">KSh {(totals.totalNetExtraMetresProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">VAT: KSh {(totals.totalExtraMetresVat || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div className="p-4 bg-muted rounded-lg">
+                                        <p className="text-xs font-medium text-muted-foreground">Block Commission</p>
+                                        <p className="text-xl font-bold">KSh {totals.totalBlockCommission.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     <div className="p-4 bg-sky-900/50 rounded-lg">
-                                        <p className="text-sm font-medium text-sky-300">Total Project Profit</p>
-                                        <p className="text-2xl font-bold text-sky-300">KSh {totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-xs font-medium text-sky-300">Total Project Profit</p>
+                                        <p className="text-xl font-bold text-sky-300">KSh {totals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -235,11 +241,16 @@ function ProfitReportPage() {
                                                     <li><span className="font-medium text-sky-400">Profit Length:</span> {roomCalcs.profitBeamLength.toFixed(2)}m</li>
                                                 </ul>
                                                 <Separator />
-                                                <h4 className="font-semibold">Financials</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <h4 className="font-semibold">Financials Breakdown</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                                     <div className="p-3 bg-muted rounded-md">
-                                                        <p className="text-xs text-muted-foreground">Beam Profit</p>
-                                                        <p className="font-semibold">KSh {roomCalcs.beamProfitValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                                        <p className="text-xs text-muted-foreground">Actual Metres Profit</p>
+                                                        <p className="font-semibold">KSh {(roomCalcs.actualMetresProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                                    </div>
+                                                    <div className="p-3 bg-muted rounded-md">
+                                                        <p className="text-xs text-muted-foreground">Net Extra Metres (after VAT)</p>
+                                                        <p className="font-semibold">KSh {(roomCalcs.netExtraMetresProfit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                                        <p className="text-[10px] text-slate-500">VAT (16%): KSh {(roomCalcs.extraMetresVat || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                                     </div>
                                                     <div className="p-3 bg-muted rounded-md">
                                                         <p className="text-xs text-muted-foreground">Block Commission</p>

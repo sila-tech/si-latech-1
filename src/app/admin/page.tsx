@@ -93,10 +93,10 @@ export default function AdminDashboardPage() {
     const { toast } = useToast();
 
     const [tempRates, setTempRates] = useState<any>({
-        beamFlatRate: 520,
-        beamTbeamRate: 1100,
-        blockFlatRate: 85,
-        blockTbeamRate: 100,
+        beamFlatRate: 500,
+        beamTbeamRate: 950,
+        blockFlatRate: 80,
+        blockTbeamRate: 95,
         cementRate: 800,
         sandRate: 3000,
         ballastRate: 3200,
@@ -112,10 +112,10 @@ export default function AdminDashboardPage() {
 
     const handleSaveRates = async () => {
         await updatePricingRates({
-            beamFlatRate: Number(tempRates.beamFlatRate) || 520,
-            beamTbeamRate: Number(tempRates.beamTbeamRate) || 1100,
-            blockFlatRate: Number(tempRates.blockFlatRate) || 85,
-            blockTbeamRate: Number(tempRates.blockTbeamRate) || 100,
+            beamFlatRate: Number(tempRates.beamFlatRate) || 500,
+            beamTbeamRate: Number(tempRates.beamTbeamRate) || 950,
+            blockFlatRate: Number(tempRates.blockFlatRate) || 80,
+            blockTbeamRate: Number(tempRates.blockTbeamRate) || 95,
             cementRate: Number(tempRates.cementRate) || 800,
             sandRate: Number(tempRates.sandRate) || 3000,
             ballastRate: Number(tempRates.ballastRate) || 3200,
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
     };
 
     const handleDownloadPromax = (proj: any) => {
-        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1100) : (pricingRates?.beamFlatRate || 520);
+        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
         const settings = {
             ...(proj.settings || {
                 beamSpacing: 0.55,
@@ -1123,7 +1123,7 @@ export default function AdminDashboardPage() {
                                         type="number"
                                         value={tempRates.beamTbeamRate} 
                                         onChange={e => setTempRates((prev: any) => ({ ...prev, beamTbeamRate: e.target.value }))} 
-                                        placeholder="1100" 
+                                        placeholder="950" 
                                     />
                                 </div>
                                 <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
@@ -1133,7 +1133,7 @@ export default function AdminDashboardPage() {
                                         type="number"
                                         value={tempRates.beamFlatRate} 
                                         onChange={e => setTempRates((prev: any) => ({ ...prev, beamFlatRate: e.target.value }))} 
-                                        placeholder="520" 
+                                        placeholder="500" 
                                     />
                                 </div>
                                 <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
@@ -1143,7 +1143,7 @@ export default function AdminDashboardPage() {
                                         type="number"
                                         value={tempRates.blockTbeamRate} 
                                         onChange={e => setTempRates((prev: any) => ({ ...prev, blockTbeamRate: e.target.value }))} 
-                                        placeholder="100" 
+                                        placeholder="95" 
                                     />
                                 </div>
                                 <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
@@ -1153,7 +1153,7 @@ export default function AdminDashboardPage() {
                                         type="number"
                                         value={tempRates.blockFlatRate} 
                                         onChange={e => setTempRates((prev: any) => ({ ...prev, blockFlatRate: e.target.value }))} 
-                                        placeholder="85" 
+                                        placeholder="80" 
                                     />
                                 </div>
                             </div>
@@ -1234,7 +1234,7 @@ export default function AdminDashboardPage() {
                     {(() => {
                         if (!selectedProject) return null;
                         
-                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1100) : (pricingRates?.beamFlatRate || 520);
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
                         const settings = {
                             ...(selectedProject.settings || {
                                 beamSpacing: 0.55,
@@ -1480,7 +1480,7 @@ export default function AdminDashboardPage() {
                     <div className="flex-1 overflow-y-auto pr-2 print:overflow-visible print:h-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
-                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 1100 : 520;
+                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
                                 const settings = selectedProject.settings || {
                                     beamSpacing: 0.55,
                                     blockWidth: 0.2,
