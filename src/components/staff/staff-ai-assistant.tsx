@@ -65,13 +65,15 @@ export function StaffAiAssistant({ staffName, assignedProjects, onApplyFacilitat
     <Card className="border-amber-200 bg-gradient-to-b from-amber-50/40 via-white to-slate-50 shadow-sm overflow-hidden">
       <CardHeader className="bg-slate-900 text-white pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-amber-500 p-2 rounded-lg text-slate-950 font-bold">
-              <Bot size={20} />
-            </div>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/sila-avatar.jpg" 
+              alt="Si-la AI" 
+              className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shrink-0 shadow-md" 
+            />
             <div>
               <CardTitle className="text-lg flex items-center gap-2">
-                SILA Field AI Assistant <Sparkles size={16} className="text-amber-400 animate-pulse" />
+                Si-la Field AI Assistant <Sparkles size={16} className="text-amber-400 animate-pulse" />
               </CardTitle>
               <CardDescription className="text-slate-300 text-xs">
                 Site task guidelines & facilitation request estimator

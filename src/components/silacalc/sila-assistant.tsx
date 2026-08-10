@@ -333,33 +333,37 @@ export function SilaAssistant() {
   if (!mounted) return null;
 
   return (
-    <div className="fixed bottom-[108px] md:bottom-6 left-6 z-[10001] flex flex-col items-start pointer-events-none">
+    <div className="fixed bottom-5 left-4 md:bottom-6 md:left-6 z-[999990] flex flex-col items-start gap-2 select-none">
       
       {/* Floating Chat Panel */}
       {isOpen && (
-        <div className="mb-4 w-[90vw] sm:w-[360px] h-[480px] bg-slate-950 border border-slate-800 rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 relative pointer-events-auto">
+        <div className="mb-3 w-[92vw] sm:w-[370px] h-[500px] max-h-[80vh] bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 relative">
           
           {/* Decorative glowing blobs */}
-          <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
 
           {/* Chat Header */}
-          <div className="p-4 bg-gradient-to-r from-slate-900 to-slate-950 border-b border-slate-850 flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-2.5">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-primary to-sky-400 flex items-center justify-center text-white font-headline font-black shadow-lg">
-                  Si
-                </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse" />
+          <div className="p-3.5 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-slate-800 flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0">
+                <img 
+                  src="/sila-avatar.jpg" 
+                  alt="Si-la AI" 
+                  className="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shadow-md"
+                />
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-headline font-black text-slate-100 text-sm">Si-la Assistant</h3>
-                  <span className="bg-primary/20 text-primary text-[8px] font-black uppercase px-1.5 py-0.5 rounded tracking-widest border border-primary/20">AI Voice</span>
+                  <h3 className="font-headline font-black text-slate-100 text-sm">Si-la</h3>
+                  <span className="bg-amber-500/20 text-amber-300 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">
+                    <Sparkles size={10} className="text-amber-400" /> AI Assistant
+                  </span>
                 </div>
                 <p className="text-[10px] text-slate-400 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
-                  Online • Swahili, Sheng, English
+                  Online • Speaks Swahili, Sheng, English
                 </p>
               </div>
             </div>
@@ -367,8 +371,9 @@ export function SilaAssistant() {
             <div className="flex items-center gap-1">
               {/* Language Switcher */}
               <button
+                type="button"
                 onClick={handleLanguageToggle}
-                className="h-8 px-2 rounded-xl text-[10px] font-black border border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1"
+                className="h-8 px-2 rounded-xl text-[10px] font-black border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1"
                 title="Switch voice recognition language"
               >
                 🌐 {language === 'sw' ? 'Sheng/Swahili' : 'English'}
@@ -376,9 +381,10 @@ export function SilaAssistant() {
 
               {/* TTS Toggle */}
               <button
+                type="button"
                 onClick={handleTtsToggle}
                 className={`h-8 w-8 rounded-xl border border-slate-800 flex items-center justify-center transition-all ${
-                  ttsEnabled ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-slate-900/60 text-slate-500'
+                  ttsEnabled ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-slate-900/80 text-slate-500'
                 }`}
                 title={ttsEnabled ? "Mute voice response" : "Unmute voice response"}
               >
@@ -387,8 +393,9 @@ export function SilaAssistant() {
 
               {/* Clear Chat */}
               <button
+                type="button"
                 onClick={clearChatHistory}
-                className="h-8 w-8 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"
+                className="h-8 w-8 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"
                 title="Clear conversation"
               >
                 <Trash2 size={14} />
@@ -396,8 +403,9 @@ export function SilaAssistant() {
 
               {/* Close Button */}
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
-                className="h-8 w-8 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all ml-1"
+                className="h-8 w-8 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-all ml-1"
               >
                 <X size={15} />
               </button>
@@ -405,22 +413,29 @@ export function SilaAssistant() {
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 relative z-10 scrollbar-thin scrollbar-thumb-slate-800">
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 relative z-10 scrollbar-thin scrollbar-thumb-slate-800">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start items-start'}`}
               >
+                {msg.role === 'model' && (
+                  <img
+                    src="/sila-avatar.jpg"
+                    alt="Si-la"
+                    className="w-7 h-7 rounded-full object-cover border border-amber-400 shrink-0 mt-0.5 shadow-xs"
+                  />
+                )}
                 <div
-                  className={`max-w-[85%] rounded-xl p-3 text-xs leading-relaxed ${
+                  className={`max-w-[82%] rounded-2xl p-3 text-xs leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-primary text-white font-semibold rounded-tr-none shadow-md shadow-primary/10'
+                      ? 'bg-amber-500 text-slate-950 font-semibold rounded-tr-none shadow-md'
                       : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none shadow-sm'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
-                  <span className={`block text-[9px] mt-1.5 text-right ${
-                    msg.role === 'user' ? 'text-white/60' : 'text-slate-500'
+                  <span className={`block text-[9px] mt-1 text-right ${
+                    msg.role === 'user' ? 'text-slate-900/70 font-bold' : 'text-slate-500'
                   }`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -429,14 +444,19 @@ export function SilaAssistant() {
             ))}
             
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-[85%] rounded-2xl rounded-tl-none border border-slate-800 bg-slate-900/80 p-3.5 text-xs text-slate-400 shadow-sm flex items-center gap-2">
+              <div className="flex justify-start items-center gap-2">
+                <img
+                  src="/sila-avatar.jpg"
+                  alt="Si-la"
+                  className="w-7 h-7 rounded-full object-cover border border-amber-400 shrink-0 shadow-xs animate-pulse"
+                />
+                <div className="max-w-[85%] rounded-2xl rounded-tl-none border border-slate-800 bg-slate-900/80 p-3 text-xs text-slate-400 shadow-sm flex items-center gap-2">
                   <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <span className="text-[10px] text-slate-500">Si-la anafikiria...</span>
+                  <span className="text-[10px] text-slate-400">Si-la is thinking...</span>
                 </div>
               </div>
             )}
@@ -444,26 +464,30 @@ export function SilaAssistant() {
           </div>
 
           {/* Quick Prompts */}
-          <div className="px-4 py-2 border-t border-slate-900 bg-slate-950/60 overflow-x-auto flex gap-2 scrollbar-none relative z-10">
+          <div className="px-3.5 py-2 border-t border-slate-900 bg-slate-950/80 overflow-x-auto flex gap-2 scrollbar-none relative z-10">
             <button
+              type="button"
               onClick={() => handleSendMessage("Niko na slab ya 6m by 5m")}
-              className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
             >
               📐 6m x 5m Slab
             </button>
             <button
+              type="button"
               onClick={() => handleSendMessage("How much is a block and flat beam?")}
-              className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
             >
               💰 Price ni ngapi?
             </button>
             <button
+              type="button"
               onClick={() => handleSendMessage("How does shared walls deduction work?")}
-              className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-white hover:border-slate-700 transition-colors"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300 hover:text-white hover:border-slate-700 transition-colors"
             >
               🏢 Shared Walls?
             </button>
             <button
+              type="button"
               onClick={() => handleSendMessage("clear the calculator")}
               className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-400 hover:text-rose-400 hover:border-rose-950 transition-colors"
             >
@@ -472,14 +496,15 @@ export function SilaAssistant() {
           </div>
 
           {/* Input Bar */}
-          <div className="p-4 bg-slate-950 border-t border-slate-900 flex items-center gap-2 relative z-10">
+          <div className="p-3 bg-slate-950 border-t border-slate-900 flex items-center gap-2 relative z-10">
             {/* Voice Input Button */}
             <button
+              type="button"
               onClick={toggleListening}
               className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center transition-all ${
                 isListening
                   ? 'bg-rose-500 hover:bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/20'
-                  : 'bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-850'
+                  : 'bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800'
               }`}
               title={isListening ? "Stop listening" : "Talk to Si-la"}
             >
@@ -499,20 +524,21 @@ export function SilaAssistant() {
                 placeholder={
                   isListening
                     ? (language === 'sw' ? 'Listening (Sheng/Swahili)...' : 'Listening (English)...')
-                    : (language === 'sw' ? 'Type or talk to Si-la...' : 'Type or talk to Si-la...')
+                    : (language === 'sw' ? 'Ask Si-la in Swahili, Sheng or English...' : 'Ask Si-la in Swahili, Sheng or English...')
                 }
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 disabled={isListening}
-                className="h-10 bg-slate-900 border-slate-850 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-primary rounded-xl text-xs pr-10"
+                className="h-10 bg-slate-900 border-slate-800 text-slate-200 placeholder-slate-500 focus-visible:ring-1 focus-visible:ring-amber-500 rounded-xl text-xs pr-10"
               />
               
               {/* Send Button inside Input */}
               <button
+                type="button"
                 onClick={() => handleSendMessage()}
                 disabled={!inputVal.trim() || isListening}
-                className="absolute right-3 text-slate-500 hover:text-primary transition-colors disabled:opacity-30"
+                className="absolute right-3 text-slate-400 hover:text-amber-400 transition-colors disabled:opacity-30"
               >
                 <Send size={15} />
               </button>
@@ -522,16 +548,31 @@ export function SilaAssistant() {
         </div>
       )}
 
-      {/* Floating Activation Button */}
+      {/* Touch-Friendly Floating Activation Button & AI Badge */}
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-sky-400 text-white shadow-xl shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border border-white/20 relative pointer-events-auto"
+        className="group flex items-center gap-2.5 bg-slate-900/95 hover:bg-slate-900 text-white p-1.5 pr-4 rounded-full shadow-2xl border-2 border-amber-400/80 active:scale-95 transition-all duration-200 touch-manipulation cursor-pointer"
+        aria-label="Open Si-la AI Assistant"
       >
-        {isOpen ? (
-          <X size={22} className="rotate-90 transition-transform duration-300" />
-        ) : (
-          <Headphones size={22} className="group-hover:animate-bounce" />
-        )}
+        <div className="relative shrink-0">
+          <img
+            src="/sila-avatar.jpg"
+            alt="Si-la AI Avatar"
+            className="w-11 h-11 md:w-12 md:h-12 rounded-full object-cover border-2 border-amber-400 group-hover:scale-105 transition-transform"
+          />
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse" />
+        </div>
+        
+        <div className="flex flex-col items-start text-left">
+          <div className="flex items-center gap-1 text-amber-400 text-xs font-black">
+            <span>Ask Si-la</span>
+            <Sparkles size={12} className="animate-spin text-amber-300" style={{ animationDuration: '4s' }} />
+          </div>
+          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+            AI Assistant
+          </span>
+        </div>
       </button>
 
     </div>
