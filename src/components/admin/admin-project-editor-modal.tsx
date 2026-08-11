@@ -125,6 +125,10 @@ export function AdminProjectEditorModal({
   const [customPaymentNotes, setCustomPaymentNotes] = useState('');
   const [clientChangeRequestNotes, setClientChangeRequestNotes] = useState('');
 
+  // Unit Rates Override State
+  const [customBeamRate, setCustomBeamRate] = useState<number | ''>('');
+  const [customBlockRate, setCustomBlockRate] = useState<number | ''>('');
+
   const [isSaving, setIsSaving] = useState(false);
 
   // Populate state on project load
@@ -140,6 +144,9 @@ export function AdminProjectEditorModal({
       setRooms(project.rooms && project.rooms.length > 0 ? project.rooms : [{ id: '1', name: 'Room 1', length: 4.0, width: 3.5 }]);
       setBeamType(project.settings?.beamType || 'tbeam');
       
+      setCustomBeamRate(project.totals?.beamPrice ?? '');
+      setCustomBlockRate(project.totals?.blockPrice ?? '');
+
       setBlueprintUri(project.planData?.imageUri || null);
       setParsedRooms(project.planData?.parsedRooms || []);
 
@@ -149,7 +156,6 @@ export function AdminProjectEditorModal({
       setCustomPaymentNotes(project.customPaymentNotes || '');
       setClientChangeRequestNotes(project.clientChangeRequestNotes || '');
     } else {
-      // Reset for New Admin Project
       setName('New Project');
       setClientName('');
       setClientContact('');
@@ -159,6 +165,8 @@ export function AdminProjectEditorModal({
       setAssignedTo('unassigned');
       setRooms([{ id: '1', name: 'Room 1', length: 4.0, width: 3.5 }]);
       setBeamType('tbeam');
+      setCustomBeamRate('');
+      setCustomBlockRate('');
       setBlueprintUri(null);
       setParsedRooms([]);
       setDiscountType('none');
@@ -179,8 +187,11 @@ export function AdminProjectEditorModal({
     return calculateProjectTotals(rooms, activeSettings, 0, false);
   }, [rooms, activeSettings]);
 
-  const beamPrice = beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
-  const blockPrice = beamType === 'tbeam' ? (pricingRates?.blockTbeamRate || 95) : (pricingRates?.blockFlatRate || 80);
+  const defaultBeamPrice = beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+  const defaultBlockPrice = beamType === 'tbeam' ? (pricingRates?.blockTbeamRate || 95) : (pricingRates?.blockFlatRate || 80);
+
+  const beamPrice = typeof customBeamRate === 'number' && customBeamRate > 0 ? customBeamRate : defaultBeamPrice;
+  const blockPrice = typeof customBlockRate === 'number' && customBlockRate > 0 ? customBlockRate : defaultBlockPrice;
 
   const beamsCost = (calculatedTotals.totalInvoiceBeamLength || 0) * beamPrice;
   const blocksCost = (calculatedTotals.totalBlocks || 0) * blockPrice;
@@ -251,7 +262,6 @@ export function AdminProjectEditorModal({
         setParsedRooms(result.rooms as PlanRoomData[]);
         setBlueprintUri(compressedUri);
 
-        // Auto-import detected rooms into rooms state
         const newRoomsList: Room[] = result.rooms.map((pr: any, idx: number) => ({
           id: `ai-${Date.now()}-${idx}`,
           name: pr.name || `Scanned Room ${idx + 1}`,
@@ -317,7 +327,6 @@ export function AdminProjectEditorModal({
         currentProjId = newDocRef.id;
       }
 
-      // Also save updated quote invoice in Firestore `quotes` collection
       const quoteNumber = `ADMIN-${currentProjId.slice(0, 6).toUpperCase()}-${Date.now().toString().slice(-4)}`;
       await addDoc(collection(firestore, 'quotes'), {
         invoiceNumber: quoteNumber,
@@ -337,7 +346,9 @@ export function AdminProjectEditorModal({
         clientChangeRequestNotes,
         totals: {
           ...calculatedTotals,
-          beamType
+          beamType,
+          beamPrice,
+          blockPrice
         },
         rooms,
         createdAt: serverTimestamp()
@@ -366,7 +377,9 @@ export function AdminProjectEditorModal({
       },
       totals: {
         ...calculatedTotals,
-        beamType
+        beamType,
+        beamPrice,
+        blockPrice
       },
       perRoomCalculations: rooms,
       discountType,
@@ -401,22 +414,22 @@ export function AdminProjectEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto flex flex-col p-0 gap-0 bg-slate-900 text-white rounded-xl border border-slate-800">
+      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto flex flex-col p-0 gap-0 bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-2xl">
         
         {/* Modal Header */}
-        <DialogHeader className="p-6 border-b border-slate-800 bg-slate-950/80 sticky top-0 z-20">
+        <DialogHeader className="p-6 border-b border-slate-100 bg-slate-50/80 sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <DialogTitle className="text-xl font-black text-sky-400 flex items-center gap-2">
-                <Building className="h-5 w-5 text-sky-400" />
+              <DialogTitle className="text-xl font-black text-[#095388] flex items-center gap-2">
+                <Building className="h-5 w-5 text-[#095388]" />
                 {project ? `Admin Edit: ${project.name}` : 'Create New Admin Project & Quote'}
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
+              <DialogDescription className="text-xs text-slate-500">
                 Modify quote details, bargain discounts, payment methods, rooms, or scan AI floor plans directly inside Admin.
               </DialogDescription>
             </div>
             {project?.status && (
-              <Badge className="bg-sky-500/20 text-sky-300 border border-sky-500/30 uppercase text-[10px] font-bold px-2.5 py-1">
+              <Badge className="bg-sky-50 text-sky-700 border border-sky-200 uppercase text-[10px] font-bold px-2.5 py-1">
                 {project.status}
               </Badge>
             )}
@@ -424,16 +437,16 @@ export function AdminProjectEditorModal({
         </DialogHeader>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto bg-slate-50/40">
           <Tabs defaultValue="rooms" className="w-full space-y-6">
-            <TabsList className="grid grid-cols-3 bg-slate-950 p-1 border border-slate-800 rounded-lg">
-              <TabsTrigger value="rooms" className="text-xs font-bold data-[state=active]:bg-sky-600 data-[state=active]:text-white">
+            <TabsList className="grid grid-cols-3 bg-slate-100 p-1 border border-slate-200 rounded-xl">
+              <TabsTrigger value="rooms" className="text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-[#095388] data-[state=active]:shadow-2xs">
                 <Layers className="h-3.5 w-3.5 mr-1.5" /> Rooms & AI Plan Reader
               </TabsTrigger>
-              <TabsTrigger value="bargain" className="text-xs font-bold data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+              <TabsTrigger value="bargain" className="text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-2xs">
                 <Coins className="h-3.5 w-3.5 mr-1.5" /> Bargain & Payment Methods
               </TabsTrigger>
-              <TabsTrigger value="details" className="text-xs font-bold data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger value="details" className="text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-2xs">
                 <User className="h-3.5 w-3.5 mr-1.5" /> Project & Client Info
               </TabsTrigger>
             </TabsList>
@@ -442,14 +455,14 @@ export function AdminProjectEditorModal({
             <TabsContent value="rooms" className="space-y-6 mt-0">
               
               {/* AI Plan Reader Section */}
-              <Card className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-900/60 p-4 border-b border-slate-800">
-                  <CardTitle className="text-sm font-bold text-sky-400 flex items-center justify-between">
+              <Card className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <CardHeader className="bg-slate-50/80 p-4 border-b border-slate-100">
+                  <CardTitle className="text-sm font-bold text-[#095388] flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <Wand2 className="h-4 w-4 text-sky-400" /> AI Blueprint CAD Scanner
+                      <Wand2 className="h-4 w-4 text-[#095388]" /> AI Blueprint CAD Scanner
                     </span>
                     {parsedRooms.length > 0 && (
-                      <Badge variant="outline" className="bg-sky-500/10 text-sky-300 border-sky-500/30 text-[10px]">
+                      <Badge variant="outline" className="bg-sky-50 text-sky-700 border-sky-200 text-[10px]">
                         {parsedRooms.length} Scanned Spaces
                       </Badge>
                     )}
@@ -460,18 +473,18 @@ export function AdminProjectEditorModal({
                     
                     {/* File Upload Zone */}
                     <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-slate-300">Upload Floor Plan (Image / PDF)</Label>
+                      <Label className="text-xs font-semibold text-slate-700">Upload Floor Plan (Image / PDF)</Label>
                       <div className="flex items-center gap-2">
                         <Input 
                           type="file" 
                           accept="image/*,application/pdf" 
                           onChange={handleFileChange}
-                          className="bg-slate-900 border-slate-700 text-xs h-9 text-slate-300 file:bg-sky-600 file:text-white file:border-0 file:text-xs file:font-bold file:px-3 file:py-1 file:rounded"
+                          className="bg-slate-50 border-slate-200 text-xs h-9 text-slate-700 file:bg-[#095388] file:text-white file:border-0 file:text-xs file:font-bold file:px-3 file:py-1 file:rounded"
                         />
                         <Button 
                           onClick={handleScanBlueprint}
                           disabled={isScanningPlan || !blueprintUri}
-                          className="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs h-9 px-4 shrink-0"
+                          className="bg-[#095388] hover:bg-[#07426c] text-white font-bold text-xs h-9 px-4 shrink-0 shadow-2xs"
                         >
                           {isScanningPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4 mr-1.5" />}
                           Scan AI
@@ -481,7 +494,7 @@ export function AdminProjectEditorModal({
 
                     {/* Blueprint Preview Canvas */}
                     {blueprintUri ? (
-                      <div className="relative h-36 bg-slate-900 rounded-lg border border-slate-800 overflow-hidden flex items-center justify-center">
+                      <div className="relative h-36 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
                         <img src={blueprintUri} alt="Blueprint Plan" className="max-h-full max-w-full object-contain" />
                         {parsedRooms.length > 0 && (
                           <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1000 1000" preserveAspectRatio="none">
@@ -492,7 +505,7 @@ export function AdminProjectEditorModal({
                                 <g key={i}>
                                   <rect x={xmin} y={ymin} width={xmax - xmin} height={ymax - ymin} fill="rgba(14, 165, 233, 0.2)" stroke="#0ea5e9" strokeWidth={2} rx="4" />
                                   <foreignObject x={xmin + 4} y={ymin + 4} width={Math.max(80, xmax - xmin - 8)} height="20">
-                                    <div className="bg-sky-600 text-white text-[8px] font-bold px-1 rounded truncate">
+                                    <div className="bg-[#095388] text-white text-[8px] font-bold px-1 rounded truncate">
                                       {pr.name} ({pr.length}m x {pr.width}m)
                                     </div>
                                   </foreignObject>
@@ -503,8 +516,8 @@ export function AdminProjectEditorModal({
                         )}
                       </div>
                     ) : (
-                      <div className="h-36 border border-dashed border-slate-800 rounded-lg flex flex-col items-center justify-center text-slate-500 text-xs gap-1 bg-slate-950/40">
-                        <ImageIcon className="h-6 w-6 text-slate-600" />
+                      <div className="h-36 border border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-slate-400 text-xs gap-1 bg-slate-50/50">
+                        <ImageIcon className="h-6 w-6 text-slate-400" />
                         <span>No blueprint uploaded</span>
                       </div>
                     )}
@@ -513,27 +526,27 @@ export function AdminProjectEditorModal({
               </Card>
 
               {/* Room Manager Section */}
-              <Card className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-900/60 p-4 border-b border-slate-800 flex flex-row items-center justify-between">
+              <Card className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <CardHeader className="bg-slate-50/80 p-4 border-b border-slate-100 flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle className="text-sm font-bold text-slate-200">Room & Slab Areas ({rooms.length})</CardTitle>
-                    <CardDescription className="text-xs text-slate-400">Add, edit, or remove room dimensions directly.</CardDescription>
+                    <CardTitle className="text-sm font-bold text-slate-800">Room & Slab Areas ({rooms.length})</CardTitle>
+                    <CardDescription className="text-xs text-slate-500">Add, edit, or remove room dimensions directly.</CardDescription>
                   </div>
-                  <Button onClick={handleAddRoom} size="sm" className="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs h-8 px-3">
+                  <Button onClick={handleAddRoom} size="sm" className="bg-[#095388] hover:bg-[#07426c] text-white font-bold text-xs h-8 px-3">
                     <Plus className="h-3.5 w-3.5 mr-1" /> Add Room
                   </Button>
                 </CardHeader>
                 <CardContent className="p-4 space-y-3">
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {rooms.map((r, index) => (
-                      <div key={r.id} className="grid grid-cols-12 gap-2 items-center bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
-                        <span className="col-span-1 text-xs font-bold text-slate-400 text-center">#{index + 1}</span>
+                      <div key={r.id} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <span className="col-span-1 text-xs font-bold text-slate-500 text-center">#{index + 1}</span>
                         <div className="col-span-4">
                           <Input 
                             value={r.name} 
                             onChange={e => handleUpdateRoom(r.id, 'name', e.target.value)} 
                             placeholder="Room Name" 
-                            className="h-8 text-xs bg-slate-950 border-slate-700 text-white font-medium"
+                            className="h-8 text-xs bg-white border-slate-200 text-slate-900 font-medium"
                           />
                         </div>
                         <div className="col-span-3 flex items-center gap-1">
@@ -542,7 +555,7 @@ export function AdminProjectEditorModal({
                             step="0.1" 
                             value={r.length} 
                             onChange={e => handleUpdateRoom(r.id, 'length', e.target.value)} 
-                            className="h-8 text-xs bg-slate-950 border-slate-700 text-white font-bold text-center"
+                            className="h-8 text-xs bg-white border-slate-200 text-slate-900 font-bold text-center"
                           />
                           <span className="text-xs text-slate-500 font-bold">m</span>
                         </div>
@@ -552,7 +565,7 @@ export function AdminProjectEditorModal({
                             step="0.1" 
                             value={r.width} 
                             onChange={e => handleUpdateRoom(r.id, 'width', e.target.value)} 
-                            className="h-8 text-xs bg-slate-950 border-slate-700 text-white font-bold text-center"
+                            className="h-8 text-xs bg-white border-slate-200 text-slate-900 font-bold text-center"
                           />
                           <span className="text-xs text-slate-500 font-bold">m</span>
                         </div>
@@ -561,7 +574,7 @@ export function AdminProjectEditorModal({
                             variant="ghost" 
                             size="sm" 
                             onClick={() => handleDeleteRoom(r.id)} 
-                            className="h-8 w-8 p-0 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -571,20 +584,20 @@ export function AdminProjectEditorModal({
                   </div>
 
                   {/* System Beam Type Selector */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
-                    <span className="font-bold text-slate-300">Beam System Type:</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                    <span className="font-bold text-slate-700">Beam System Type:</span>
                     <div className="flex items-center gap-2">
                       <Button 
                         variant={beamType === 'tbeam' ? 'default' : 'outline'}
                         onClick={() => setBeamType('tbeam')}
-                        className={beamType === 'tbeam' ? 'bg-sky-600 text-white font-bold text-xs h-7 px-3' : 'border-slate-700 text-slate-400 text-xs h-7 px-3'}
+                        className={beamType === 'tbeam' ? 'bg-[#095388] text-white font-bold text-xs h-7 px-3 shadow-2xs' : 'border-slate-200 text-slate-600 text-xs h-7 px-3'}
                       >
                         T-Beam (KSh {pricingRates?.beamTbeamRate || 950}/m)
                       </Button>
                       <Button 
                         variant={beamType === 'flat' ? 'default' : 'outline'}
                         onClick={() => setBeamType('flat')}
-                        className={beamType === 'flat' ? 'bg-sky-600 text-white font-bold text-xs h-7 px-3' : 'border-slate-700 text-slate-400 text-xs h-7 px-3'}
+                        className={beamType === 'flat' ? 'bg-[#095388] text-white font-bold text-xs h-7 px-3 shadow-2xs' : 'border-slate-200 text-slate-600 text-xs h-7 px-3'}
                       >
                         Flat Beam (KSh {pricingRates?.beamFlatRate || 500}/m)
                       </Button>
@@ -599,21 +612,48 @@ export function AdminProjectEditorModal({
             <TabsContent value="bargain" className="space-y-6 mt-0">
               
               {/* Discount / Bargain Manager */}
-              <Card className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-900/60 p-4 border-b border-slate-800">
-                  <CardTitle className="text-sm font-bold text-amber-400 flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-amber-400" /> Price Bargain & Custom Discounts
+              <Card className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <CardHeader className="bg-slate-50/80 p-4 border-b border-slate-100">
+                  <CardTitle className="text-sm font-bold text-amber-600 flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-amber-600" /> Custom Unit Rates & Price Bargain
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4 text-xs">
+                  {/* Unit Rate Overrides */}
+                  <div className="bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/80 space-y-2">
+                    <p className="font-bold text-amber-900 text-xs">Edit Unit Rates (Negotiated Price per Meter / Block)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-slate-700 font-medium text-[11px]">Beam Rate (KSh / meter)</Label>
+                        <Input 
+                          type="number" 
+                          value={customBeamRate} 
+                          onChange={e => setCustomBeamRate(e.target.value === '' ? '' : Number(e.target.value))} 
+                          placeholder={`Default: KSh ${defaultBeamPrice}`}
+                          className="h-8 text-xs bg-white border-slate-200 text-slate-900 font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-slate-700 font-medium text-[11px]">Infill Block Rate (KSh / pcs)</Label>
+                        <Input 
+                          type="number" 
+                          value={customBlockRate} 
+                          onChange={e => setCustomBlockRate(e.target.value === '' ? '' : Number(e.target.value))} 
+                          placeholder={`Default: KSh ${defaultBlockPrice}`}
+                          className="h-8 text-xs bg-white border-slate-200 text-slate-900 font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-slate-300 font-semibold">Discount Type</Label>
+                      <Label className="text-slate-700 font-semibold">Discount Type</Label>
                       <Select value={discountType} onValueChange={(val: any) => setDiscountType(val)}>
-                        <SelectTrigger className="h-9 bg-slate-900 border-slate-700 text-white text-xs">
+                        <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs">
                           <SelectValue placeholder="No Discount" />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-800 text-white text-xs">
+                        <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
                           <SelectItem value="none">No Discount</SelectItem>
                           <SelectItem value="percent">Percentage Discount (%)</SelectItem>
                           <SelectItem value="amount">Fixed Amount Discount (KSh)</SelectItem>
@@ -623,7 +663,7 @@ export function AdminProjectEditorModal({
 
                     {discountType !== 'none' && (
                       <div className="space-y-1.5">
-                        <Label className="text-slate-300 font-semibold">
+                        <Label className="text-slate-700 font-semibold">
                           {discountType === 'percent' ? 'Discount Percentage (%)' : 'Discount Amount (KSh)'}
                         </Label>
                         <Input 
@@ -631,37 +671,37 @@ export function AdminProjectEditorModal({
                           value={discountValue}
                           onChange={e => setDiscountValue(Number(e.target.value) || 0)}
                           placeholder="0"
-                          className="h-9 bg-slate-900 border-slate-700 text-white font-bold text-xs"
+                          className="h-9 bg-slate-50 border-slate-200 text-slate-900 font-bold text-xs"
                         />
                       </div>
                     )}
 
-                    <div className="space-y-1.5 bg-slate-900/90 p-3 rounded-lg border border-slate-800">
-                      <span className="text-[11px] text-slate-400 uppercase font-bold block">Gross Subtotal</span>
-                      <span className="text-base font-black text-slate-200">KSh {grossTotal.toLocaleString()}</span>
+                    <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                      <span className="text-[11px] text-slate-500 uppercase font-bold block">Gross Subtotal</span>
+                      <span className="text-base font-black text-slate-900">KSh {grossTotal.toLocaleString()}</span>
                       {discountAmount > 0 && (
-                        <div className="text-[11px] text-red-400 font-bold mt-1">
+                        <div className="text-[11px] text-red-600 font-bold mt-1">
                           Discount: -KSh {discountAmount.toLocaleString()}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="p-3 bg-amber-950/30 border border-amber-800/40 rounded-lg flex items-center justify-between">
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
                     <div>
-                      <span className="text-xs text-amber-300 font-bold block">Net Grand Total After Discount:</span>
-                      <span className="text-xs text-slate-400">Reflected in updated quote PDF & invoice records.</span>
+                      <span className="text-xs text-amber-900 font-bold block">Net Grand Total After Discount:</span>
+                      <span className="text-xs text-slate-500">Reflected in updated quote PDF & invoice records.</span>
                     </div>
-                    <span className="text-xl font-black text-amber-400">KSh {netGrandTotal.toLocaleString()}</span>
+                    <span className="text-xl font-black text-amber-700">KSh {netGrandTotal.toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Payment Methods & Special Notes */}
-              <Card className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-900/60 p-4 border-b border-slate-800">
-                  <CardTitle className="text-sm font-bold text-sky-400 flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-sky-400" /> Included Payment Methods & Instructions
+              <Card className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <CardHeader className="bg-slate-50/80 p-4 border-b border-slate-100">
+                  <CardTitle className="text-sm font-bold text-[#095388] flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-[#095388]" /> Included Payment Methods & Instructions
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4 text-xs">
@@ -680,13 +720,13 @@ export function AdminProjectEditorModal({
                           onClick={() => togglePaymentMethod(pm.id)}
                           className={`p-3 rounded-lg border text-left transition-all flex flex-col justify-between ${
                             active 
-                              ? 'bg-sky-950/60 border-sky-500 text-white' 
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                              ? 'bg-sky-50 border-sky-500 text-sky-950 shadow-2xs font-bold' 
+                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300'
                           }`}
                         >
                           <div className="flex items-center justify-between w-full">
                             <span className="font-bold text-xs">{pm.label}</span>
-                            {active && <Check className="h-3.5 w-3.5 text-sky-400" />}
+                            {active && <Check className="h-3.5 w-3.5 text-[#095388]" />}
                           </div>
                           <span className="text-[10px] opacity-75 mt-1">{pm.sub}</span>
                         </button>
@@ -695,22 +735,22 @@ export function AdminProjectEditorModal({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Custom Payment Notes</Label>
+                    <Label className="text-slate-700 font-semibold">Custom Payment Notes</Label>
                     <Input 
                       value={customPaymentNotes} 
                       onChange={e => setCustomPaymentNotes(e.target.value)} 
                       placeholder="e.g. Account Number: SI-LATECH / Customer Name" 
-                      className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                      className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Client Bargain / Change Request Notes</Label>
+                    <Label className="text-slate-700 font-semibold">Client Bargain / Change Request Notes</Label>
                     <Textarea 
                       value={clientChangeRequestNotes} 
                       onChange={e => setClientChangeRequestNotes(e.target.value)} 
                       placeholder="Record client negotiation requests, room modifications requested by client, or special discount terms..." 
-                      className="bg-slate-900 border-slate-700 text-white text-xs min-h-[70px]"
+                      className="bg-slate-50 border-slate-200 text-slate-900 text-xs min-h-[70px]"
                     />
                   </div>
                 </CardContent>
@@ -720,78 +760,78 @@ export function AdminProjectEditorModal({
 
             {/* TAB 3: PROJECT & CLIENT INFO */}
             <TabsContent value="details" className="space-y-4 mt-0">
-              <Card className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
-                <CardHeader className="bg-slate-900/60 p-4 border-b border-slate-800">
-                  <CardTitle className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                    <User className="h-4 w-4 text-emerald-400" /> Client & Project Identity
+              <Card className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <CardHeader className="bg-slate-50/80 p-4 border-b border-slate-100">
+                  <CardTitle className="text-sm font-bold text-emerald-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-emerald-600" /> Client & Project Identity
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Project Name <span className="text-red-400">*</span></Label>
+                    <Label className="text-slate-700 font-semibold">Project Name <span className="text-red-500">*</span></Label>
                     <Input 
                       value={name} 
                       onChange={e => setName(e.target.value)} 
                       placeholder="Project Name" 
-                      className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                      className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Client Name</Label>
+                    <Label className="text-slate-700 font-semibold">Client Name</Label>
                     <Input 
                       value={clientName} 
                       onChange={e => setClientName(e.target.value)} 
                       placeholder="Client Full Name" 
-                      className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                      className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Project Location</Label>
+                    <Label className="text-slate-700 font-semibold">Project Location</Label>
                     <Input 
                       value={projectLocation} 
                       onChange={e => setProjectLocation(e.target.value)} 
                       placeholder="Location (e.g. Westlands, Nairobi)" 
-                      className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                      className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Client Contact Phone / Email</Label>
+                    <Label className="text-slate-700 font-semibold">Client Contact Phone / Email</Label>
                     <Input 
                       value={clientContact} 
                       onChange={e => setClientContact(e.target.value)} 
                       placeholder="+254 700 000 000" 
-                      className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                      className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Site Contact Person</Label>
+                    <Label className="text-slate-700 font-semibold">Site Contact Person</Label>
                     <Input 
                       value={contactPerson} 
                       onChange={e => setContactPerson(e.target.value)} 
                       placeholder="Site Foreman or Representative" 
-                      className="h-9 bg-slate-900 border-slate-700 text-white text-xs"
+                      className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300 font-semibold">Project Status</Label>
+                    <Label className="text-slate-700 font-semibold">Project Status</Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger className="h-9 bg-slate-900 border-slate-700 text-white text-xs">
+                      <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs">
                         <SelectValue placeholder="Select Status" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white text-xs">
-                        <SelectItem value="pending" className="text-amber-400 font-semibold">Pending</SelectItem>
-                        <SelectItem value="running" className="text-sky-400 font-semibold">Running</SelectItem>
-                        <SelectItem value="finished" className="text-emerald-400 font-semibold">Finished</SelectItem>
+                      <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
+                        <SelectItem value="pending" className="text-amber-600 font-semibold">Pending</SelectItem>
+                        <SelectItem value="running" className="text-blue-600 font-semibold">Running</SelectItem>
+                        <SelectItem value="finished" className="text-emerald-600 font-semibold">Finished</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-1.5 md:col-span-2">
-                    <Label className="text-slate-300 font-semibold">Assigned Staff Member</Label>
+                    <Label className="text-slate-700 font-semibold">Assigned Staff Member</Label>
                     <Select value={assignedTo} onValueChange={setAssignedTo}>
-                      <SelectTrigger className="h-9 bg-slate-900 border-slate-700 text-white text-xs">
+                      <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs">
                         <SelectValue placeholder="Assign Staff" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-slate-800 text-white text-xs">
+                      <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
                         <SelectItem value="unassigned" className="text-slate-400 italic">Unassigned</SelectItem>
                         {staffList.map((s: any) => (
                           <SelectItem key={s.id} value={s.username}>{s.name} (@{s.username})</SelectItem>
@@ -805,47 +845,47 @@ export function AdminProjectEditorModal({
           </Tabs>
 
           {/* Quick Summary Bar */}
-          <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+          <div className="p-4 bg-white rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs shadow-2xs">
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Total Slab Area</span>
-              <span className="font-extrabold text-white text-sm">{(calculatedTotals.totalArea || 0).toFixed(2)} m²</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Total Slab Area</span>
+              <span className="font-extrabold text-slate-900 text-sm">{(calculatedTotals.totalArea || 0).toFixed(2)} m²</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Invoice Beams</span>
-              <span className="font-extrabold text-sky-400 text-sm">{(calculatedTotals.totalInvoiceBeamLength || 0).toFixed(2)} LM</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Invoice Beams</span>
+              <span className="font-extrabold text-[#095388] text-sm">{(calculatedTotals.totalInvoiceBeamLength || 0).toFixed(2)} LM</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Hollow Blocks</span>
-              <span className="font-extrabold text-sky-400 text-sm">{calculatedTotals.totalBlocks || 0} pcs</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Hollow Blocks</span>
+              <span className="font-extrabold text-[#095388] text-sm">{calculatedTotals.totalBlocks || 0} pcs</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Estimated Profit</span>
-              <span className="font-extrabold text-emerald-400 text-sm">KSh {(calculatedTotals.totalProjectProfit || 0).toLocaleString()}</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Estimated Profit</span>
+              <span className="font-extrabold text-emerald-600 text-sm">KSh {(calculatedTotals.totalProjectProfit || 0).toLocaleString()}</span>
             </div>
           </div>
 
         </div>
 
         {/* Modal Footer */}
-        <DialogFooter className="p-4 border-t border-slate-800 bg-slate-950/80 sticky bottom-0 z-20 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/80 sticky bottom-0 z-20 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button 
               type="button" 
               variant="outline" 
               size="sm" 
               onClick={handleDownloadQuote} 
-              className="border-slate-700 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-9"
+              className="border-slate-200 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs h-9"
             >
-              <Download className="h-3.5 w-3.5 mr-1 text-sky-400" /> Download Quote PDF
+              <Download className="h-3.5 w-3.5 mr-1 text-[#095388]" /> Download Quote PDF
             </Button>
             <Button 
               type="button" 
               variant="outline" 
               size="sm" 
               onClick={handleDownloadPromax} 
-              className="border-slate-700 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs h-9"
+              className="border-slate-200 bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs h-9"
             >
-              <Download className="h-3.5 w-3.5 mr-1 text-emerald-400" /> Manufacturing Order
+              <Download className="h-3.5 w-3.5 mr-1 text-emerald-600" /> Manufacturing Order
             </Button>
           </div>
 
@@ -855,7 +895,7 @@ export function AdminProjectEditorModal({
               variant="ghost" 
               size="sm" 
               onClick={() => onOpenChange(false)} 
-              className="text-slate-400 hover:text-white text-xs h-9"
+              className="text-slate-500 hover:text-slate-900 text-xs h-9"
             >
               Cancel
             </Button>
@@ -864,7 +904,7 @@ export function AdminProjectEditorModal({
               size="sm" 
               onClick={handleSave} 
               disabled={isSaving} 
-              className="bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs h-9 px-5 shadow-lg"
+              className="bg-[#095388] hover:bg-[#07426c] text-white font-bold text-xs h-9 px-5 shadow-sm"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Check className="h-4 w-4 mr-1.5" />}
               Save & Sync Changes

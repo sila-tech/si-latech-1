@@ -282,6 +282,11 @@ export function InvestorManagement() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleAddInvestment} className="space-y-4">
+                            {!customersLoading && (!customers || customers.length === 0) && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800 font-medium">
+                                    ⚠️ No customers found in the system. Investments must be linked to a customer account. Add a customer first through the mobile app or Firebase console before recording investments.
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <Label htmlFor="customer">Select Customer</Label>
                                 {customersLoading ? (
@@ -289,9 +294,9 @@ export function InvestorManagement() {
                                         <Loader2 className="animate-spin h-3.5 w-3.5" /> Loading customers...
                                     </div>
                                 ) : (
-                                    <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                                    <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId} disabled={!customers || customers.length === 0}>
                                         <SelectTrigger id="customer">
-                                            <SelectValue placeholder="Choose customer..." />
+                                            <SelectValue placeholder={customers && customers.length > 0 ? "Choose customer..." : "No customers available"} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {customers?.map((cust: any) => (

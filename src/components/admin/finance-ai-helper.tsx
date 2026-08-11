@@ -54,12 +54,12 @@ export function FinanceAiSmartFiller({ onApplyParsedRecord }: FinanceAiSmartFill
   };
 
   return (
-    <div className="bg-slate-900 text-white p-3 rounded-lg border border-slate-800 space-y-2 mb-4">
+    <div className="bg-amber-50/70 text-slate-900 p-3.5 rounded-xl border border-amber-200/80 space-y-2.5 mb-4 shadow-2xs">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
-          <Sparkles size={14} /> AI Smart Record Filler
+        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+          <Sparkles size={14} className="text-amber-600" /> AI Smart Record Filler
         </div>
-        <Badge variant="outline" className="text-[10px] border-amber-400/40 text-amber-300">
+        <Badge variant="outline" className="text-[10px] border-amber-300 bg-amber-100 text-amber-900 font-bold">
           Paste Note / M-Pesa SMS
         </Badge>
       </div>

@@ -9,19 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, HardHat, MapPin, Layers, Download, Image as ImageIcon, Wallet, LogOut, FileText } from 'lucide-react';
-import { Header } from '@/components/header';
+import { Loader2, HardHat, MapPin, Layers, Download, Image as ImageIcon, Wallet, LogOut, FileText, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { generateMaterialSchedulePdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 import { StaffAiAssistant } from '@/components/staff/staff-ai-assistant';
+import { StaffSidebar, type StaffSection } from '@/components/staff/staff-sidebar';
 
 const STAFF_SESSION_KEY = 'sila-staff-auth';
 
 export default function StaffDashboardPage() {
     const [user, setUser] = useState<{username: string, name: string} | null>(null);
+    const [activeSection, setActiveSection] = useState<StaffSection>('projects');
     const [selectedProject, setSelectedProject] = useState<any>(null);
     const [isLayoutViewOpen, setIsLayoutViewOpen] = useState(false);
     
@@ -55,7 +56,6 @@ export default function StaffDashboardPage() {
     );
     const { data: rawRequests, isLoading: requestsLoading } = useCollection<any>(myFinancesQuery);
     
-    // Sort client-side to avoid needing a Firestore composite index
     const myRequests = React.useMemo(() => {
         if (!rawRequests) return [];
         return [...rawRequests].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
@@ -93,61 +93,44 @@ export default function StaffDashboardPage() {
         }
     };
 
-    if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+    if (!user) return <div className="min-h-screen bg-slate-50 flex items-center justify-center"><Loader2 className="animate-spin text-[#095388]" /></div>;
 
-    return (
-        <div className="flex flex-col min-h-screen bg-slate-50">
-            <Header />
-            <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
-                
-                {/* Header Section */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-amber-100 p-3 rounded-full text-amber-700">
-                            <HardHat size={32} />
-                        </div>
+    const renderSection = () => {
+        switch (activeSection) {
+            case 'projects':
+                return (
+                    <div className="space-y-6">
                         <div>
-                            <h1 className="text-2xl font-black font-headline text-slate-900">Welcome, {user.name}</h1>
-                            <p className="text-slate-500 text-sm">Staff & Technician Portal</p>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">Assigned Projects</h1>
+                            <p className="text-slate-500 text-sm mt-1">View project specs, material schedules, and room layout diagrams.</p>
                         </div>
-                    </div>
-                    <Button variant="outline" onClick={handleLogout} className="text-slate-500 border-slate-200 hover:bg-slate-100">
-                        <LogOut size={16} className="mr-2" /> Sign Out
-                    </Button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Projects Section */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <h2 className="text-xl font-bold font-headline flex items-center gap-2">
-                            <Layers className="text-primary" /> My Assigned Projects
-                        </h2>
                         
                         {projectsLoading ? (
-                            <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+                            <div className="flex justify-center p-12"><Loader2 className="animate-spin text-[#095388]" /></div>
                         ) : projects?.length === 0 ? (
-                            <Card className="border-dashed border-2 bg-transparent shadow-none">
-                                <CardContent className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
-                                    <MapPin size={48} className="mb-4 opacity-20" />
-                                    <p>You have no projects assigned to you at the moment.</p>
+                            <Card className="border-dashed border-2 bg-white shadow-2xs">
+                                <CardContent className="flex flex-col items-center justify-center p-16 text-center text-slate-400">
+                                    <MapPin size={48} className="mb-4 opacity-30 text-amber-500" />
+                                    <p className="font-bold text-slate-700">No projects assigned to you yet</p>
+                                    <p className="text-xs text-slate-400 mt-1">Once an administrator assigns a project to @{user.username}, it will show up here.</p>
                                 </CardContent>
                             </Card>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {projects?.map((proj) => (
-                                    <Card key={proj.id} className="border border-slate-200 hover:border-primary/50 hover:shadow-md transition-all bg-white cursor-pointer" onClick={() => setSelectedProject(proj)}>
-                                        <CardHeader className="pb-2 border-b bg-slate-50">
-                                            <CardTitle className="text-lg font-bold">{proj.name}</CardTitle>
-                                            <CardDescription>{proj.clientName || 'No Client'}</CardDescription>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                {projects?.map((proj: any) => (
+                                    <Card key={proj.id} className="bg-blue-600 text-white border-0 hover:bg-blue-700 shadow-sm hover:shadow-lg transition-all rounded-2xl cursor-pointer group flex flex-col justify-between overflow-hidden" onClick={() => setSelectedProject(proj)}>
+                                        <CardHeader className="pb-3 border-b border-white/10 bg-white/10 p-4">
+                                            <CardTitle className="text-base font-black text-white">{proj.name}</CardTitle>
+                                            <CardDescription className="text-xs text-white/80 font-medium">{proj.clientName || 'No Client'}</CardDescription>
                                         </CardHeader>
-                                        <CardContent className="pt-4 space-y-2">
-                                            <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                <MapPin size={14} className="text-primary" />
-                                                {proj.projectLocation || 'Unknown Location'}
+                                        <CardContent className="p-4 space-y-2">
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-white/90">
+                                                <MapPin size={14} className="opacity-80 shrink-0" />
+                                                <span className="truncate">{proj.projectLocation || 'Unknown Location'}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm text-slate-600">
-                                                <Layers size={14} className="text-primary" />
-                                                {proj.rooms?.length || 0} Project Areas
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-white/90">
+                                                <Layers size={14} className="opacity-80 shrink-0" />
+                                                <span>{proj.rooms?.length || 0} Project Areas</span>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -155,40 +138,35 @@ export default function StaffDashboardPage() {
                             </div>
                         )}
                     </div>
+                );
 
-                    {/* Finances Section */}
-                    <div className="space-y-6">
-                        <h2 className="text-xl font-bold font-headline flex items-center gap-2">
-                            <Wallet className="text-amber-600" /> Site Facilitation
-                        </h2>
-                        
-                        <StaffAiAssistant 
-                            staffName={user?.name}
-                            assignedProjects={projects?.map(p => ({ name: p.name, projectLocation: p.projectLocation, roomsCount: p.rooms?.length }))}
-                            onApplyFacilitation={(amt, rsn) => {
-                                setFacAmount(amt.toString());
-                                setFacReason(rsn);
-                                toast({ title: 'AI Recommendation Applied', description: 'Form populated with suggested amount and reason.' });
-                            }}
-                        />
+            case 'facilitation':
+                return (
+                    <div className="space-y-6 max-w-3xl">
+                        <div>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">Site Facilitation</h1>
+                            <p className="text-slate-500 text-sm mt-1">Request transport, meals, or operational site funds from management.</p>
+                        </div>
 
-                        <Card className="border-slate-200 shadow-sm">
-                            <CardHeader className="bg-slate-900 text-white rounded-t-xl pb-4">
-                                <CardTitle className="text-lg">Request Funds</CardTitle>
-                                <CardDescription className="text-slate-400">Request money for site operations.</CardDescription>
+                        <Card className="border border-slate-200 bg-white shadow-2xs rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-slate-900 text-white p-5">
+                                <CardTitle className="text-base font-bold flex items-center gap-2">
+                                    <Wallet className="text-amber-400" size={18} /> Request Operations Funds
+                                </CardTitle>
+                                <CardDescription className="text-slate-400 text-xs">Submitted requests go directly to Super Admin for approval.</CardDescription>
                             </CardHeader>
-                            <CardContent className="pt-6">
+                            <CardContent className="p-6">
                                 <form onSubmit={handleRequestFacilitation} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Amount Required (KSh)</Label>
-                                        <Input type="number" value={facAmount} onChange={(e) => setFacAmount(e.target.value)} placeholder="0" />
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-semibold text-slate-700">Amount Required (KSh)</Label>
+                                        <Input type="number" value={facAmount} onChange={(e) => setFacAmount(e.target.value)} placeholder="e.g. 2500" />
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Reason / Purpose</Label>
-                                        <Input value={facReason} onChange={(e) => setFacReason(e.target.value)} placeholder="e.g. Transport, Lunch for fundis" />
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs font-semibold text-slate-700">Reason / Purpose</Label>
+                                        <Input value={facReason} onChange={(e) => setFacReason(e.target.value)} placeholder="e.g. Fuel for site visit, lunch for fundis" />
                                     </div>
-                                    <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700" disabled={isRequesting}>
-                                        {isRequesting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                                    <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-10" disabled={isRequesting}>
+                                        {isRequesting ? <Loader2 className="animate-spin mr-2" size={15} /> : null}
                                         Submit Request
                                     </Button>
                                 </form>
@@ -196,54 +174,95 @@ export default function StaffDashboardPage() {
                         </Card>
 
                         <div className="space-y-3">
-                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Recent Requests</h3>
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Request History</h3>
                             {requestsLoading ? (
                                 <Loader2 className="animate-spin mx-auto text-primary" />
                             ) : myRequests?.length === 0 ? (
-                                <p className="text-xs text-slate-400 italic">No previous requests found.</p>
+                                <p className="text-xs text-slate-400 italic">No previous requests submitted.</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {myRequests?.slice(0, 5).map(req => (
-                                        <div key={req.id} className="bg-white p-3 rounded-lg border text-sm flex justify-between items-center shadow-sm">
+                                    {myRequests?.map((req: any) => (
+                                        <div key={req.id} className="bg-white p-3.5 rounded-xl border border-slate-200 text-sm flex justify-between items-center shadow-2xs">
                                             <div>
                                                 <p className="font-bold text-slate-900">KSh {req.amount?.toLocaleString()}</p>
                                                 <p className="text-xs text-slate-500">{req.reason}</p>
                                             </div>
-                                            <div>
-                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${
-                                                    req.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                    req.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                    'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                    {req.status?.toUpperCase()}
-                                                </span>
-                                            </div>
+                                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                                                req.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                req.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                'bg-amber-50 text-amber-700 border-amber-200'
+                                            }`}>
+                                                {req.status?.toUpperCase()}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
                     </div>
+                );
+
+            case 'ai':
+                return (
+                    <div className="space-y-6 max-w-3xl">
+                        <div>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline flex items-center gap-2">
+                                <Bot className="text-purple-600" /> Field Assistant
+                            </h1>
+                            <p className="text-slate-500 text-sm mt-1">Smart recommendations for your assigned site tasks.</p>
+                        </div>
+                        <StaffAiAssistant 
+                            staffName={user?.name}
+                            assignedProjects={projects?.map((p: any) => ({ name: p.name, projectLocation: p.projectLocation, roomsCount: p.rooms?.length }))}
+                            onApplyFacilitation={(amt, rsn) => {
+                                setFacAmount(amt.toString());
+                                setFacReason(rsn);
+                                setActiveSection('facilitation');
+                                toast({ title: 'AI Suggestion Applied', description: 'Switching to Facilitation form with pre-filled details.' });
+                            }}
+                        />
+                    </div>
+                );
+
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="flex min-h-screen bg-slate-50/60">
+            <StaffSidebar
+                activeSection={activeSection}
+                onSectionChange={setActiveSection}
+                staffName={user.name}
+                username={user.username}
+                onLogout={handleLogout}
+            />
+
+            {/* Main Content Area */}
+            <main className="flex-1 min-h-screen p-6 lg:p-10 overflow-y-auto">
+                <div className="max-w-5xl mx-auto">
+                    {renderSection()}
                 </div>
             </main>
 
-            {/* Restricted Project Details Dialog for Staff */}
+            {/* Project Details Dialog */}
             <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl bg-white border border-slate-200">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl font-black text-primary">{selectedProject?.name}</DialogTitle>
+                        <DialogTitle className="text-2xl font-black text-[#095388]">{selectedProject?.name}</DialogTitle>
                         <p className="text-sm text-slate-500">{selectedProject?.clientName} — {selectedProject?.projectLocation}</p>
                     </DialogHeader>
                     
-                    <div className="py-6 space-y-6">
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-blue-800 text-sm flex gap-3 items-start">
-                            <FileText className="shrink-0 mt-0.5" size={18} />
-                            <p>You have been assigned to this project. You can download the required material breakdown and view the technical layout diagrams below.</p>
+                    <div className="py-4 space-y-5">
+                        <div className="bg-sky-50 p-4 rounded-xl border border-sky-200 text-sky-900 text-xs flex gap-3 items-start font-medium">
+                            <FileText className="shrink-0 text-sky-600 mt-0.5" size={18} />
+                            <p>You are assigned as technician for this project. Access material requirements or technical layout sheets below.</p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Button 
-                                className="h-16 bg-slate-900 hover:bg-slate-800 flex flex-col items-center justify-center gap-1"
+                                className="h-14 bg-slate-900 hover:bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5 rounded-xl"
                                 onClick={() => generateMaterialSchedulePdf({
                                     clientInfo: {
                                         projectName: selectedProject.name,
@@ -254,17 +273,17 @@ export default function StaffDashboardPage() {
                                     settings: selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }
                                 })}
                             >
-                                <Download size={20} />
+                                <Download size={18} />
                                 <span className="text-xs font-bold">Download Material Breakdown</span>
                             </Button>
                             
                             <Button 
                                 variant="outline"
-                                className="h-16 border-primary text-primary hover:bg-primary/5 flex flex-col items-center justify-center gap-1"
+                                className="h-14 border-primary text-primary hover:bg-primary/5 flex flex-col items-center justify-center gap-0.5 rounded-xl font-bold"
                                 onClick={() => setIsLayoutViewOpen(true)}
                             >
-                                <ImageIcon size={20} />
-                                <span className="text-xs font-bold">View Layout Diagrams</span>
+                                <ImageIcon size={18} />
+                                <span className="text-xs font-bold">View Technical Diagrams</span>
                             </Button>
                         </div>
                     </div>
@@ -273,22 +292,17 @@ export default function StaffDashboardPage() {
 
             {/* Layout Diagrams Dialog */}
             <Dialog open={isLayoutViewOpen} onOpenChange={setIsLayoutViewOpen}>
-                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print-dialog-content">
+                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print-dialog-content bg-white">
                     <DialogHeader className="print:hidden">
                         <DialogTitle className="text-2xl font-black text-slate-900">Technical Layout Diagrams</DialogTitle>
-                        <CardDescription>Visual guide for staff and site technicians.</CardDescription>
+                        <CardDescription>Visual guide for site technicians.</CardDescription>
                     </DialogHeader>
                     
                     <div className="flex-1 overflow-y-auto pr-2 print:overflow-visible print:h-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
-                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 1100 : 520;
-                                const settings = selectedProject.settings || {
-                                    beamSpacing: 0.55,
-                                    blockWidth: 0.2,
-                                    wastagePercentage: 10
-                                };
-                                const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
+                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 500;
+                                const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }, BEAM_PRICE_PER_METER, r.name);
                                 return (
                                     <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />
                                 );
@@ -299,7 +313,7 @@ export default function StaffDashboardPage() {
                     <div className="flex justify-between border-t pt-4 print:hidden">
                         <p className="text-xs text-slate-400 italic">SI-LATECH Internal Staff Document</p>
                         <Button onClick={() => window.print()} className="bg-primary font-bold">
-                            <Download size={16} className="mr-2" /> Print for Site Technician
+                            <Download size={16} className="mr-2" /> Print Technical Diagram
                         </Button>
                     </div>
                 </DialogContent>
