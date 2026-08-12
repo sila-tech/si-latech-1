@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { calculateProjectTotals } from './calculator';
+import { calculateProjectTotals, calcRoomBlocksAndBeams } from './calculator';
 
 export const addLogoToPdf = (doc: jsPDF, color: string) => {
     doc.setFont('helvetica', 'bold');

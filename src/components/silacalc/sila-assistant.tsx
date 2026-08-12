@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useCalculator } from '@/context/calculator-context';
 import { processSilaMessage } from '@/ai/flows/sila-voice-flow';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -330,10 +331,13 @@ export function SilaAssistant() {
   };
 
   // Don't render on the server — prevents hydration mismatch from Date/localStorage
-  if (!mounted) return null;
+  const hasMobileBar = (totals?.totalArea || 0) > 0;
 
   return (
-    <div className="fixed bottom-5 left-4 md:bottom-6 md:left-6 z-[999990] flex flex-col items-start gap-2 select-none">
+    <div className={cn(
+      "fixed left-4 md:left-6 z-[999990] flex flex-col items-start gap-2 select-none transition-all duration-300",
+      hasMobileBar ? "bottom-20 md:bottom-6" : "bottom-5 md:bottom-6"
+    )}>
       
       {/* Floating Chat Panel */}
       {isOpen && (

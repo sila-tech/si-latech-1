@@ -163,6 +163,8 @@ export function AdminSidebar({
         </div>
     );
 
+    const activeItem = NAV_ITEMS.find((item) => item.id === activeSection);
+
     return (
         <>
             {/* Desktop Sidebar */}
@@ -170,25 +172,45 @@ export function AdminSidebar({
                 <SidebarContent />
             </aside>
 
-            {/* Mobile Toggle Button */}
-            <div className="lg:hidden fixed top-3 left-3 z-50">
-                <Button
-                    size="icon"
-                    onClick={() => setMobileOpen(!mobileOpen)}
-                    className="h-9 w-9 bg-[#07365a] border border-sky-800 text-white hover:bg-[#095388] shadow-md rounded-xl"
-                >
-                    {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                </Button>
+            {/* Mobile Top Header Bar */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-[#07365a] border-b border-sky-900/50 flex items-center justify-between px-3 text-white shadow-md">
+                <div className="flex items-center gap-2.5">
+                    <Button
+                        size="icon"
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        aria-label="Open Admin Menu"
+                        className="h-9 w-9 bg-white/10 hover:bg-white/20 border border-white/20 text-white shadow-xs rounded-xl"
+                    >
+                        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        <img src="/logo.png" alt="SI-LATECH" className="w-6 h-6 object-contain" />
+                        <span className="text-xs font-black tracking-tight text-white uppercase">
+                            Admin <span className="text-sky-300">/ {activeItem?.label || 'Dashboard'}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                    <Button
+                        onClick={onManageRates}
+                        size="sm"
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[10px] h-7 px-2.5 rounded-lg border-0 shadow-xs"
+                    >
+                        <SlidersHorizontal className="h-3 w-3 mr-1" />
+                        Rates
+                    </Button>
+                </div>
             </div>
 
             {/* Mobile Sidebar Overlay */}
             {mobileOpen && (
                 <>
                     <div
-                        className="lg:hidden fixed inset-0 bg-slate-950/60 z-40 backdrop-blur-xs"
+                        className="lg:hidden fixed inset-0 bg-slate-950/60 z-40 backdrop-blur-xs transition-opacity"
                         onClick={() => setMobileOpen(false)}
                     />
-                    <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-64 z-50 bg-[#07365a] border-r border-sky-900/50 flex flex-col overflow-y-auto shadow-2xl">
+                    <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-72 z-50 bg-[#07365a] border-r border-sky-900/50 flex flex-col overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-200">
                         <SidebarContent />
                     </aside>
                 </>

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock, Download, FileText, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, DollarSign, ArrowUpRight, ArrowDownRight, CheckCircle2, XCircle, Clock, Download, FileText, Pencil, Trash2, HandCoins, UserCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -139,19 +139,41 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
     const totals = {
         income: 0,
         expenses: 0,
-        pending: 0
+        pending: 0,
+        staffLoansIssued: 0,
+        staffLoansRepaid: 0,
+        outstandingLoans: 0
     };
 
     finances?.forEach(f => {
-        if (f.type === 'income') totals.income += f.amount || 0;
-        else if (f.status === 'approved') totals.expenses += f.amount || 0;
-        else if (f.status === 'pending') totals.pending += f.amount || 0;
+        const amt = f.amount || 0;
+        if (f.type === 'income') {
+            totals.income += amt;
+        } else if (f.type === 'loan_repayment') {
+            if (f.status === 'approved') {
+                totals.income += amt;
+                totals.staffLoansRepaid += amt;
+            }
+        } else if (f.type === 'staff_loan') {
+            if (f.status === 'approved') {
+                totals.expenses += amt;
+                totals.staffLoansIssued += amt;
+            } else if (f.status === 'pending') {
+                totals.pending += amt;
+            }
+        } else if (f.status === 'approved') {
+            totals.expenses += amt;
+        } else if (f.status === 'pending') {
+            totals.pending += amt;
+        }
     });
 
-    const ledgerAsc = finances ? [...finances].filter(f => f.type === 'income' || f.status === 'approved').reverse() : [];
+    totals.outstandingLoans = Math.max(0, totals.staffLoansIssued - totals.staffLoansRepaid);
+
+    const ledgerAsc = finances ? [...finances].filter(f => f.type === 'income' || f.type === 'loan_repayment' || f.status === 'approved').reverse() : [];
     let currentBalance = 0;
     const ledgerEntries = ledgerAsc.map(f => {
-        const isCredit = f.type === 'income';
+        const isCredit = f.type === 'income' || f.type === 'loan_repayment';
         const amount = f.amount || 0;
         const debit = !isCredit ? amount : 0;
         const credit = isCredit ? amount : 0;
@@ -164,6 +186,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
         };
     });
     const displayLedger = [...ledgerEntries].reverse();
+    const staffLoanRecords = finances ? finances.filter((f: any) => f.type === 'staff_loan' || f.type === 'loan_repayment') : [];
 
     const filterLedgerByPeriod = (entries: any[]) => {
         if (statementPeriod === 'all') return entries;
@@ -245,29 +268,37 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                 <h2 className="text-2xl font-bold font-headline text-slate-900">Financial Tracking</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <Card className="border border-green-200 bg-green-50/50 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-bold text-green-700 flex items-center gap-2"><ArrowUpRight size={16}/> Total Income</CardTitle>
+                        <CardTitle className="text-xs font-bold text-green-700 uppercase tracking-wider flex items-center gap-2"><ArrowUpRight size={16}/> Total Income</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-black text-green-700">KSh {totals.income.toLocaleString()}</p>
+                        <p className="text-2xl sm:text-3xl font-black text-green-700">KSh {totals.income.toLocaleString()}</p>
                     </CardContent>
                 </Card>
                 <Card className="border border-red-200 bg-red-50/50 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-bold text-red-700 flex items-center gap-2"><ArrowDownRight size={16}/> Total Expenses</CardTitle>
+                        <CardTitle className="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center gap-2"><ArrowDownRight size={16}/> Total Expenses</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-black text-red-700">KSh {totals.expenses.toLocaleString()}</p>
+                        <p className="text-2xl sm:text-3xl font-black text-red-700">KSh {totals.expenses.toLocaleString()}</p>
+                    </CardContent>
+                </Card>
+                <Card className="border border-purple-200 bg-purple-50/50 shadow-sm">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-xs font-bold text-purple-700 uppercase tracking-wider flex items-center gap-2"><HandCoins size={16}/> Outstanding Loans</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl sm:text-3xl font-black text-purple-700">KSh {totals.outstandingLoans.toLocaleString()}</p>
                     </CardContent>
                 </Card>
                 <Card className="border border-amber-200 bg-amber-50/50 shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-bold text-amber-700 flex items-center gap-2"><Clock size={16}/> Pending Requests</CardTitle>
+                        <CardTitle className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-2"><Clock size={16}/> Pending Requests</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-black text-amber-700">KSh {totals.pending.toLocaleString()}</p>
+                        <p className="text-2xl sm:text-3xl font-black text-amber-700">KSh {totals.pending.toLocaleString()}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -276,7 +307,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                 <Card className="lg:col-span-1 border-slate-200">
                     <CardHeader>
                         <CardTitle className="text-lg">{isSuperAdmin ? 'Log Transaction' : 'Request Facilitation'}</CardTitle>
-                        <CardDescription>{isSuperAdmin ? 'Manually record income or expense.' : 'Submit a request for facilitation funds.'}</CardDescription>
+                        <CardDescription>{isSuperAdmin ? 'Manually record income, loan, or expense.' : 'Submit a request for facilitation funds or loan.'}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {isSuperAdmin && (
@@ -296,6 +327,9 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="income">Income (Money Received)</SelectItem>
+                                            <SelectItem value="staff_loan">Staff Loan / Salary Advance</SelectItem>
+                                            <SelectItem value="loan_repayment">Staff Loan Repayment</SelectItem>
+                                            <SelectItem value="facilitation_request">Facilitation Request</SelectItem>
                                             <SelectItem value="advertisement">Advertisement Expense</SelectItem>
                                             <SelectItem value="other_expense">Other Expense</SelectItem>
                                         </SelectContent>
@@ -308,7 +342,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                             </div>
                             <div className="space-y-2">
                                 <Label>Description / Reason</Label>
-                                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={isSuperAdmin ? "e.g. Facebook Ads" : "e.g. Transport to site"} />
+                                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder={isSuperAdmin ? "e.g. Salary advance for Technician John" : "e.g. Transport to site"} />
                             </div>
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
@@ -324,9 +358,10 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                     </CardHeader>
                     <CardContent>
                         <Tabs defaultValue="bank" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsList className="grid w-full grid-cols-3 mb-4">
                                 <TabsTrigger value="bank">Mini Bank (Ledger)</TabsTrigger>
                                 <TabsTrigger value="history">Pending & History</TabsTrigger>
+                                <TabsTrigger value="staff_loans">Staff Loans</TabsTrigger>
                             </TabsList>
                             
                             <TabsContent value="bank" className="space-y-4">
@@ -500,6 +535,113 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                     </div>
                                 )}
                             </TabsContent>
+
+                            <TabsContent value="staff_loans" className="space-y-4">
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                    <div>
+                                        <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider">Staff Loan Ledger Summary</h4>
+                                        <p className="text-xs text-purple-700 font-medium mt-0.5">
+                                            Issued: <span className="font-bold">KSh {totals.staffLoansIssued.toLocaleString()}</span>  |  
+                                            Repaid: <span className="font-bold text-emerald-700">KSh {totals.staffLoansRepaid.toLocaleString()}</span>  |  
+                                            Balance Due: <span className="font-bold text-purple-900">KSh {totals.outstandingLoans.toLocaleString()}</span>
+                                        </p>
+                                    </div>
+                                    {isSuperAdmin && (
+                                        <Button 
+                                            size="sm" 
+                                            onClick={() => { setType('loan_repayment'); setReason('Staff Loan Repayment'); }}
+                                            className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs h-8 px-3 rounded-lg shrink-0 gap-1.5"
+                                        >
+                                            <HandCoins size={14} /> Log Loan Repayment
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {isLoading ? (
+                                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+                                ) : (
+                                    <div className="h-[320px] overflow-y-auto overflow-x-auto border rounded-md">
+                                        <Table>
+                                            <TableHeader className="sticky top-0 bg-slate-50 z-10 shadow-sm">
+                                                <TableRow>
+                                                    <TableHead>Date</TableHead>
+                                                    <TableHead>Category / Type</TableHead>
+                                                    <TableHead>Description / Purpose</TableHead>
+                                                    <TableHead>Staff Member</TableHead>
+                                                    <TableHead className="text-right">Amount (KSh)</TableHead>
+                                                    <TableHead className="text-center">Status / Action</TableHead>
+                                                    <TableHead className="text-center w-[80px]">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {staffLoanRecords.length === 0 ? (
+                                                    <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">No staff loan records found.</TableCell></TableRow>
+                                                ) : (
+                                                    staffLoanRecords.map((f: any) => (
+                                                        <TableRow key={f.id}>
+                                                            <TableCell className="text-xs text-slate-500">
+                                                                {f.createdAt?.seconds ? format(new Date(f.createdAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className={
+                                                                    f.type === 'loan_repayment' 
+                                                                        ? 'text-emerald-700 border-emerald-300 bg-emerald-50 font-bold' 
+                                                                        : 'text-purple-700 border-purple-300 bg-purple-50 font-bold'
+                                                                }>
+                                                                    {f.type === 'loan_repayment' ? 'Repayment' : 'Staff Loan'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="font-medium text-sm max-w-[200px] truncate" title={f.reason}>{f.reason}</TableCell>
+                                                            <TableCell className="text-xs text-slate-700 font-semibold">{f.requestedBy || 'Admin'}</TableCell>
+                                                            <TableCell className={`text-right font-bold ${f.type === 'loan_repayment' ? 'text-emerald-600' : 'text-purple-700'}`}>
+                                                                {f.type === 'loan_repayment' ? `+KSh ${f.amount?.toLocaleString()}` : `-KSh ${f.amount?.toLocaleString()}`}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                {f.status === 'pending' ? (
+                                                                    isSuperAdmin ? (
+                                                                        <div className="flex gap-1.5 justify-center">
+                                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => handleUpdateStatus(f.id, 'approved')}>Approve</Button>
+                                                                            <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => handleUpdateStatus(f.id, 'rejected')}>Reject</Button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">Pending</Badge>
+                                                                    )
+                                                                ) : (
+                                                                    <Badge variant="outline" className={f.status === 'approved' ? 'text-green-600 border-green-200 font-bold' : 'text-slate-500'}>
+                                                                        {f.status.charAt(0).toUpperCase() + f.status.slice(1)}
+                                                                    </Badge>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-center">
+                                                                <div className="flex justify-center gap-1">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-7 w-7 text-slate-500 hover:text-slate-900" 
+                                                                        onClick={() => startEdit(f)}
+                                                                        title="Edit"
+                                                                    >
+                                                                        <Pencil size={14} />
+                                                                    </Button>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" 
+                                                                        onClick={() => handleDeleteRecord(f.id)}
+                                                                        title="Delete"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </TabsContent>
                         </Tabs>
                     </CardContent>
                 </Card>
@@ -507,7 +649,7 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
 
             {/* Edit Financial Record Dialog */}
             <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
-                <DialogContent className="max-w-md bg-white border border-slate-200 shadow-lg rounded-lg">
+                <DialogContent className="w-[95vw] sm:max-w-md bg-white border border-slate-200 shadow-lg rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-slate-900">Edit Financial Record</DialogTitle>
                     </DialogHeader>
@@ -518,6 +660,8 @@ export function FinanceManagement({ isSuperAdmin = true }: { isSuperAdmin?: bool
                                 <SelectTrigger id="edit-type"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="income">Income (Money Received)</SelectItem>
+                                    <SelectItem value="staff_loan">Staff Loan / Salary Advance</SelectItem>
+                                    <SelectItem value="loan_repayment">Staff Loan Repayment</SelectItem>
                                     <SelectItem value="facilitation_request">Facilitation Request</SelectItem>
                                     <SelectItem value="advertisement">Advertisement Expense</SelectItem>
                                     <SelectItem value="other_expense">Other Expense</SelectItem>

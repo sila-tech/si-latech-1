@@ -271,11 +271,13 @@ export default function AdminDashboardPage() {
     const analytics = useMemo(() => {
         const all = projects || [];
         const running = all.filter((p: any) => (p.status || 'pending') === 'running').length;
+        const expected = all.filter((p: any) => (p.status || 'pending') === 'expected').length;
         const pending = all.filter((p: any) => (p.status || 'pending') === 'pending').length;
         const finished = all.filter((p: any) => (p.status || 'pending') === 'finished').length;
         const totalRevenue = (invoices || []).reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0);
-        const avgProjectValue = (invoices || []).length > 0 ? totalRevenue / invoices.length : 0;
-        return { running, pending, finished, totalRevenue, avgProjectValue, totalProjects: all.length };
+        const invList = invoices || [];
+        const avgProjectValue = invList.length > 0 ? totalRevenue / invList.length : 0;
+        return { running, expected, pending, finished, totalRevenue, avgProjectValue, totalProjects: all.length };
     }, [projects, invoices]);
 
     if (projectsLoading || invoicesLoading) {
@@ -364,21 +366,21 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Quick Actions Panel */}
-            <Card className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+            <Card className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-xs">
                 <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
                     <BarChart3 size={18} className="text-[#095388]" /> Management Actions
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <Button onClick={handleExportProfitReport} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 rounded-xl gap-2 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                    <Button onClick={handleExportProfitReport} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-10 rounded-xl gap-2 shadow-sm w-full">
                         <Download size={14} /> Export Profit Report
                     </Button>
-                    <Button onClick={handleDownloadQuotesCSV} className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-10 rounded-xl gap-2 shadow-sm">
+                    <Button onClick={handleDownloadQuotesCSV} className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-10 rounded-xl gap-2 shadow-sm w-full">
                         <FileSpreadsheet size={14} /> Export Quotes CSV
                     </Button>
-                    <Button onClick={() => setActiveSection('projects')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 rounded-xl gap-2 shadow-sm">
+                    <Button onClick={() => setActiveSection('projects')} className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-10 rounded-xl gap-2 shadow-sm w-full">
                         <Layers size={14} /> Manage Projects
                     </Button>
-                    <Button onClick={() => setActiveSection('finances')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-10 rounded-xl gap-2 shadow-sm">
+                    <Button onClick={() => setActiveSection('finances')} className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-10 rounded-xl gap-2 shadow-sm w-full">
                         <DollarSign size={14} /> Financial Tracking
                     </Button>
                 </div>
@@ -387,14 +389,15 @@ export default function AdminDashboardPage() {
             {/* Status Breakdown Cards */}
             <div>
                 <h2 className="text-base font-bold text-slate-900 mb-3">Project Status Distribution</h2>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {[
                         { label: 'Running Projects', value: analytics.running, color: 'bg-blue-600 text-white border-0' },
+                        { label: 'Expected (Deposit)', value: analytics.expected, color: 'bg-purple-600 text-white border-0' },
                         { label: 'Pending Projects', value: analytics.pending, color: 'bg-amber-500 text-slate-950 border-0' },
                         { label: 'Finished Projects', value: analytics.finished, color: 'bg-emerald-600 text-white border-0' },
                     ].map(item => (
-                        <div key={item.label} className={`rounded-2xl border p-5 text-center shadow-sm ${item.color}`}>
-                            <p className="text-3xl font-black">{item.value}</p>
+                        <div key={item.label} className={`rounded-2xl border p-4 sm:p-5 text-center shadow-sm ${item.color}`}>
+                            <p className="text-2xl sm:text-3xl font-black">{item.value}</p>
                             <p className="text-xs font-bold mt-1 uppercase tracking-wider">{item.label}</p>
                         </div>
                     ))}
@@ -420,21 +423,22 @@ export default function AdminDashboardPage() {
 
             {/* Search & Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200/80 p-3 rounded-2xl shadow-2xs">
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                    {['running', 'pending', 'finished', 'all'].map(s => (
+                <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
+                    {['running', 'expected', 'pending', 'finished', 'all'].map(s => (
                         <button
                             key={s}
                             onClick={() => setProjectStatusFilter(s)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 projectStatusFilter === s
                                     ? s === 'running' ? 'bg-blue-600 text-white shadow-2xs'
+                                    : s === 'expected' ? 'bg-purple-600 text-white shadow-2xs'
                                     : s === 'pending' ? 'bg-amber-500 text-slate-950 shadow-2xs'
                                     : s === 'finished' ? 'bg-emerald-600 text-white shadow-2xs'
                                     : 'bg-slate-800 text-white shadow-2xs'
                                     : 'text-slate-600 hover:text-slate-900'
                             }`}
                         >
-                            {s === 'all' ? `All (${projects?.length || 0})` : s.charAt(0).toUpperCase() + s.slice(1)}
+                            {s === 'all' ? `All (${projects?.length || 0})` : s === 'expected' ? 'Expected' : s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
                     ))}
                 </div>
@@ -502,6 +506,8 @@ export default function AdminDashboardPage() {
                                             // Full solid status-based card colors
                                             const cardBg = status === 'running'
                                                 ? 'bg-blue-600 text-white border-0 hover:bg-blue-700'
+                                                : status === 'expected'
+                                                ? 'bg-purple-600 text-white border-0 hover:bg-purple-700'
                                                 : status === 'finished'
                                                 ? 'bg-emerald-600 text-white border-0 hover:bg-emerald-700'
                                                 : 'bg-amber-500 text-slate-950 border-0 hover:bg-amber-600';
@@ -526,7 +532,7 @@ export default function AdminDashboardPage() {
                                                                         ? 'bg-slate-950 text-white border-0 text-[10px] font-bold shrink-0'
                                                                         : 'bg-white text-slate-900 border-0 text-[10px] font-bold shrink-0'
                                                                 }>
-                                                                    {status.toUpperCase()}
+                                                                    {status === 'expected' ? 'EXPECTED' : status.toUpperCase()}
                                                                 </Badge>
                                                             </div>
                                                         </CardHeader>
@@ -735,7 +741,7 @@ export default function AdminDashboardPage() {
             />
 
             {/* Main Content Area */}
-            <main className="flex-1 min-h-screen bg-slate-50/60 p-6 lg:p-10 overflow-y-auto">
+            <main className="flex-1 min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-10 pt-18 lg:pt-10 overflow-y-auto">
                 <div className="max-w-6xl mx-auto">
                     {renderSection()}
                 </div>
@@ -743,7 +749,7 @@ export default function AdminDashboardPage() {
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={!!deletingProject} onOpenChange={(open) => !open && setDeletingProject(null)}>
-                <DialogContent className="max-w-sm">
+                <DialogContent className="w-[92vw] sm:max-w-sm rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-red-600 flex items-center gap-2">
                             <Trash2 size={18} /> Confirm Delete
@@ -752,7 +758,7 @@ export default function AdminDashboardPage() {
                     <p className="text-xs text-slate-600 py-2">
                         Are you sure you want to delete <strong className="text-slate-900">{getProjectName(deletingProject)}</strong>? This action cannot be undone.
                     </p>
-                    <DialogFooter className="gap-2">
+                    <DialogFooter className="gap-2 flex-col sm:flex-row">
                         <Button variant="outline" size="sm" onClick={() => setDeletingProject(null)}>Cancel</Button>
                         <Button variant="destructive" size="sm" onClick={handleDeleteProject} disabled={isDeleting}>
                             {isDeleting && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />} Delete Project
@@ -763,7 +769,7 @@ export default function AdminDashboardPage() {
 
             {/* Manage Pricing Rates Dialog */}
             <Dialog open={isPricingModalOpen} onOpenChange={setIsPricingModalOpen}>
-                <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
                             <SlidersHorizontal className="text-amber-500" size={20} /> Live Rate &amp; Pricing Management

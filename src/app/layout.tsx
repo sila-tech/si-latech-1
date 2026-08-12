@@ -1,5 +1,5 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -8,6 +8,13 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { WhatsAppButton } from '@/components/whatsapp-button';
 import { SilaAssistant } from '@/components/silacalc/sila-assistant';
 import { PwaRegister } from '@/components/pwa-register';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#095388',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://si-latech.com'),

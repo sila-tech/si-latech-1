@@ -42,7 +42,8 @@ export interface ProjectData {
   costEstimationEnabled?: boolean;
   pricingRates?: Record<string, number>;
   calculatedTotals?: Record<string, any>;
-  status?: 'pending' | 'running' | 'finished' | 'purchased';
+  totals?: Record<string, any>;
+  status?: 'pending' | 'expected' | 'running' | 'finished' | 'purchased';
   assignedTo?: string;
   discountType?: 'none' | 'percent' | 'amount';
   discountValue?: number;

@@ -11,10 +11,10 @@ const ParseFinanceRecordInputSchema = z.object({
 export type ParseFinanceRecordInput = z.infer<typeof ParseFinanceRecordInputSchema>;
 
 const ParseFinanceRecordOutputSchema = z.object({
-  type: z.enum(['income', 'expense', 'facilitation_request']).describe('Classification of the transaction.'),
+  type: z.enum(['income', 'expense', 'facilitation_request', 'staff_loan', 'loan_repayment']).describe('Classification of the transaction.'),
   amount: z.number().describe('Extracted monetary amount in KSh.'),
   reason: z.string().describe('Cleaned, structured reason or description of the transaction.'),
-  category: z.string().describe('Extracted category (e.g. Client Payment, Transport, Materials, Labor/Wages, Utilities, Site Ops).'),
+  category: z.string().describe('Extracted category (e.g. Client Payment, Transport, Materials, Labor/Wages, Staff Loan, Utilities, Site Ops).'),
   confidence: z.enum(['high', 'medium', 'low']).describe('Confidence level of the AI extraction.'),
   explanation: z.string().describe('Brief summary of how the text was parsed.'),
 });
@@ -43,9 +43,11 @@ Your Job:
    - "income": Payments received from clients, investors, or sales deposits.
    - "expense": Money paid out for materials, transport, fuel, wages, equipment hire, utilities, or office supplies.
    - "facilitation_request": Funds requested by site technicians for operational tasks.
+   - "staff_loan": Salary advance or personal loans issued to employee/staff.
+   - "loan_repayment": Money returned/repaid by a staff member against an outstanding loan.
 2. Extract the exact numerical amount in KSh (Kenya Shillings).
 3. Create a clean, professional "reason" description summarizing who paid/was paid and for what purpose.
-4. Assign a category (e.g. "Client Payment", "Materials & Supplies", "Transport & Fuel", "Labor & Wages", "Equipment Rental", "Site Operational Expense").
+4. Assign a category (e.g. "Client Payment", "Materials & Supplies", "Transport & Fuel", "Labor & Wages", "Staff Loan & Advance", "Equipment Rental", "Site Operational Expense").
 5. Indicate your confidence level and a brief explanation.
 
 Return structured JSON according to the output schema.`,

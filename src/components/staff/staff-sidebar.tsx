@@ -133,6 +133,8 @@ export function StaffSidebar({
         </div>
     );
 
+    const activeItem = NAV_ITEMS.find((item) => item.id === activeSection);
+
     return (
         <>
             {/* Desktop Sidebar */}
@@ -140,25 +142,38 @@ export function StaffSidebar({
                 <SidebarContent />
             </aside>
 
-            {/* Mobile Toggle Button */}
-            <div className="lg:hidden fixed top-3 left-3 z-50">
-                <Button
-                    size="icon"
-                    onClick={() => setMobileOpen(!mobileOpen)}
-                    className="h-9 w-9 bg-white border border-slate-200 text-slate-800 hover:bg-slate-100 shadow-md rounded-xl"
-                >
-                    {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                </Button>
+            {/* Mobile Top Header Bar */}
+            <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-3 text-slate-800 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                    <Button
+                        size="icon"
+                        onClick={() => setMobileOpen(!mobileOpen)}
+                        aria-label="Open Staff Menu"
+                        className="h-9 w-9 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 shadow-2xs rounded-xl"
+                    >
+                        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                    </Button>
+                    <div className="flex items-center gap-2">
+                        <img src="/logo.png" alt="SI-LATECH" className="w-6 h-6 object-contain" />
+                        <span className="text-xs font-black tracking-tight text-slate-900 uppercase">
+                            Staff <span className="text-amber-600">/ {activeItem?.label || 'Portal'}</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 truncate max-w-[120px]">
+                    {staffName.split(' ')[0]}
+                </div>
             </div>
 
             {/* Mobile Sidebar Overlay */}
             {mobileOpen && (
                 <>
                     <div
-                        className="lg:hidden fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-2xs"
+                        className="lg:hidden fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-2xs transition-opacity"
                         onClick={() => setMobileOpen(false)}
                     />
-                    <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-64 z-50 bg-white border-r border-slate-200 flex flex-col overflow-y-auto shadow-2xl">
+                    <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-72 z-50 bg-white border-r border-slate-200 flex flex-col overflow-y-auto shadow-2xl animate-in slide-in-from-left duration-200">
                         <SidebarContent />
                     </aside>
                 </>

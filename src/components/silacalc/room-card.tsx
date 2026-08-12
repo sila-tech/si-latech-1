@@ -123,7 +123,7 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
               inputMode="decimal"
               value={localLength}
               onChange={(e) => handleLengthChange(e.target.value)}
-              className="w-full font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11"
+              className="w-full text-base sm:text-sm font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11 sm:h-12"
               placeholder={displayUnit === 'ft' ? 'e.g. 32.8' : 'e.g. 10.0'}
             />
             <span className="text-[10px] text-slate-400 font-medium block h-4">
@@ -145,7 +145,7 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
               inputMode="decimal"
               value={localWidth}
               onChange={(e) => handleWidthChange(e.target.value)}
-              className="w-full font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11"
+              className="w-full text-base sm:text-sm font-bold bg-slate-50/50 border-slate-200 focus-visible:ring-primary rounded-xl h-11 sm:h-12"
               placeholder={displayUnit === 'ft' ? 'e.g. 32.8' : 'e.g. 10.0'}
             />
             <span className="text-[10px] text-slate-400 font-medium block h-4">

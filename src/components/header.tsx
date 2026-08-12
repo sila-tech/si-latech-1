@@ -85,32 +85,32 @@ export function Header() {
         </div>
 
         {/* Mobile Header Right: WhatsApp + Prominent Calculate CTA + Hamburger */}
-        <div className="flex lg:hidden items-center gap-2">
+        <div className="flex lg:hidden items-center gap-1.5 sm:gap-2 shrink-0">
           <a
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="WhatsApp SI-LATECH"
-            className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#25D366] text-white shadow-sm"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#25D366] text-white shadow-xs active:scale-95 transition-transform"
           >
-            <MessageCircle size={16} />
+            <MessageCircle size={17} />
           </a>
 
           <Button
             asChild
             size="sm"
-            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 text-xs rounded-lg shadow-sm"
+            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-2.5 sm:px-3.5 py-1.5 text-xs rounded-xl shadow-xs active:scale-95 transition-transform"
           >
             <a href="/#calculator" className="flex items-center gap-1">
               <Calculator className="h-3.5 w-3.5" />
-              Calculate
+              <span className="hidden xs:inline">Calculate</span>
             </a>
           </Button>
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle navigation menu"
-            className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+            className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all"
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -120,31 +120,31 @@ export function Header() {
 
       {/* Mobile Dropdown Menu */}
       {mobileOpen && (
-        <div className="lg:hidden border-t border-slate-100 bg-white px-4 py-4 space-y-2 shadow-xl animate-in slide-in-from-top-2 duration-200">
+        <div className="lg:hidden border-t border-slate-100 bg-white px-4 py-4 space-y-2 shadow-2xl animate-in slide-in-from-top-2 duration-200">
           {navLinks.map(({ href, label }) => (
             <a
               key={href}
               href={href}
               onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              className="block px-4 py-3.5 rounded-xl text-sm font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition-colors"
             >
               {label}
             </a>
           ))}
-          <div className="pt-2 grid grid-cols-2 gap-2 border-t border-slate-100">
+          <div className="pt-3 grid grid-cols-2 gap-2.5 border-t border-slate-100">
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl text-xs font-bold"
+              className="flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-transform"
             >
               <MessageCircle size={16} /> WhatsApp
             </a>
             <a
               href="tel:+254141981315"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl text-xs font-bold"
+              className="flex items-center justify-center gap-2 bg-slate-900 text-white py-3.5 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-transform"
             >
               <Phone size={16} /> Call Us
             </a>

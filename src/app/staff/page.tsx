@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, HardHat, MapPin, Layers, Download, Image as ImageIcon, Wallet, LogOut, FileText, Bot } from 'lucide-react';
+import { Loader2, HardHat, MapPin, Layers, Download, Image as ImageIcon, Wallet, LogOut, FileText, Bot, HandCoins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { generateMaterialSchedulePdf } from '@/lib/pdf-utils';
@@ -29,6 +30,7 @@ export default function StaffDashboardPage() {
     // Facilitation state
     const [facAmount, setFacAmount] = useState('');
     const [facReason, setFacReason] = useState('');
+    const [reqType, setReqType] = useState('facilitation_request');
     const [isRequesting, setIsRequesting] = useState(false);
 
     const router = useRouter();
@@ -76,14 +78,14 @@ export default function StaffDashboardPage() {
         setIsRequesting(true);
         try {
             await addDoc(collection(firestore, 'finances'), {
-                type: 'facilitation_request',
+                type: reqType,
                 amount: parseFloat(facAmount),
                 reason: facReason,
                 requestedBy: user?.username,
                 status: 'pending',
                 createdAt: serverTimestamp()
             });
-            toast({ title: 'Request Sent', description: 'Your facilitation request has been submitted for approval.' });
+            toast({ title: 'Request Sent', description: reqType === 'staff_loan' ? 'Your staff loan request has been submitted for approval.' : 'Your facilitation request has been submitted for approval.' });
             setFacAmount('');
             setFacReason('');
         } catch (error) {
@@ -100,20 +102,20 @@ export default function StaffDashboardPage() {
             case 'projects':
                 return (
                     <div className="space-y-6">
-                        <div>
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">Assigned Projects</h1>
-                            <p className="text-slate-500 text-sm mt-1">View project specs, material schedules, and room layout diagrams.</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">Assigned Projects</h1>
+                                <p className="text-slate-500 text-sm mt-1">Slab calculation projects assigned to your account.</p>
+                            </div>
                         </div>
-                        
+
                         {projectsLoading ? (
-                            <div className="flex justify-center p-12"><Loader2 className="animate-spin text-[#095388]" /></div>
+                            <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>
                         ) : projects?.length === 0 ? (
-                            <Card className="border-dashed border-2 bg-white shadow-2xs">
-                                <CardContent className="flex flex-col items-center justify-center p-16 text-center text-slate-400">
-                                    <MapPin size={48} className="mb-4 opacity-30 text-amber-500" />
-                                    <p className="font-bold text-slate-700">No projects assigned to you yet</p>
-                                    <p className="text-xs text-slate-400 mt-1">Once an administrator assigns a project to @{user.username}, it will show up here.</p>
-                                </CardContent>
+                            <Card className="p-8 text-center border-dashed border-slate-300">
+                                <HardHat className="mx-auto text-slate-400 mb-2" size={32} />
+                                <p className="text-sm font-semibold text-slate-600">No assigned projects found</p>
+                                <p className="text-xs text-slate-400 mt-1">Ask your administrator to assign site projects to your staff username.</p>
                             </Card>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -142,28 +144,40 @@ export default function StaffDashboardPage() {
 
             case 'facilitation':
                 return (
-                    <div className="space-y-6 max-w-3xl">
+                    <div className="space-y-6 max-w-2xl">
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">Site Facilitation</h1>
-                            <p className="text-slate-500 text-sm mt-1">Request transport, meals, or operational site funds from management.</p>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline flex items-center gap-2">
+                                <Wallet className="text-amber-500" /> Operations &amp; Staff Loans
+                            </h1>
+                            <p className="text-slate-500 text-sm mt-1">Request site operational funds or personal staff salary advances.</p>
                         </div>
 
                         <Card className="border border-slate-200 bg-white shadow-2xs rounded-2xl overflow-hidden">
                             <CardHeader className="bg-slate-900 text-white p-5">
                                 <CardTitle className="text-base font-bold flex items-center gap-2">
-                                    <Wallet className="text-amber-400" size={18} /> Request Operations Funds
+                                    <Wallet className="text-amber-400" size={18} /> Financial Request
                                 </CardTitle>
                                 <CardDescription className="text-slate-400 text-xs">Submitted requests go directly to Super Admin for approval.</CardDescription>
                             </CardHeader>
                             <CardContent className="p-6">
                                 <form onSubmit={handleRequestFacilitation} className="space-y-4">
                                     <div className="space-y-1.5">
+                                        <Label className="text-xs font-semibold text-slate-700">Request Type</Label>
+                                        <Select value={reqType} onValueChange={setReqType}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="facilitation_request">Site Facilitation (Fuel, Transport, Fundis Lunch)</SelectItem>
+                                                <SelectItem value="staff_loan">Staff Loan / Salary Advance</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
                                         <Label className="text-xs font-semibold text-slate-700">Amount Required (KSh)</Label>
                                         <Input type="number" value={facAmount} onChange={(e) => setFacAmount(e.target.value)} placeholder="e.g. 2500" />
                                     </div>
                                     <div className="space-y-1.5">
                                         <Label className="text-xs font-semibold text-slate-700">Reason / Purpose</Label>
-                                        <Input value={facReason} onChange={(e) => setFacReason(e.target.value)} placeholder="e.g. Fuel for site visit, lunch for fundis" />
+                                        <Input value={facReason} onChange={(e) => setFacReason(e.target.value)} placeholder={reqType === 'staff_loan' ? "e.g. Salary advance for mid-month emergency" : "e.g. Fuel for site visit, lunch for fundis"} />
                                     </div>
                                     <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs h-10" disabled={isRequesting}>
                                         {isRequesting ? <Loader2 className="animate-spin mr-2" size={15} /> : null}
@@ -183,8 +197,17 @@ export default function StaffDashboardPage() {
                                 <div className="space-y-2">
                                     {myRequests?.map((req: any) => (
                                         <div key={req.id} className="bg-white p-3.5 rounded-xl border border-slate-200 text-sm flex justify-between items-center shadow-2xs">
-                                            <div>
-                                                <p className="font-bold text-slate-900">KSh {req.amount?.toLocaleString()}</p>
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-bold text-slate-900">KSh {req.amount?.toLocaleString()}</p>
+                                                    <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md border uppercase ${
+                                                        req.type === 'staff_loan' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                        req.type === 'loan_repayment' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                        'bg-amber-50 text-amber-700 border-amber-200'
+                                                    }`}>
+                                                        {req.type === 'staff_loan' ? 'Staff Loan' : req.type === 'loan_repayment' ? 'Repayment' : 'Facilitation'}
+                                                    </span>
+                                                </div>
                                                 <p className="text-xs text-slate-500">{req.reason}</p>
                                             </div>
                                             <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
@@ -230,7 +253,7 @@ export default function StaffDashboardPage() {
     };
 
     return (
-        <div className="flex min-h-screen bg-slate-50/60">
+        <div className="flex min-h-screen bg-slate-50/60 w-full">
             <StaffSidebar
                 activeSection={activeSection}
                 onSectionChange={setActiveSection}
@@ -240,7 +263,7 @@ export default function StaffDashboardPage() {
             />
 
             {/* Main Content Area */}
-            <main className="flex-1 min-h-screen p-6 lg:p-10 overflow-y-auto">
+            <main className="flex-1 min-h-screen p-4 sm:p-6 lg:p-10 pt-18 lg:pt-10 overflow-y-auto">
                 <div className="max-w-5xl mx-auto">
                     {renderSection()}
                 </div>
@@ -248,10 +271,10 @@ export default function StaffDashboardPage() {
 
             {/* Project Details Dialog */}
             <Dialog open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)}>
-                <DialogContent className="max-w-2xl bg-white border border-slate-200">
+                <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-slate-200 rounded-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black text-[#095388]">{selectedProject?.name}</DialogTitle>
-                        <p className="text-sm text-slate-500">{selectedProject?.clientName} — {selectedProject?.projectLocation}</p>
+                        <CardDescription>{selectedProject?.clientName} — {selectedProject?.projectLocation}</CardDescription>
                     </DialogHeader>
                     
                     <div className="py-4 space-y-5">
@@ -262,7 +285,7 @@ export default function StaffDashboardPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Button 
-                                className="h-14 bg-slate-900 hover:bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5 rounded-xl"
+                                className="h-14 bg-slate-900 hover:bg-slate-800 text-white flex flex-col items-center justify-center gap-0.5 rounded-xl font-bold"
                                 onClick={() => generateMaterialSchedulePdf({
                                     clientInfo: {
                                         projectName: selectedProject.name,

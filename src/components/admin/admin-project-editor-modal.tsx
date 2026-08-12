@@ -414,13 +414,13 @@ export function AdminProjectEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto flex flex-col p-0 gap-0 bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[92vh] overflow-y-auto flex flex-col p-0 gap-0 bg-white text-slate-900 rounded-2xl border border-slate-200 shadow-2xl">
         
         {/* Modal Header */}
-        <DialogHeader className="p-6 border-b border-slate-100 bg-slate-50/80 sticky top-0 z-20">
+        <DialogHeader className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/80 sticky top-0 z-20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <DialogTitle className="text-xl font-black text-[#095388] flex items-center gap-2">
+              <DialogTitle className="text-lg sm:text-xl font-black text-[#095388] flex items-center gap-2">
                 <Building className="h-5 w-5 text-[#095388]" />
                 {project ? `Admin Edit: ${project.name}` : 'Create New Admin Project & Quote'}
               </DialogTitle>
@@ -429,7 +429,7 @@ export function AdminProjectEditorModal({
               </DialogDescription>
             </div>
             {project?.status && (
-              <Badge className="bg-sky-50 text-sky-700 border border-sky-200 uppercase text-[10px] font-bold px-2.5 py-1">
+              <Badge className="bg-sky-50 text-sky-700 border border-sky-200 uppercase text-[10px] font-bold px-2.5 py-1 shrink-0">
                 {project.status}
               </Badge>
             )}
@@ -437,9 +437,9 @@ export function AdminProjectEditorModal({
         </DialogHeader>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-6 flex-1 overflow-y-auto bg-slate-50/40">
+        <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto bg-slate-50/40">
           <Tabs defaultValue="rooms" className="w-full space-y-6">
-            <TabsList className="grid grid-cols-3 bg-slate-100 p-1 border border-slate-200 rounded-xl">
+            <TabsList className="grid grid-cols-1 sm:grid-cols-3 bg-slate-100 p-1 border border-slate-200 rounded-xl gap-1">
               <TabsTrigger value="rooms" className="text-xs font-bold data-[state=active]:bg-white data-[state=active]:text-[#095388] data-[state=active]:shadow-2xs">
                 <Layers className="h-3.5 w-3.5 mr-1.5" /> Rooms & AI Plan Reader
               </TabsTrigger>
@@ -820,6 +820,7 @@ export function AdminProjectEditorModal({
                       </SelectTrigger>
                       <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
                         <SelectItem value="pending" className="text-amber-600 font-semibold">Pending</SelectItem>
+                        <SelectItem value="expected" className="text-purple-600 font-semibold">Expected (Awaiting Deposit)</SelectItem>
                         <SelectItem value="running" className="text-blue-600 font-semibold">Running</SelectItem>
                         <SelectItem value="finished" className="text-emerald-600 font-semibold">Finished</SelectItem>
                       </SelectContent>

@@ -1088,7 +1088,7 @@ export function ActionsCard() {
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(primaryColor);
-      doc.text('SYSTEM COMPARISON & PROFIT VARIATIONS REPORT', 14, currentY);
+      doc.text('SYSTEM COMPARISON REPORT', 14, currentY);
 
       currentY += 8;
       doc.setFontSize(10);
@@ -1110,7 +1110,6 @@ export function ActionsCard() {
       const tbeamBlocksCost = tbeamTotals.totalBlocks * tbeamBlockPrice;
 
       const priceDiff = tbeamGrandTotal - flatGrandTotal;
-      const profitDiff = tbeamTotals.totalProjectProfit - flatTotals.totalProjectProfit;
 
       (doc as any).autoTable({
         startY: currentY,
@@ -1123,7 +1122,6 @@ export function ActionsCard() {
           ['Total Beams Cost', `KSh ${flatBeamsCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamBeamsCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${(tbeamBeamsCost - flatBeamsCost).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
           ['Total Blocks Cost', `KSh ${flatBlocksCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamBlocksCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${(tbeamBlocksCost - flatBlocksCost).toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
           ['ESTIMATED GRAND TOTAL', `KSh ${flatGrandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamGrandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${priceDiff >= 0 ? '+' : ''}${priceDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
-          ['ESTIMATED PROJECT PROFIT', `KSh ${flatTotals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${tbeamTotals.totalProjectProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, `KSh ${profitDiff >= 0 ? '+' : ''}${profitDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
         ],
         theme: 'striped',
         headStyles: { fillColor: [9, 83, 136], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -1141,14 +1139,12 @@ export function ActionsCard() {
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(primaryColor);
-      doc.text('PROFIT & STRUCTURAL VARIATION ANALYSIS', 14, finalY);
+      doc.text('COST & STRUCTURAL VARIATION ANALYSIS', 14, finalY);
 
       finalY += 6;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50);
-      doc.text(`• Profit Variation: T-Beam system yields KSh ${profitDiff >= 0 ? '+' : ''}${profitDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })} additional profit margin compared to Flat Beam.`, 14, finalY);
-      finalY += 5;
       doc.text(`• Cost Variation: Customer grand total variation is KSh ${priceDiff >= 0 ? '+' : ''}${priceDiff.toLocaleString('en-US', { minimumFractionDigits: 2 })} between systems.`, 14, finalY);
       finalY += 5;
       doc.text(`• Structural Recommendation: T-Beam systems feature reinforced ribs suitable for longer spans (>4.2m) or heavier residential loads.`, 14, finalY);

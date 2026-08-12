@@ -5,8 +5,12 @@ import { MessageCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 
+import { useCalculator } from '@/context/calculator-context';
+
 export function WhatsAppButton() {
   const pathname = usePathname();
+  const { totals } = useCalculator();
+  const hasMobileBar = (totals?.totalArea || 0) > 0;
   const [isVisible, setIsVisible] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
   const phoneNumber = '254141981315';
@@ -28,7 +32,10 @@ export function WhatsAppButton() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-6 right-4 md:right-6 z-[99999] flex flex-col items-end gap-2 transition-all duration-300">
+    <div className={cn(
+      "fixed right-4 md:right-6 z-[99999] flex flex-col items-end gap-2 transition-all duration-300",
+      hasMobileBar ? "bottom-20 md:bottom-6" : "bottom-6"
+    )}>
       {/* Tooltip */}
       <div 
         className={cn(

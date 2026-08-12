@@ -45,25 +45,25 @@ export default function Home() {
           </div>
 
           <Tabs defaultValue="beam-block" className="space-y-6">
-            <div className="flex justify-center">
-              <TabsList className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex justify-center w-full overflow-x-auto pb-2 mobile-touch-scroll scrollbar-none">
+              <TabsList className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm inline-flex shrink-0">
                 <TabsTrigger 
                   value="beam-block" 
-                  className="rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 data-[state=active]:shadow-md flex items-center gap-2"
+                  className="rounded-xl px-3.5 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950 data-[state=active]:shadow-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
                 >
-                  <Layers className="h-4 w-4" /> Beam & Block Slab
+                  <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Beam &amp; Block Slab
                 </TabsTrigger>
                 <TabsTrigger 
                   value="concrete-slab" 
-                  className="rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-md flex items-center gap-2"
+                  className="rounded-xl px-3.5 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-slate-900 data-[state=active]:text-white data-[state=active]:shadow-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
                 >
-                  <Construction className="h-4 w-4" /> Cast Concrete Slab
+                  <Construction className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Cast Concrete Slab
                 </TabsTrigger>
                 <TabsTrigger 
                   value="savings-compare" 
-                  className="rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md flex items-center gap-2"
+                  className="rounded-xl px-3.5 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
                 >
-                  <TrendingUp className="h-4 w-4" /> Compare Savings
+                  <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Compare Savings
                 </TabsTrigger>
               </TabsList>
             </div>

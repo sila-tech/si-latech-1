@@ -73,26 +73,26 @@ export function ProjectsGallerySection() {
               <div className="absolute inset-0 bg-slate-950/20" />
 
               {/* Pin 1: Precast Beam */}
-              <div className="absolute top-[35%] left-[25%] flex items-center gap-2 bg-slate-950/90 border border-amber-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-xl backdrop-blur-md">
-                <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black">1</span>
+              <div className="absolute top-[32%] left-[10%] sm:left-[25%] flex items-center gap-1.5 sm:gap-2 bg-slate-950/90 border border-amber-500 text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-xl backdrop-blur-md">
+                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-[9px] sm:text-xs">1</span>
                 <span>Precast Beam</span>
               </div>
 
               {/* Pin 2: Hollow Block */}
-              <div className="absolute top-[52%] left-[50%] flex items-center gap-2 bg-slate-950/90 border border-blue-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-xl backdrop-blur-md">
-                <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center font-black">2</span>
+              <div className="absolute top-[52%] left-[40%] sm:left-[50%] flex items-center gap-1.5 sm:gap-2 bg-slate-950/90 border border-blue-500 text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-xl backdrop-blur-md">
+                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-blue-500 text-white flex items-center justify-center font-black text-[9px] sm:text-xs">2</span>
                 <span>Hollow Block</span>
               </div>
 
               {/* Pin 3: 400mm Spacing */}
-              <div className="absolute top-[25%] right-[15%] flex items-center gap-2 bg-slate-950/90 border border-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-xl backdrop-blur-md">
-                <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-black">3</span>
+              <div className="absolute top-[20%] right-[5%] sm:right-[15%] flex items-center gap-1.5 sm:gap-2 bg-slate-950/90 border border-emerald-500 text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-xl backdrop-blur-md">
+                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-[9px] sm:text-xs">3</span>
                 <span>400mm Spacing</span>
               </div>
 
               {/* Pin 4: Timber Support */}
-              <div className="absolute bottom-[20%] left-[35%] flex items-center gap-2 bg-slate-950/90 border border-purple-500 text-white px-2.5 py-1 rounded-full text-xs font-bold shadow-xl backdrop-blur-md">
-                <span className="w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center font-black">4</span>
+              <div className="absolute bottom-[15%] left-[25%] sm:left-[35%] flex items-center gap-1.5 sm:gap-2 bg-slate-950/90 border border-purple-500 text-white px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold shadow-xl backdrop-blur-md">
+                <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-purple-500 text-white flex items-center justify-center font-black text-[9px] sm:text-xs">4</span>
                 <span>Timber Runner</span>
               </div>
             </div>
