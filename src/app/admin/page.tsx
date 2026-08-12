@@ -208,7 +208,12 @@ export default function AdminDashboardPage() {
         }) || [];
         const totalBlocks = reCalculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0);
         generatePromaxPdf({
-            clientInfo: { projectName: getProjectName(proj), projectLocation: getProjectLocation(proj) },
+            clientInfo: { 
+                projectName: getProjectName(proj), 
+                projectLocation: getProjectLocation(proj),
+                clientName: proj.clientName || 'Valued Client',
+                beamType: proj.settings?.beamType || 'flat'
+            },
             totals: { totalBlocks },
             perRoomCalculations: reCalculatedRooms
         });

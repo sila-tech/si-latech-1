@@ -63,6 +63,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { saveGeneratedQuote } from '@/lib/firestore';
+import { generatePromaxPdf } from '@/lib/pdf-utils';
 import type { ProjectData } from '@/context/calculator-context';
 
 
@@ -1398,126 +1399,21 @@ export function ActionsCard() {
   };
 
   const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
-    const doc = new jsPDF();
-    const primaryColor = '#0f172a'; // Slate-900
-    const reportDate = new Date().toLocaleDateString('en-GB');
-    const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
-    
-    const renderFloorPromaxPage = (pageTitle: string, pageRooms: Room[], pageTotals: any) => {
-      addLogoToPdf(doc, primaryColor);
-      
-      const activePerRoomCalcs = pageRooms.map((r) => {
-        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1100 : 520, r.name, isOptimized);
-        return { room: r, roomCalcs };
-      });
-
-      const beamAggregates = new Map<number, number>();
-      pageRooms.forEach(r => {
-          const p = activePerRoomCalcs.find(pr => pr.room.id === r.id);
-          if (p) {
-              const length = p.roomCalcs.individualBeamLength || p.roomCalcs.shorter;
-              const count = p.roomCalcs.actualBeamCount;
-              beamAggregates.set(length, (beamAggregates.get(length) || 0) + count);
-          }
-      });
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.setTextColor(primaryColor);
-      doc.text(pageTitle, 14, 40);
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(50);
-      doc.text(`Project: ${clientInfo.projectName}`, 14, 50);
-      doc.text(`Location: ${clientInfo.projectLocation}`, 14, 55);
-      doc.text(`Date: ${reportDate}`, 14, 60);
-      doc.text(`Order ID: ${reportNumber}`, 145, 60);
-
-      // Beams Table
-      const beamColumn = ['DESCRIPTION', 'LENGTH (M)', 'QUANTITY', 'TOTAL LM'];
-      const beamRows = Array.from(beamAggregates.entries())
-          .sort((a, b) => a[0] - b[0])
-          .map(([length, count]) => ([
-              'Prestressed Beam',
-              length.toFixed(2),
-              `${count} pcs`,
-              (length * count).toFixed(2)
-          ]));
-
-      (doc as any).autoTable({
-          head: [beamColumn],
-          body: beamRows,
-          startY: 70,
-          theme: 'grid',
-          headStyles: { fillColor: primaryColor, textColor: 255 },
-          styles: { fontSize: 10 },
-          columnStyles: {
-              1: { halign: 'center' },
-              2: { halign: 'center' },
-              3: { halign: 'right' },
-          }
-      });
-
-      let finalY = (doc as any).lastAutoTable.finalY + 15;
-
-      // Blocks Section
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.setTextColor(primaryColor);
-      doc.text('TOTAL BLOCK REQUIREMENTS:', 14, finalY);
-      doc.text(`${pageTotals.totalBlocks.toLocaleString()} pcs`, 196, finalY, { align: 'right' });
-      
-      finalY += 10;
-      doc.setDrawColor(200);
-      doc.line(14, finalY, 196, finalY);
-
-      finalY += 15;
-
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(100);
-      doc.text('Note: Beam quantities are based on actual physical room spans. Block quantities include standard project allowance.', 14, finalY);
-    };
-
-    const selectedFloor = clientInfo.selectedFloor || 'all';
-
-    const uniqueFloors = Array.from(new Set(rooms.map(r => {
-      if (r.name.includes(':')) {
-        return r.name.split(':')[0].trim();
-      }
-      return '';
-    }).filter(Boolean)));
-
     const activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
-
-    if (selectedFloor === 'separate' && uniqueFloors.length > 1) {
-      uniqueFloors.forEach((floor, idx) => {
-        if (idx > 0) {
-          doc.addPage();
-        }
-        const floorRooms = rooms.filter(r => r.name.startsWith(floor + ':'));
-        const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
-        renderFloorPromaxPage(`PROMAX MFG ORDER - ${floor.toUpperCase()}`, floorRooms, floorTotals);
-      });
-
-      // Add combined summary page at the end
-      doc.addPage();
-      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
-      renderFloorPromaxPage('PROMAX MFG ORDER - COMBINED SUMMARY', rooms, combinedTotals);
-    } else if (selectedFloor !== 'all' && selectedFloor !== 'separate') {
-      // Single specific floor
-      const floorRooms = rooms.filter(r => r.name.startsWith(selectedFloor + ':'));
-      const floorTotals = calculateProjectTotals(floorRooms, settings, 0, isOptimized);
-      renderFloorPromaxPage(`PROMAX MFG ORDER - ${selectedFloor.toUpperCase()}`, floorRooms, floorTotals);
-    } else {
-      // Combined (single page)
-      const combinedTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
-      renderFloorPromaxPage('PROMAX MANUFACTURING ORDER', rooms, combinedTotals);
-    }
-
-    addPdfBackground(doc);
-    doc.save(`Promax-Breakdown-${reportNumber}.pdf`);
+    const perRoomCalculations = rooms.map(r => {
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1100 : 520, r.name, isOptimized);
+      return { room: r, roomCalcs };
+    });
+    generatePromaxPdf({
+      clientInfo: {
+        projectName: clientInfo.projectName || 'Project',
+        projectLocation: clientInfo.projectLocation || 'N/A',
+        clientName: clientInfo.clientName || 'Valued Client',
+        beamType: settings.beamType
+      },
+      totals: activeTotals,
+      perRoomCalculations
+    });
     setBreakdownDialogOpen(false);
   };
   

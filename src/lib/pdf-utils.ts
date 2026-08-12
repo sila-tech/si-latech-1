@@ -247,6 +247,8 @@ export const generatePromaxPdf = (data: {
     clientInfo: {
         projectName: string;
         projectLocation: string;
+        clientName?: string;
+        beamType?: string;
     };
     totals: any;
     perRoomCalculations: any[];
@@ -259,89 +261,201 @@ export const generatePromaxPdf = (data: {
     addLogoToPdf(doc, primaryColor);
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `PROMAX-${String(Date.now()).slice(-6)}`;
+    const beamSysLabel = clientInfo.beamType === 'tbeam' ? 'T-Beam System (Heavy Duty)' : 'Flat Beam System';
     
-    const beamAggregates = new Map<number, number>();
-    perRoomCalculations.forEach(p => {
+    const beamAggregates = new Map<number, { count: number; rooms: string[] }>();
+    const roomBreakdownRows: any[] = [];
+    let grandTotalBeamsPcs = 0;
+    let grandTotalBeamMeters = 0;
+    let grandTotalBlocksPcs = 0;
+
+    (perRoomCalculations || []).forEach((p: any) => {
         const calcs = p.roomCalcs || p;
-        const roomName = p.room?.name || calcs.name || '';
-        const isBalcony = roomName.toLowerCase().includes('balcony') || 
-                          roomName.toLowerCase().includes('verandah') || 
-                          roomName.toLowerCase().includes('velander') || 
-                          roomName.toLowerCase().includes('veranda') || 
-                          roomName.toLowerCase().includes('velanda');
+        const roomObj = p.room || p;
+        const roomName = roomObj.name || calcs.name || p.name || 'Room';
+        const lengthM = roomObj.length || calcs.length || 0;
+        const widthM = roomObj.width || calcs.width || 0;
+        const spanText = lengthM && widthM ? `${lengthM.toFixed(2)}m × ${widthM.toFixed(2)}m` : 'N/A';
         
-        if (calcs.effectiveBeams) {
+        let roomBeamLen = calcs.individualBeamLength || (lengthM && widthM ? Math.min(lengthM, widthM) + 0.20 : 0);
+        let roomBeamQty = calcs.actualBeamCount || calcs.invoiceBeamCount || 0;
+        let roomBlocks = Math.ceil(calcs.totalBlocks || 0);
+
+        if (calcs.effectiveBeams && Array.isArray(calcs.effectiveBeams) && calcs.effectiveBeams.length > 0) {
             calcs.effectiveBeams.forEach((b: any) => {
-                const len = b.invoiceLength || b.length;
-                if (!len) return;
-                const count = isBalcony ? (b.count * 2) : b.count;
-                beamAggregates.set(len, (beamAggregates.get(len) || 0) + count);
+                const len = b.invoiceLength || b.length || 0;
+                const count = b.count || 0;
+                if (len > 0 && count > 0) {
+                    const roundedLen = Math.round(len * 100) / 100;
+                    const existing = beamAggregates.get(roundedLen) || { count: 0, rooms: [] };
+                    existing.count += count;
+                    if (!existing.rooms.includes(roomName)) existing.rooms.push(roomName);
+                    beamAggregates.set(roundedLen, existing);
+                    grandTotalBeamsPcs += count;
+                    grandTotalBeamMeters += (roundedLen * count);
+                }
             });
+        } else if (roomBeamLen > 0 && roomBeamQty > 0) {
+            const roundedLen = Math.round(roomBeamLen * 100) / 100;
+            const existing = beamAggregates.get(roundedLen) || { count: 0, rooms: [] };
+            existing.count += roomBeamQty;
+            if (!existing.rooms.includes(roomName)) existing.rooms.push(roomName);
+            beamAggregates.set(roundedLen, existing);
+            grandTotalBeamsPcs += roomBeamQty;
+            grandTotalBeamMeters += (roundedLen * roomBeamQty);
         }
+
+        const roomTotalLm = roomBeamLen * roomBeamQty;
+        grandTotalBlocksPcs += roomBlocks;
+
+        roomBreakdownRows.push([
+            roomName,
+            spanText,
+            roomBeamLen > 0 ? `${roomBeamLen.toFixed(2)} m` : 'N/A',
+            `${roomBeamQty} pcs`,
+            roomTotalLm > 0 ? `${roomTotalLm.toFixed(2)} m` : 'N/A',
+            `${roomBlocks} pcs`
+        ]);
     });
 
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text('PROMAX MANUFACTURING ORDER', 130, 14);
+    doc.text('PROMAX MANUFACTURING ORDER', 125, 14);
     doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
-    doc.text(`#${reportNumber}`, 130, 22);
+    doc.text(`#${reportNumber}`, 125, 22);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(primaryColor);
-    doc.text('PROJECT INFO:', 14, 50);
+    doc.text('PROJECT INFO:', 14, 48);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(50);
-    doc.text(`Project Name: ${clientInfo.projectName || 'N/A'}`, 14, 56);
-    doc.text(`Location: ${clientInfo.projectLocation || 'N/A'}`, 14, 61);
-    doc.text(`Order Date: ${reportDate}`, 14, 66);
+    doc.text(`Project Name: ${clientInfo.projectName || 'N/A'}`, 14, 54);
+    doc.text(`Client Name: ${clientInfo.clientName || 'N/A'}`, 14, 59);
+    doc.text(`Site Location: ${clientInfo.projectLocation || 'N/A'}`, 14, 64);
+    doc.text(`Specification: ${beamSysLabel}`, 125, 54);
+    doc.text(`Order Date: ${reportDate}`, 125, 59);
 
-    const tableColumn = ['ITEM DESCRIPTION', 'SPECIFICATION / LENGTH', 'QTY REQUIRED', 'UNIT'];
-    const tableRows: any[] = [];
+    // --- SECTION 1: FACTORY BEAM CUTTING & CASTING SCHEDULE ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(primaryColor);
+    doc.text('SECTION 1: FACTORY BEAM CUTTING & CASTING SCHEDULE (AGGREGATED)', 14, 73);
+
+    const factoryBeamColumn = ['ITEM DESCRIPTION', 'SPECIFICATION / CUT LENGTH', 'QTY REQUIRED', 'TOTAL LINEAR METERS'];
+    const factoryBeamRows: any[] = [];
 
     const sortedLengths = Array.from(beamAggregates.keys()).sort((a, b) => b - a);
+    const itemLabel = clientInfo.beamType === 'tbeam' ? 'Prestressed T-Beam (Heavy Duty)' : 'Prestressed Flat Beam';
+
     sortedLengths.forEach(len => {
-        tableRows.push([
-            'Prestressed Concrete Beam',
+        const item = beamAggregates.get(len);
+        if (!item) return;
+        const totalLm = len * item.count;
+        factoryBeamRows.push([
+            itemLabel,
             `${len.toFixed(2)} meters`,
-            beamAggregates.get(len),
-            'pcs'
+            `${item.count} pcs`,
+            `${totalLm.toFixed(2)} m`
         ]);
     });
 
-    tableRows.push([
-        'Concrete Hollow Blocks (4x8x16)',
-        'Standard Infill Block',
-        totals.totalBlocks || 0,
-        'pcs'
+    factoryBeamRows.push([
+        { content: 'TOTAL FACTORY BEAM REQUIREMENT', styles: { fontStyle: 'bold' } },
+        { content: 'All Cut Sizes Combined', styles: { fontStyle: 'bold' } },
+        { content: `${grandTotalBeamsPcs} pcs`, styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: `${grandTotalBeamMeters.toFixed(2)} m`, styles: { fontStyle: 'bold', halign: 'right' } }
     ]);
 
     (doc as any).autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 76,
+        head: [factoryBeamColumn],
+        body: factoryBeamRows,
+        startY: 77,
         theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255 },
-        styles: { fontSize: 10 },
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9 },
         columnStyles: {
+            1: { halign: 'center' },
             2: { halign: 'center' },
+            3: { halign: 'right' },
+        }
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 10;
+
+    // --- SECTION 2: ROOM-BY-ROOM ALLOCATION BREAKDOWN ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(primaryColor);
+    doc.text('SECTION 2: ROOM-BY-ROOM BEAM & BLOCK ALLOCATION BREAKDOWN', 14, currentY);
+
+    const roomColumn = ['ROOM / SLAB AREA', 'ROOM SPAN', 'BEAM CUT LENGTH', 'BEAM QTY', 'TOTAL BEAM LM', 'HOLLOW BLOCKS'];
+
+    (doc as any).autoTable({
+        head: [roomColumn],
+        body: roomBreakdownRows,
+        startY: currentY + 5,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 8.5 },
+        columnStyles: {
+            1: { halign: 'center' },
+            2: { halign: 'center' },
+            3: { halign: 'center' },
+            4: { halign: 'right' },
+            5: { halign: 'right' },
+        }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+
+    // --- SECTION 3: INFILL BLOCK & MATERIAL SUMMARY ---
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(primaryColor);
+    doc.text('SECTION 3: INFILL BLOCK & MATERIAL SUMMARY', 14, currentY);
+
+    const blockColumn = ['MATERIAL DESCRIPTION', 'SPECIFICATION', 'TOTAL QTY REQUIRED', 'UNIT'];
+    const totalBlocksCount = Math.ceil(totals?.totalBlocks || grandTotalBlocksPcs || 0);
+
+    const blockRows = [
+        [
+            'Concrete Hollow Blocks (4x8x16)',
+            'Standard Structural Precast Infill Block',
+            totalBlocksCount.toLocaleString(),
+            'pcs'
+        ]
+    ];
+
+    (doc as any).autoTable({
+        head: [blockColumn],
+        body: blockRows,
+        startY: currentY + 5,
+        theme: 'grid',
+        headStyles: { fillColor: [51, 65, 85], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9 },
+        columnStyles: {
+            2: { halign: 'center', fontStyle: 'bold' },
             3: { halign: 'center' },
         }
     });
 
-    let finalY = (doc as any).lastAutoTable.finalY + 15;
+    let finalY = (doc as any).lastAutoTable.finalY + 10;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(primaryColor);
-    doc.text('AUTHORIZATION & PRODUCTION NOTES:', 14, finalY);
+    doc.text('PRODUCTION & DISPATCH AUTHORIZATION NOTES:', 14, finalY);
     finalY += 6;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(60);
-    doc.text('• Manufactured to SI-LATECH structural engineering standards.', 14, finalY);
+    doc.text('• Manufactured with 50N/mm² high-strength concrete & high-tensile steel wire strands according to SI-LATECH engineering standards.', 14, finalY);
     finalY += 5;
-    doc.text('• Verify beam lengths on site before loading dispatch trucks.', 14, finalY);
+    doc.text('• Verify beam clear spans on site before loading dispatch trucks.', 14, finalY);
+    finalY += 5;
+    doc.text('• Dispatch trucks must be loaded per room allocation breakdown for ease of site offloading.', 14, finalY);
 
     doc.save(`PROMAX-Order-${reportNumber}.pdf`);
     return true;

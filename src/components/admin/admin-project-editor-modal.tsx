@@ -394,7 +394,9 @@ export function AdminProjectEditorModal({
     generatePromaxPdf({
       clientInfo: {
         projectName: name || 'Project',
-        projectLocation: projectLocation || 'N/A'
+        projectLocation: projectLocation || 'N/A',
+        clientName: clientName || 'Valued Client',
+        beamType: activeSettings?.beamType || 'flat'
       },
       totals: {
         totalBlocks: calculatedTotals.totalBlocks
