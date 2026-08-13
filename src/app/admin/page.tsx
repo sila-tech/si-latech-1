@@ -60,6 +60,7 @@ import {
 
 export default function AdminDashboardPage() {
     const [activeSection, setActiveSection] = useState<AdminSection>('overview');
+    const [financeSubTab, setFinanceSubTab] = useState('overview');
     const [searchQuery, setSearchQuery] = useState('');
     const [projectStatusFilter, setProjectStatusFilter] = useState('running');
     const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -726,7 +727,7 @@ export default function AdminDashboardPage() {
             case 'overview': return renderOverview();
             case 'projects': return renderProjects();
             case 'quotes': return renderQuotes();
-            case 'finances': return <FinanceManagement isSuperAdmin={isSuperAdmin} />;
+            case 'finances': return <FinanceManagement isSuperAdmin={isSuperAdmin} activeSubTab={financeSubTab} onSubTabChange={setFinanceSubTab} />;
             case 'investments': return <InvestorManagement />;
             case 'portfolio': return <PortfolioManagement />;
             case 'team': return isSuperAdmin ? <StaffManagement /> : null;
@@ -739,6 +740,8 @@ export default function AdminDashboardPage() {
             <AdminSidebar
                 activeSection={activeSection}
                 onSectionChange={(s) => { setActiveSection(s); setDisplayLimit(PAGE_SIZE); }}
+                activeFinanceSubTab={financeSubTab}
+                onFinanceSubTabSelect={setFinanceSubTab}
                 isSuperAdmin={isSuperAdmin}
                 adminName={adminName}
                 onLogout={handleLogout}

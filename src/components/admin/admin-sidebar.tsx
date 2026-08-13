@@ -15,8 +15,14 @@ import {
     Menu,
     X,
     ChevronRight,
+    ChevronDown,
     Building2,
     Shield,
+    BarChart2,
+    Landmark,
+    PlusCircle,
+    Clock,
+    HandCoins,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -50,9 +56,25 @@ const NAV_ITEMS: NavItem[] = [
     { id: 'team',        label: 'Team',        icon: Users,           activeBg: 'bg-indigo-600',  activeText: 'text-white font-bold',  iconColor: 'text-white', superAdminOnly: true },
 ];
 
+export interface FinanceSubTabItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+}
+
+export const FINANCE_SUB_TABS: FinanceSubTabItem[] = [
+    { id: 'overview',         label: 'Overview & Graph', icon: BarChart2 },
+    { id: 'bank',             label: 'Mini Bank (Ledger)', icon: Landmark },
+    { id: 'manual_record',    label: 'Manual Record',   icon: PlusCircle },
+    { id: 'pending_requests', label: 'Pending Requests', icon: Clock },
+    { id: 'staff_loans',      label: 'Staff Loans',     icon: HandCoins },
+];
+
 interface AdminSidebarProps {
     activeSection: AdminSection;
     onSectionChange: (section: AdminSection) => void;
+    activeFinanceSubTab?: string;
+    onFinanceSubTabSelect?: (subTab: string) => void;
     isSuperAdmin: boolean;
     adminName: string;
     onLogout: () => void;
@@ -62,12 +84,15 @@ interface AdminSidebarProps {
 export function AdminSidebar({
     activeSection,
     onSectionChange,
+    activeFinanceSubTab = 'overview',
+    onFinanceSubTabSelect,
     isSuperAdmin,
     adminName,
     onLogout,
     onManageRates,
 }: AdminSidebarProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [financesDropdownOpen, setFinancesDropdownOpen] = useState(true);
 
     const visibleItems = NAV_ITEMS.filter(
         (item) => !item.superAdminOnly || isSuperAdmin
@@ -107,31 +132,75 @@ export function AdminSidebar({
                 {visibleItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = activeSection === item.id;
+                    const isFinances = item.id === 'finances';
+
                     return (
-                        <button
-                            key={item.id}
-                            onClick={() => {
-                                onSectionChange(item.id);
-                                setMobileOpen(false);
-                            }}
-                            className={cn(
-                                'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 group',
-                                isActive
-                                    ? `${item.activeBg} ${item.activeText} shadow-md`
-                                    : 'text-sky-100/80 hover:bg-white/10 hover:text-white'
-                            )}
-                        >
-                            <Icon
+                        <div key={item.id} className="space-y-1">
+                            <button
+                                onClick={() => {
+                                    onSectionChange(item.id);
+                                    if (isFinances) {
+                                        setFinancesDropdownOpen(!financesDropdownOpen);
+                                    } else {
+                                        setMobileOpen(false);
+                                    }
+                                }}
                                 className={cn(
-                                    'h-4 w-4 shrink-0 transition-colors',
-                                    isActive ? item.iconColor : 'text-sky-300/70 group-hover:text-white'
+                                    'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 group',
+                                    isActive
+                                        ? `${item.activeBg} ${item.activeText} shadow-md`
+                                        : 'text-sky-100/80 hover:bg-white/10 hover:text-white'
                                 )}
-                            />
-                            <span className="flex-1 text-left">{item.label}</span>
-                            {isActive && (
-                                <ChevronRight className="h-3.5 w-3.5 opacity-80" />
+                            >
+                                <Icon
+                                    className={cn(
+                                        'h-4 w-4 shrink-0 transition-colors',
+                                        isActive ? item.iconColor : 'text-sky-300/70 group-hover:text-white'
+                                    )}
+                                />
+                                <span className="flex-1 text-left">{item.label}</span>
+                                {isFinances ? (
+                                    financesDropdownOpen ? (
+                                        <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+                                    ) : (
+                                        <ChevronRight className="h-3.5 w-3.5 opacity-80" />
+                                    )
+                                ) : isActive ? (
+                                    <ChevronRight className="h-3.5 w-3.5 opacity-80" />
+                                ) : null}
+                            </button>
+
+                            {/* Dropdown sub-items for Finances */}
+                            {isFinances && financesDropdownOpen && (
+                                <div className="pl-4 pr-1 py-1 space-y-1 bg-black/15 rounded-xl border border-white/5 my-1 animate-in fade-in duration-200">
+                                    {FINANCE_SUB_TABS.map((sub) => {
+                                        const SubIcon = sub.icon;
+                                        const isSubActive = isActive && activeFinanceSubTab === sub.id;
+                                        return (
+                                            <button
+                                                key={sub.id}
+                                                onClick={() => {
+                                                    onSectionChange('finances');
+                                                    if (onFinanceSubTabSelect) {
+                                                        onFinanceSubTabSelect(sub.id);
+                                                    }
+                                                    setMobileOpen(false);
+                                                }}
+                                                className={cn(
+                                                    'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors text-left',
+                                                    isSubActive
+                                                        ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30'
+                                                        : 'text-sky-200/70 hover:bg-white/10 hover:text-white'
+                                                )}
+                                            >
+                                                <SubIcon className={cn('h-3.5 w-3.5 shrink-0', isSubActive ? 'text-emerald-400' : 'text-sky-300/60')} />
+                                                <span className="truncate">{sub.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             )}
-                        </button>
+                        </div>
                     );
                 })}
             </nav>
