@@ -25,10 +25,12 @@ import {
     Landmark, 
     PlusCircle, 
     TrendingUp, 
-    ChevronDown,
-    Sparkles
+    UserCheck,
+    Users,
+    Trash,
+    AlertCircle
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
@@ -51,8 +53,19 @@ export function FinanceManagement({
     const [amount, setAmount] = useState('');
     const [reason, setReason] = useState('');
     const [type, setType] = useState(isSuperAdmin ? 'income' : 'facilitation_request');
+    const [selectedStaffMember, setSelectedStaffMember] = useState('');
+    const [customStaffName, setCustomStaffName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statementPeriod, setStatementPeriod] = useState('all');
+    const [staffFilter, setStaffFilter] = useState('all');
+
+    // Dialog states for Staff Loans
+    const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
+    const [loanModalType, setLoanModalType] = useState<'staff_loan' | 'loan_repayment'>('staff_loan');
+    const [loanStaffName, setLoanStaffName] = useState('');
+    const [loanCustomName, setLoanCustomName] = useState('');
+    const [loanAmount, setLoanAmount] = useState('');
+    const [loanReason, setLoanReason] = useState('');
 
     // States for editing
     const [editingRecord, setEditingRecord] = useState<any | null>(null);
@@ -60,6 +73,7 @@ export function FinanceManagement({
     const [editReason, setEditReason] = useState('');
     const [editType, setEditType] = useState('');
     const [editStatus, setEditStatus] = useState('');
+    const [editRequestedBy, setEditRequestedBy] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
 
     const firestore = useFirestore();
@@ -78,11 +92,19 @@ export function FinanceManagement({
         }
     };
 
+    // Fetch finances
     const financesQuery = useMemoFirebase(
         () => query(collection(firestore, 'finances'), orderBy('createdAt', 'desc')),
         [firestore]
     );
     const { data: finances, isLoading } = useCollection<any>(financesQuery);
+
+    // Fetch staff list for loan assignment
+    const staffQuery = useMemoFirebase(
+        () => query(collection(firestore, 'staff'), orderBy('name', 'asc')),
+        [firestore]
+    );
+    const { data: staffList } = useCollection<any>(staffQuery);
 
     const handleAddRecord = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,38 +115,73 @@ export function FinanceManagement({
 
         setIsSubmitting(true);
         try {
-            let adminName = 'Admin';
-            try {
-                const stored = sessionStorage.getItem('sila-admin-auth');
-                if (stored && stored !== btoa('Sila4927')) {
-                    adminName = JSON.parse(stored).name || 'Admin';
-                } else if (stored === btoa('Sila4927')) {
-                    adminName = 'Super Admin';
-                }
-            } catch (e) {}
+            let userIdentifier = 'Admin';
+            if (type === 'staff_loan' || type === 'loan_repayment') {
+                userIdentifier = selectedStaffMember === 'custom' ? customStaffName : selectedStaffMember;
+                if (!userIdentifier) userIdentifier = 'Staff';
+            } else {
+                try {
+                    const stored = sessionStorage.getItem('sila-admin-auth');
+                    if (stored && stored !== btoa('Sila4927')) {
+                        userIdentifier = JSON.parse(stored).name || 'Admin';
+                    } else if (stored === btoa('Sila4927')) {
+                        userIdentifier = 'Super Admin';
+                    }
+                } catch (e) {}
+            }
 
             await addDoc(collection(firestore, 'finances'), {
                 type,
                 amount: parseFloat(amount),
                 reason,
-                requestedBy: adminName,
+                requestedBy: userIdentifier,
                 status: isSuperAdmin ? 'approved' : 'pending',
                 createdAt: serverTimestamp()
             });
-            toast({ title: 'Success', description: 'Financial record added.' });
+            toast({ title: 'Success', description: 'Financial record saved successfully.' });
             setAmount('');
             setReason('');
+            setSelectedStaffMember('');
+            setCustomStaffName('');
 
-            // Switch to mini bank or history after adding
-            if (type === 'income' || type === 'loan_repayment') {
-                handleTabChange('bank');
-            } else if (type === 'staff_loan') {
+            if (type === 'staff_loan' || type === 'loan_repayment') {
                 handleTabChange('staff_loans');
-            } else if (!isSuperAdmin) {
-                handleTabChange('pending_requests');
+            } else if (type === 'income') {
+                handleTabChange('bank');
             }
         } catch (error) {
-            toast({ title: 'Error', description: 'Could not add record.', variant: 'destructive' });
+            toast({ title: 'Error', description: 'Could not save record.', variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSaveStaffLoanModal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const targetStaff = loanStaffName === 'custom' ? loanCustomName : loanStaffName;
+        if (!targetStaff || !loanAmount || !loanReason) {
+            toast({ title: 'Error', description: 'Staff name, amount, and purpose are required.', variant: 'destructive' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await addDoc(collection(firestore, 'finances'), {
+                type: loanModalType,
+                amount: parseFloat(loanAmount),
+                reason: loanReason,
+                requestedBy: targetStaff,
+                status: 'approved',
+                createdAt: serverTimestamp()
+            });
+            toast({ title: 'Success', description: `${loanModalType === 'staff_loan' ? 'Staff loan' : 'Loan repayment'} recorded for ${targetStaff}.` });
+            setIsLoanModalOpen(false);
+            setLoanStaffName('');
+            setLoanCustomName('');
+            setLoanAmount('');
+            setLoanReason('');
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not record staff loan.', variant: 'destructive' });
         } finally {
             setIsSubmitting(false);
         }
@@ -145,6 +202,7 @@ export function FinanceManagement({
         setEditReason(record.reason || '');
         setEditType(record.type || 'income');
         setEditStatus(record.status || 'pending');
+        setEditRequestedBy(record.requestedBy || 'Admin');
     };
 
     const handleUpdateRecord = async (e: React.FormEvent) => {
@@ -161,7 +219,8 @@ export function FinanceManagement({
                 amount: parseFloat(editAmount),
                 reason: editReason,
                 type: editType,
-                status: editStatus
+                status: editStatus,
+                requestedBy: editRequestedBy
             });
             toast({ title: 'Success', description: 'Financial record updated.' });
             setEditingRecord(null);
@@ -178,9 +237,33 @@ export function FinanceManagement({
         }
         try {
             await deleteDoc(doc(firestore, 'finances', id));
-            toast({ title: 'Deleted', description: 'Financial record deleted successfully.' });
+            toast({ title: 'Deleted', description: 'Financial record deleted.' });
         } catch (error) {
             toast({ title: 'Error', description: 'Could not delete record.', variant: 'destructive' });
+        }
+    };
+
+    const handleClearAllManualRecords = async () => {
+        if (!window.confirm('Action required: Clear all manual test records? System project income records will be preserved.')) {
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            let count = 0;
+            if (finances) {
+                for (const f of finances) {
+                    if (f.requestedBy !== 'System') {
+                        await deleteDoc(doc(firestore, 'finances', f.id));
+                        count++;
+                    }
+                }
+            }
+            toast({ title: 'Clean Sheet Ready', description: `Cleared ${count} manual test records.` });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not clear records.', variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -248,10 +331,28 @@ export function FinanceManagement({
     }, [finances]);
 
     const staffLoanRecords = useMemo(() => {
-        return finances ? finances.filter((f: any) => f.type === 'staff_loan' || f.type === 'loan_repayment') : [];
+        if (!finances) return [];
+        return finances.filter((f: any) => {
+            const isLoan = f.type === 'staff_loan' || f.type === 'loan_repayment';
+            if (!isLoan) return false;
+            if (staffFilter === 'all') return true;
+            return f.requestedBy === staffFilter;
+        });
+    }, [finances, staffFilter]);
+
+    // Unique staff members who have loan records
+    const staffMembersWithLoans = useMemo(() => {
+        if (!finances) return [];
+        const names = new Set<string>();
+        finances.forEach((f: any) => {
+            if ((f.type === 'staff_loan' || f.type === 'loan_repayment') && f.requestedBy) {
+                names.add(f.requestedBy);
+            }
+        });
+        return Array.from(names);
     }, [finances]);
 
-    // Income vs Expenses Chart Data (Smooth Curved Dual Area)
+    // Chart data for Income vs Expenses
     const chartData = useMemo(() => {
         if (!finances || finances.length === 0) return [];
 
@@ -355,15 +456,14 @@ export function FinanceManagement({
 
     return (
         <div className="space-y-6">
-            {/* Header & Sub-Navigation Bar */}
+            {/* Top Header & Sub-Nav */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/80 p-4 rounded-2xl shadow-xs">
                 <div>
                     <h2 className="text-2xl font-black font-headline text-slate-900 tracking-tight">Finances &amp; Ledger</h2>
                     <p className="text-xs text-slate-500 mt-0.5">Cashflow analytics, bank statement, staff loan tracking &amp; approvals.</p>
                 </div>
 
-                {/* Sub-tab Navigation Selector (Dropdown for mobile + Pill buttons for desktop) */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     {/* Mobile Dropdown Select */}
                     <div className="md:hidden w-full">
                         <Select value={subTab} onValueChange={handleTabChange}>
@@ -438,10 +538,22 @@ export function FinanceManagement({
                             <HandCoins size={14} /> Staff Loans
                         </button>
                     </div>
+
+                    {isSuperAdmin && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleClearAllManualRecords}
+                            className="text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-9 rounded-xl gap-1.5"
+                            title="Clear test entries to start fresh"
+                        >
+                            <Trash size={14} /> Reset Sheet
+                        </Button>
+                    )}
                 </div>
             </div>
 
-            {/* Financial Summary Cards (Always Visible at Top of Finance) */}
+            {/* Financial Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="border border-green-200 bg-green-50/60 shadow-xs hover:shadow-sm transition-all rounded-2xl">
                     <CardHeader className="pb-2">
@@ -488,7 +600,6 @@ export function FinanceManagement({
             {/* TAB CONTENT 1: OVERVIEW & INCOME VS EXPENSES GRAPH */}
             {subTab === 'overview' && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                    {/* Income vs Expenses Curved Graph */}
                     <Card className="border border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
                         <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -517,7 +628,7 @@ export function FinanceManagement({
                                 <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-xs">
                                     <BarChart2 className="h-10 w-10 text-slate-300 mb-2" />
                                     <p className="font-semibold text-slate-600">No financial transactions recorded yet.</p>
-                                    <p className="text-slate-400 mt-0.5">Use the Manual Record tab to log income or expenses.</p>
+                                    <p className="text-slate-400 mt-0.5">Use the Manual Record or Staff Loans tab to log income or expenses.</p>
                                 </div>
                             ) : (
                                 <div className="h-[320px] w-full">
@@ -569,7 +680,7 @@ export function FinanceManagement({
                                         <TableHead>Date</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Description</TableHead>
-                                        <TableHead>Requested By</TableHead>
+                                        <TableHead>Requested By / Staff</TableHead>
                                         <TableHead className="text-right">Amount (KSh)</TableHead>
                                         <TableHead className="text-center">Status</TableHead>
                                     </TableRow>
@@ -584,12 +695,12 @@ export function FinanceManagement({
                                                     {f.createdAt?.seconds ? format(new Date(f.createdAt.seconds * 1000), 'dd MMM, h:mm a') : 'N/A'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={f.type === 'income' ? 'text-green-700 border-green-200 bg-green-50 font-bold' : 'text-red-700 border-red-200 bg-red-50 font-bold'}>
+                                                    <Badge variant="outline" className={f.type === 'income' ? 'text-green-700 border-green-200 bg-green-50 font-bold' : f.type === 'staff_loan' ? 'text-purple-700 border-purple-200 bg-purple-50 font-bold' : f.type === 'loan_repayment' ? 'text-emerald-700 border-emerald-200 bg-emerald-50 font-bold' : 'text-red-700 border-red-200 bg-red-50 font-bold'}>
                                                         {f.type === 'income' ? 'Income' : f.type === 'staff_loan' ? 'Staff Loan' : f.type === 'loan_repayment' ? 'Repayment' : 'Expense'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="font-medium text-xs text-slate-900 max-w-[220px] truncate" title={f.reason}>{f.reason}</TableCell>
-                                                <TableCell className="text-xs text-slate-500">{f.requestedBy || 'Admin'}</TableCell>
+                                                <TableCell className="text-xs text-slate-700 font-semibold">{f.requestedBy || 'Admin'}</TableCell>
                                                 <TableCell className={`text-right font-black text-xs ${f.type === 'income' || f.type === 'loan_repayment' ? 'text-green-600' : 'text-slate-900'}`}>
                                                     KSh {f.amount?.toLocaleString() || '0'}
                                                 </TableCell>
@@ -715,7 +826,7 @@ export function FinanceManagement({
                 </Card>
             )}
 
-            {/* TAB CONTENT 3: MANUAL RECORD & FACILITATION FORM */}
+            {/* TAB CONTENT 3: MANUAL RECORD FORM */}
             {subTab === 'manual_record' && (
                 <div className="max-w-2xl mx-auto animate-in fade-in duration-200 space-y-6">
                     <Card className="border border-slate-200 shadow-md bg-white rounded-2xl overflow-hidden">
@@ -759,6 +870,38 @@ export function FinanceManagement({
                                         </Select>
                                     </div>
                                 )}
+
+                                {/* If type is staff_loan or loan_repayment, select Staff Member */}
+                                {(type === 'staff_loan' || type === 'loan_repayment') && (
+                                    <div className="space-y-2 p-3.5 bg-purple-50/70 border border-purple-200 rounded-xl">
+                                        <Label className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                                            <UserCheck size={15} className="text-purple-700" /> Staff Member
+                                        </Label>
+                                        <Select value={selectedStaffMember} onValueChange={setSelectedStaffMember}>
+                                            <SelectTrigger className="h-10 rounded-xl border-purple-200 text-xs font-bold bg-white">
+                                                <SelectValue placeholder="-- Select Staff Member --" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white">
+                                                {staffList?.map((s: any) => (
+                                                    <SelectItem key={s.id} value={s.name || s.username} className="text-xs font-semibold">
+                                                        {s.name} ({s.username})
+                                                    </SelectItem>
+                                                ))}
+                                                <SelectItem value="custom" className="text-xs font-bold text-purple-700">+ Enter Custom Staff Name</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        {selectedStaffMember === 'custom' && (
+                                            <Input
+                                                placeholder="Type staff member name..."
+                                                value={customStaffName}
+                                                onChange={(e) => setCustomStaffName(e.target.value)}
+                                                className="h-10 rounded-xl border-purple-200 text-xs mt-2 bg-white"
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="space-y-2">
                                     <Label className="text-xs font-bold text-slate-700">Amount (KSh)</Label>
                                     <Input 
@@ -774,7 +917,7 @@ export function FinanceManagement({
                                     <Input 
                                         value={reason} 
                                         onChange={(e) => setReason(e.target.value)} 
-                                        placeholder={isSuperAdmin ? "e.g. Client deposit for Ruiru Project slab" : "e.g. Transport and lunch for technician"} 
+                                        placeholder={type === 'staff_loan' ? "e.g. Salary advance for August" : isSuperAdmin ? "e.g. Client deposit for Ruiru Project slab" : "e.g. Transport and lunch for technician"} 
                                         className="h-10 rounded-xl border-slate-200 text-sm"
                                     />
                                 </div>
@@ -873,7 +1016,7 @@ export function FinanceManagement({
             {/* TAB CONTENT 5: STAFF LOANS */}
             {subTab === 'staff_loans' && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xs">
+                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xs">
                         <div>
                             <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider">Staff Loan Ledger Summary</h4>
                             <p className="text-xs text-purple-800 font-medium mt-1">
@@ -883,23 +1026,56 @@ export function FinanceManagement({
                             </p>
                         </div>
                         {isSuperAdmin && (
-                            <Button 
-                                size="sm" 
-                                onClick={() => { 
-                                    setType('loan_repayment'); 
-                                    setReason('Staff Loan Repayment'); 
-                                    handleTabChange('manual_record');
-                                }}
-                                className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs h-9 px-4 rounded-xl shrink-0 gap-1.5 shadow-xs"
-                            >
-                                <HandCoins size={14} /> Log Loan Repayment
-                            </Button>
+                            <div className="flex items-center gap-2 flex-wrap shrink-0">
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => {
+                                        setLoanModalType('staff_loan');
+                                        setLoanReason('Salary Advance / Staff Loan');
+                                        setIsLoanModalOpen(true);
+                                    }}
+                                    className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs h-9 px-4 rounded-xl gap-1.5 shadow-xs"
+                                >
+                                    <PlusCircle size={15} /> Issue Staff Loan
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                        setLoanModalType('loan_repayment');
+                                        setLoanReason('Staff Loan Repayment');
+                                        setIsLoanModalOpen(true);
+                                    }}
+                                    className="border-purple-300 text-purple-800 hover:bg-purple-100 font-bold text-xs h-9 px-4 rounded-xl gap-1.5 shadow-xs"
+                                >
+                                    <HandCoins size={15} /> Log Repayment
+                                </Button>
+                            </div>
                         )}
                     </div>
 
+                    {/* Filter by Staff Member */}
                     <Card className="border border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
-                        <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4">
-                            <CardTitle className="text-base font-bold text-slate-900">Staff Loan Records</CardTitle>
+                        <CardHeader className="bg-slate-50/50 border-b border-slate-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <Users className="h-5 w-5 text-purple-700" /> Staff Member Loan Records
+                            </CardTitle>
+                            {staffMembersWithLoans.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-xs text-slate-500 font-semibold whitespace-nowrap">Filter Staff:</Label>
+                                    <Select value={staffFilter} onValueChange={setStaffFilter}>
+                                        <SelectTrigger className="h-8 w-44 text-xs font-bold rounded-lg border-slate-200 bg-white">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white">
+                                            <SelectItem value="all" className="text-xs">All Staff Members ({staffMembersWithLoans.length})</SelectItem>
+                                            {staffMembersWithLoans.map(name => (
+                                                <SelectItem key={name} value={name} className="text-xs font-medium">{name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                         </CardHeader>
                         <CardContent className="p-0">
                             {isLoading ? (
@@ -911,8 +1087,8 @@ export function FinanceManagement({
                                             <TableRow>
                                                 <TableHead className="text-xs uppercase font-bold text-slate-600">Date</TableHead>
                                                 <TableHead className="text-xs uppercase font-bold text-slate-600">Category</TableHead>
-                                                <TableHead className="text-xs uppercase font-bold text-slate-600">Description / Purpose</TableHead>
                                                 <TableHead className="text-xs uppercase font-bold text-slate-600">Staff Member</TableHead>
+                                                <TableHead className="text-xs uppercase font-bold text-slate-600">Purpose / Notes</TableHead>
                                                 <TableHead className="text-right text-xs uppercase font-bold text-slate-900">Amount (KSh)</TableHead>
                                                 <TableHead className="text-center text-xs uppercase font-bold text-slate-600">Status</TableHead>
                                                 <TableHead className="text-center w-[90px] text-xs uppercase font-bold text-slate-600">Actions</TableHead>
@@ -936,8 +1112,10 @@ export function FinanceManagement({
                                                                 {f.type === 'loan_repayment' ? 'Repayment' : 'Staff Loan'}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className="font-medium text-xs text-slate-900">{f.reason}</TableCell>
-                                                        <TableCell className="text-xs text-slate-700 font-semibold">{f.requestedBy || 'Admin'}</TableCell>
+                                                        <TableCell className="text-xs text-slate-900 font-bold flex items-center gap-1.5 mt-2">
+                                                            <UserCheck size={14} className="text-purple-600" /> {f.requestedBy || 'Staff'}
+                                                        </TableCell>
+                                                        <TableCell className="font-medium text-xs text-slate-700">{f.reason}</TableCell>
                                                         <TableCell className={`text-right font-black text-xs tabular-nums ${f.type === 'loan_repayment' ? 'text-emerald-600' : 'text-purple-700'}`}>
                                                             {f.type === 'loan_repayment' ? `+KSh ${f.amount?.toLocaleString()}` : `-KSh ${f.amount?.toLocaleString()}`}
                                                         </TableCell>
@@ -980,7 +1158,82 @@ export function FinanceManagement({
                 </div>
             )}
 
-            {/* Edit Financial Record Dialog */}
+            {/* DEDICATED STAFF LOAN / REPAYMENT MODAL */}
+            <Dialog open={isLoanModalOpen} onOpenChange={setIsLoanModalOpen}>
+                <DialogContent className="w-[95vw] sm:max-w-md bg-white border border-slate-200 shadow-xl rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <HandCoins className="h-5 w-5 text-purple-700" />
+                            {loanModalType === 'staff_loan' ? 'Issue Staff Loan / Salary Advance' : 'Log Staff Loan Repayment'}
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                            {loanModalType === 'staff_loan' 
+                                ? 'Record a loan or cash advance issued to a staff member.' 
+                                : 'Record a loan repayment received from a staff member.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleSaveStaffLoanModal} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-700">Select Staff Member</Label>
+                            <Select value={loanStaffName} onValueChange={setLoanStaffName}>
+                                <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs font-semibold bg-white">
+                                    <SelectValue placeholder="-- Select Staff Member --" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                    {staffList?.map((s: any) => (
+                                        <SelectItem key={s.id} value={s.name || s.username} className="text-xs font-semibold">
+                                            {s.name} ({s.username})
+                                        </SelectItem>
+                                    ))}
+                                    <SelectItem value="custom" className="text-xs font-bold text-purple-700">+ Enter Custom Staff Name</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {loanStaffName === 'custom' && (
+                                <Input
+                                    placeholder="Type staff member full name..."
+                                    value={loanCustomName}
+                                    onChange={(e) => setLoanCustomName(e.target.value)}
+                                    className="h-10 rounded-xl border-slate-200 text-xs mt-2"
+                                />
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-700">Amount (KSh)</Label>
+                            <Input 
+                                type="number" 
+                                value={loanAmount} 
+                                onChange={(e) => setLoanAmount(e.target.value)} 
+                                placeholder="e.g. 5000" 
+                                className="h-10 rounded-xl border-slate-200 text-sm font-semibold"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-slate-700">Purpose / Reference Notes</Label>
+                            <Input 
+                                value={loanReason} 
+                                onChange={(e) => setLoanReason(e.target.value)} 
+                                placeholder={loanModalType === 'staff_loan' ? "e.g. Salary advance for August" : "e.g. M-Pesa salary deduction / Cash repayment"} 
+                                className="h-10 rounded-xl border-slate-200 text-sm"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button type="button" variant="outline" onClick={() => setIsLoanModalOpen(false)} className="h-10 rounded-xl border-slate-200 font-semibold text-xs">
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting} className="bg-purple-700 hover:bg-purple-800 text-white font-bold h-10 rounded-xl text-xs px-5">
+                                {isSubmitting ? <Loader2 className="animate-spin mr-2" size={14} /> : null}
+                                Save Record
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* EDIT FINANCIAL RECORD DIALOG */}
             <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
                 <DialogContent className="w-[95vw] sm:max-w-md bg-white border border-slate-200 shadow-lg rounded-2xl">
                     <DialogHeader>
@@ -1000,6 +1253,15 @@ export function FinanceManagement({
                                     <SelectItem value="other_expense">Other Expense</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-staff" className="text-xs font-bold text-slate-700">User / Staff Member</Label>
+                            <Input 
+                                id="edit-staff" 
+                                value={editRequestedBy} 
+                                onChange={(e) => setEditRequestedBy(e.target.value)} 
+                                className="h-10 rounded-xl border-slate-200 text-sm font-semibold" 
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-amount" className="text-xs font-bold text-slate-700">Amount (KSh)</Label>
