@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Loader2, HardHat, MapPin, Layers, Download, Image as ImageIcon, Wallet, LogOut, FileText, Bot, HandCoins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { generateMaterialSchedulePdf } from '@/lib/pdf-utils';
+import { generateMaterialSchedulePdf, generateTechnicalLayoutPdf } from '@/lib/pdf-utils';
 import { calcRoomBlocksAndBeams } from '@/lib/calculator';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 import { StaffAiAssistant } from '@/components/staff/staff-ai-assistant';
@@ -334,10 +334,35 @@ export default function StaffDashboardPage() {
                     </div>
                     
                     <div className="flex justify-between border-t pt-4 print:hidden">
-                        <p className="text-xs text-slate-400 italic">SI-LATECH Internal Staff Document</p>
-                        <Button onClick={() => window.print()} className="bg-primary font-bold">
-                            <Download size={16} className="mr-2" /> Print Technical Diagram
-                        </Button>
+                        <p className="text-xs text-slate-400 italic">SI-LATECH Technical Document (No Financial Figures)</p>
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                className="font-bold border-slate-200 text-slate-700"
+                                onClick={() => {
+                                    if (!selectedProject) return;
+                                    const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 500;
+                                    const perRoomCalculations = selectedProject.rooms?.map((r: any) => {
+                                        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2 }, BEAM_PRICE_PER_METER, r.name);
+                                        return { room: r, roomCalcs };
+                                    }) || [];
+                                    generateTechnicalLayoutPdf({
+                                        clientInfo: {
+                                            projectName: selectedProject.name || 'Project',
+                                            projectLocation: selectedProject.projectLocation || 'N/A',
+                                            clientName: selectedProject.clientName || 'Valued Client',
+                                            beamType: selectedProject.settings?.beamType || 'flat'
+                                        },
+                                        perRoomCalculations
+                                    });
+                                }}
+                            >
+                                <Download size={15} className="mr-1.5" /> Download PDF Sheet
+                            </Button>
+                            <Button onClick={() => window.print()} className="bg-primary font-bold">
+                                <Download size={15} className="mr-1.5" /> Print Layout
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

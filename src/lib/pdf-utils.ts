@@ -600,3 +600,126 @@ export const generateMaterialSchedulePdf = (data: {
     doc.save(`Material-Schedule-${clientInfo.projectName || 'Site'}.pdf`);
     return true;
 };
+
+export const generateTechnicalLayoutPdf = (data: {
+    clientInfo: {
+        projectName: string;
+        projectLocation: string;
+        clientName?: string;
+        beamType?: string;
+    };
+    perRoomCalculations: any[];
+}) => {
+    const { clientInfo, perRoomCalculations } = data;
+    const doc = new jsPDF();
+    const primaryColor = '#0f172a'; // Slate-900
+    
+    addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
+    const reportDate = new Date().toLocaleDateString('en-GB');
+    const reportNumber = `LAYOUT-${String(Date.now()).slice(-6)}`;
+    const beamSysLabel = clientInfo.beamType === 'tbeam' ? 'T-Beam System (Heavy Duty)' : 'Flat Beam System';
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('TECHNICAL LAYOUT SHEET', 125, 14);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text(`#${reportNumber}`, 125, 22);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('PROJECT TECHNICAL INFO:', 14, 48);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50);
+    doc.text(`Project Name: ${clientInfo.projectName || 'N/A'}`, 14, 54);
+    doc.text(`Client Name: ${clientInfo.clientName || 'N/A'}`, 14, 59);
+    doc.text(`Site Location: ${clientInfo.projectLocation || 'N/A'}`, 14, 64);
+    doc.text(`Specification: ${beamSysLabel}`, 125, 54);
+    doc.text(`Date: ${reportDate}`, 125, 59);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(primaryColor);
+    doc.text('SITE TECHNICIAN ROOM ALLOCATION & PLACEMENT GUIDE', 14, 73);
+
+    const tableColumn = ['ROOM / SLAB AREA', 'ROOM SPAN (L × W)', 'BEAM CUT LENGTH', 'BEAM QTY', 'TOTAL LM', 'HOLLOW BLOCKS'];
+    const tableRows: any[] = [];
+    let grandTotalBeamsPcs = 0;
+    let grandTotalBeamLm = 0;
+    let grandTotalBlocks = 0;
+
+    (perRoomCalculations || []).forEach((p: any) => {
+        const calcs = p.roomCalcs || p;
+        const roomObj = p.room || p;
+        const roomName = roomObj.name || calcs.name || p.name || 'Room';
+        const lengthM = roomObj.length || calcs.length || 0;
+        const widthM = roomObj.width || calcs.width || 0;
+        const spanText = lengthM && widthM ? `${lengthM.toFixed(2)}m × ${widthM.toFixed(2)}m` : 'N/A';
+
+        const roomBeamLen = calcs.individualBeamLength || (lengthM && widthM ? Math.min(lengthM, widthM) + 0.20 : 0);
+        const roomBeamQty = calcs.actualBeamCount || calcs.invoiceBeamCount || 0;
+        const roomBlocks = Math.ceil(calcs.totalBlocks || 0);
+        const roomTotalLm = roomBeamLen * roomBeamQty;
+
+        grandTotalBeamsPcs += roomBeamQty;
+        grandTotalBeamLm += roomTotalLm;
+        grandTotalBlocks += roomBlocks;
+
+        tableRows.push([
+            roomName,
+            spanText,
+            roomBeamLen > 0 ? `${roomBeamLen.toFixed(2)} m` : 'N/A',
+            `${roomBeamQty} pcs`,
+            roomTotalLm > 0 ? `${roomTotalLm.toFixed(2)} m` : 'N/A',
+            `${roomBlocks} pcs`
+        ]);
+    });
+
+    tableRows.push([
+        { content: 'TOTAL PROJECT SITE ALLOCATION', styles: { fontStyle: 'bold' } },
+        { content: 'All Areas Combined', styles: { fontStyle: 'bold' } },
+        { content: '—', styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: `${grandTotalBeamsPcs} pcs`, styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: `${grandTotalBeamLm.toFixed(2)} m`, styles: { fontStyle: 'bold', halign: 'right' } },
+        { content: `${grandTotalBlocks} pcs`, styles: { fontStyle: 'bold', halign: 'right' } }
+    ]);
+
+    (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 77,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9 },
+        columnStyles: {
+            1: { halign: 'center' },
+            2: { halign: 'center' },
+            3: { halign: 'center' },
+            4: { halign: 'right' },
+            5: { halign: 'right' },
+        }
+    });
+
+    let finalY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(primaryColor);
+    doc.text('TECHNICAL SITE PLACEMENT GUIDELINES:', 14, finalY);
+    finalY += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(60);
+    doc.text('1. Beams must be laid parallel to the shorter clear span direction across support walls.', 14, finalY);
+    finalY += 5;
+    doc.text('2. Concrete hollow blocks are placed in single rows between adjacent beam flanges.', 14, finalY);
+    finalY += 5;
+    doc.text('3. Ensure temporary propping is installed at 1.2m intervals before casting concrete topping.', 14, finalY);
+    finalY += 5;
+    doc.text('4. Verify room clear spans on site before placing beams.', 14, finalY);
+
+    doc.save(`Technical-Layout-${reportNumber}.pdf`);
+    return true;
+};
