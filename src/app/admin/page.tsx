@@ -41,7 +41,7 @@ import { Input } from '@/components/ui/input';
 import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
 import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf, generateMaterialSchedulePdf } from '@/lib/pdf-utils';
-import { calcRoomBlocksAndBeams } from '@/lib/calculator';
+import { calcRoomBlocksAndBeams, calculateProjectTotals } from '@/lib/calculator';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 import { StaffManagement } from '@/components/admin/staff-management';
 import { FinanceManagement } from '@/components/admin/finance-management';
@@ -279,10 +279,24 @@ export default function AdminDashboardPage() {
         const running = all.filter((p: any) => (p.status || 'pending') === 'running').length;
         const expected = all.filter((p: any) => (p.status || 'pending') === 'expected').length;
         const pending = all.filter((p: any) => (p.status || 'pending') === 'pending').length;
-        const finished = all.filter((p: any) => (p.status || 'pending') === 'finished').length;
-        const totalRevenue = (invoices || []).reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0);
+        const finishedProjectsList = all.filter((p: any) => (p.status || 'pending') === 'finished' || (p.status || 'pending') === 'paid');
+        const finished = finishedProjectsList.length;
+        
+        // Total Revenue is already paid profits from all paid/finished projects
+        const totalRevenue = finishedProjectsList.reduce((sum: number, p: any) => {
+            let pProfit = Number(p.profit) || 0;
+            if (!pProfit && p.rooms && p.rooms.length > 0) {
+                try {
+                    const calcs = calculateProjectTotals(p.rooms, p.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 });
+                    pProfit = calcs.totalProjectProfit || 0;
+                } catch (e) {}
+            }
+            return sum + pProfit;
+        }, 0);
+
         const invList = invoices || [];
-        const avgProjectValue = invList.length > 0 ? totalRevenue / invList.length : 0;
+        const totalQuotesValue = invList.reduce((sum: number, inv: any) => sum + (inv.grandTotal || 0), 0);
+        const avgProjectValue = invList.length > 0 ? totalQuotesValue / invList.length : 0;
         return { running, expected, pending, finished, totalRevenue, avgProjectValue, totalProjects: all.length };
     }, [projects, invoices]);
 
@@ -310,7 +324,7 @@ export default function AdminDashboardPage() {
                 <Card className="bg-emerald-600 text-white border-0 rounded-2xl shadow-sm hover:shadow-lg transition-all">
                     <CardHeader className="pb-2">
                         <CardDescription className="text-emerald-100 font-bold text-xs uppercase tracking-wider flex items-center justify-between">
-                            <span className="flex items-center gap-1.5"><TrendingUp size={15} className="text-emerald-200" /> Total Revenue</span>
+                            <span className="flex items-center gap-1.5"><TrendingUp size={15} className="text-emerald-200" /> Total Paid Revenue</span>
                             <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
                         </CardDescription>
                         <CardTitle className="text-2xl font-black text-white tabular-nums mt-1.5">
@@ -318,7 +332,7 @@ export default function AdminDashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-xs text-emerald-100/90 font-medium">Combined value of all saved quotes</p>
+                        <p className="text-xs text-emerald-100/90 font-medium">Accumulated profit from finished &amp; paid projects</p>
                     </CardContent>
                 </Card>
 
