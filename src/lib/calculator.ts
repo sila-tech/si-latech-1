@@ -244,6 +244,16 @@ export const DEFAULTS: CalculationDefaults = {
 const ceil = (v: number) => Math.ceil(v);
 const METERS_TO_FEET = 3.28084;
 
+export function calcBilledBlocks(baseBlocks: number): number {
+    const roundedBase = Math.ceil(baseBlocks);
+    if (roundedBase <= 0) return 0;
+    if (roundedBase < 500) {
+        return roundedBase + 5;
+    }
+    const extraAllowance = Math.floor(roundedBase / 500) * 7;
+    return roundedBase + extraAllowance;
+}
+
 export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
@@ -707,7 +717,7 @@ export function calculateProjectTotals(
   const lintel = calcLintelConcrete(totalLintelLength, settings);
   const lintelSteel = calcLintelSteel(totalLintelLength, settings);
   aggregated.totalCementBags = Math.ceil(aggregated.totalCementBags);
-  aggregated.totalBlocks = Math.ceil(aggregated.totalBlocks);
+  aggregated.totalBlocks = calcBilledBlocks(aggregated.totalBlocks);
 
   return {
     ...aggregated,

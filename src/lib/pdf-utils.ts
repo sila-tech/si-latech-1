@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { calculateProjectTotals, calcRoomBlocksAndBeams } from './calculator';
+import { calculateProjectTotals, calcRoomBlocksAndBeams, calcBilledBlocks } from './calculator';
 
 export const addLogoToPdf = (doc: jsPDF, color: string) => {
     doc.setFont('helvetica', 'bold');
@@ -418,7 +418,7 @@ export const generatePromaxPdf = (data: {
     doc.text('SECTION 3: INFILL BLOCK & MATERIAL SUMMARY', 14, currentY);
 
     const blockColumn = ['MATERIAL DESCRIPTION', 'SPECIFICATION', 'TOTAL QTY REQUIRED', 'UNIT'];
-    const totalBlocksCount = Math.ceil(totals?.totalBlocks || grandTotalBlocksPcs || 0);
+    const totalBlocksCount = Math.ceil(totals?.totalBlocks || calcBilledBlocks(grandTotalBlocksPcs) || 0);
 
     const blockRows = [
         [

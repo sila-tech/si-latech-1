@@ -41,7 +41,7 @@ import { Input } from '@/components/ui/input';
 import { format, isToday, isYesterday, isThisWeek } from 'date-fns';
 import { useCalculator } from '@/context/calculator-context';
 import { generateQuotePdf, generatePromaxPdf, generateProfitRequestPdf, generateMaterialSchedulePdf } from '@/lib/pdf-utils';
-import { calcRoomBlocksAndBeams, calculateProjectTotals } from '@/lib/calculator';
+import { calcRoomBlocksAndBeams, calculateProjectTotals, calcBilledBlocks } from '@/lib/calculator';
 import { RoomLayoutVisualizer } from '@/components/silacalc/room-layout-visualizer';
 import { StaffManagement } from '@/components/admin/staff-management';
 import { FinanceManagement } from '@/components/admin/finance-management';
@@ -207,7 +207,8 @@ export default function AdminDashboardPage() {
             const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
             return { ...r, roomCalcs };
         }) || [];
-        const totalBlocks = reCalculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0);
+        const baseBlocks = reCalculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0);
+        const totalBlocks = calcBilledBlocks(baseBlocks);
         generatePromaxPdf({
             clientInfo: { 
                 projectName: getProjectName(proj), 
@@ -883,7 +884,7 @@ export default function AdminDashboardPage() {
                         const totals = {
                             area: calculatedRooms.reduce((acc: number, r: any) => acc + (r.length * r.width), 0),
                             actualBeams: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.actualBeamCount || 0), 0),
-                            invoiceBlocks: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0),
+                            invoiceBlocks: calcBilledBlocks(calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalBlocks || 0), 0)),
                             beamProfit: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.beamProfitValue || 0), 0),
                             blockCommission: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.blockCommission || 0), 0),
                             totalProfit: calculatedRooms.reduce((acc: number, r: any) => acc + (r.roomCalcs?.totalRoomProfit || 0), 0),
