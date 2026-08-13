@@ -237,7 +237,7 @@ export function AdminSidebar({
     return (
         <>
             {/* Desktop Sidebar */}
-            <aside className="hidden lg:flex flex-col w-60 shrink-0 bg-[#07365a] border-r border-sky-900/50 min-h-screen sticky top-0 h-screen overflow-y-auto shadow-md">
+            <aside className="hidden lg:flex flex-col w-60 shrink-0 bg-[#07365a] border-r border-sky-900/50 h-screen sticky top-0 left-0 z-30 overflow-y-auto shadow-md">
                 <SidebarContent />
             </aside>
 

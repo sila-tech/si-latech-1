@@ -749,8 +749,8 @@ export default function AdminDashboardPage() {
             />
 
             {/* Main Content Area */}
-            <main className="flex-1 min-h-screen bg-slate-50/60 p-4 sm:p-6 lg:p-10 pt-18 lg:pt-10 overflow-y-auto">
-                <div className="max-w-6xl mx-auto">
+            <main className="flex-1 h-screen overflow-y-auto bg-slate-50/60 p-4 sm:p-6 lg:p-10 pt-18 lg:pt-10">
+                <div className="max-w-6xl mx-auto pb-12">
                     {renderSection()}
                 </div>
             </main>
