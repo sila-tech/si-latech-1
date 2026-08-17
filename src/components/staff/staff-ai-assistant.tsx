@@ -62,7 +62,7 @@ export function StaffAiAssistant({ staffName, assignedProjects, onApplyFacilitat
   };
 
   return (
-    <Card className="border-amber-200 bg-gradient-to-b from-amber-50/40 via-white to-slate-50 shadow-sm overflow-hidden">
+    <Card className="border-amber-200 bg-gradient-to-b from-amber-50/40 via-white to-slate-50 shadow-sm overflow-hidden print:hidden no-print">
       <CardHeader className="bg-slate-900 text-white pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

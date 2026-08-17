@@ -116,33 +116,48 @@ html, body {
 
 /* Technical Layout Diagrams Print Stylesheet */
 @media print {
-  /* Hide non-printable web navigation and UI controls */
-  main, header, footer, nav, aside, .no-print, button[aria-label="Close"], .print\:hidden {
+  /* Hide all top-level body children except active Radix portals */
+  body > *:not([data-radix-portal]) {
     display: none !important;
   }
+
+  body > [data-radix-portal] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
   
-  /* Ensure Radix Dialog portal container is visible and transparent during print */
+  /* Hide non-printable web controls inside portal */
+  .no-print, button[aria-label="Close"], .print\:hidden {
+    display: none !important;
+  }
+
+  /* Remove fixed overlay backdrop positioning during print */
   [data-state=open].fixed.inset-0 {
     display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: static !important;
     width: 100% !important;
     height: auto !important;
     background: white !important;
+    box-shadow: none !important;
     backdrop-filter: none !important;
-    z-index: 99999 !important;
   }
-  
-  /* Restructure the layout modal to fill the printed page natively */
+
+  /* Unconstrain height and overflow on modal content and all nested children */
+  .print-dialog-content,
+  .print-dialog-content * {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
   .print-dialog-content {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: static !important;
+    display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    max-height: none !important;
     transform: none !important;
     border: none !important;
     box-shadow: none !important;
@@ -150,8 +165,6 @@ html, body {
     color: black !important;
     padding: 0 !important;
     margin: 0 !important;
-    overflow: visible !important;
-    z-index: 9999 !important;
   }
 
   /* Expand Radix ScrollArea so it does not crop or show scrollbars */
@@ -173,17 +186,18 @@ html, body {
     box-shadow: none !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    padding: 24px !important;
-    margin-bottom: 24px !important;
+    padding: 20px !important;
+    margin-bottom: 20px !important;
   }
 
   /* Ensure page margins are clean and remove default browser headers/footers */
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 12mm;
   }
 
   body {
-    padding: 15mm !important;
+    background: white !important;
+    padding: 0 !important;
   }
 }

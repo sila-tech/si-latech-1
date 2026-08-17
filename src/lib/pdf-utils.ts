@@ -720,6 +720,71 @@ export const generateTechnicalLayoutPdf = (data: {
     finalY += 5;
     doc.text('4. Verify room clear spans on site before placing beams.', 14, finalY);
 
+    // Vector Room Diagrams Section
+    doc.addPage();
+    addPdfBackground(doc);
+    addLogoToPdf(doc, primaryColor);
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor);
+    doc.text('ROOM LAYOUT DIAGRAMS & BEAM PLACEMENT SCHEMATICS', 14, 48);
+    
+    let diagY = 56;
+    (perRoomCalculations || []).forEach((p: any, idx: number) => {
+        const calcs = p.roomCalcs || p;
+        const roomObj = p.room || p;
+        const roomName = roomObj.name || calcs.name || p.name || `Room ${idx + 1}`;
+        const lengthM = roomObj.length || calcs.length || 0;
+        const widthM = roomObj.width || calcs.width || 0;
+        
+        if (diagY + 75 > 280) {
+            doc.addPage();
+            addPdfBackground(doc);
+            addLogoToPdf(doc, primaryColor);
+            diagY = 48;
+        }
+
+        // Room Card Header
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(14, diagY, 182, 70, 2, 2, 'F');
+        doc.setDrawColor(203, 213, 225);
+        doc.roundedRect(14, diagY, 182, 70, 2, 2, 'D');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(primaryColor);
+        doc.text(`${roomName} (${widthM.toFixed(2)}m × ${lengthM.toFixed(2)}m)`, 20, diagY + 8);
+
+        const beamQty = calcs.actualBeamCount || calcs.invoiceBeamCount || 0;
+        const blockQty = Math.ceil(calcs.totalBlocks || 0);
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.text(`${beamQty} Beams  |  ${blockQty} Blocks`, 135, diagY + 8);
+
+        // Vector Diagram Box
+        const boxX = 20;
+        const boxY = diagY + 14;
+        const boxW = 170;
+        const boxH = 50;
+        
+        doc.setFillColor(255, 255, 255);
+        doc.rect(boxX, boxY, boxW, boxH, 'F');
+        doc.setDrawColor(100, 116, 139);
+        doc.rect(boxX, boxY, boxW, boxH, 'D');
+
+        // Draw Beams as vertical lines inside box
+        const numBeams = Math.max(1, beamQty);
+        const spacing = boxW / (numBeams + 1);
+        doc.setFillColor(71, 85, 105);
+        for (let b = 1; b <= numBeams; b++) {
+            const bx = boxX + (b * spacing);
+            doc.rect(bx - 1.5, boxY + 2, 3, boxH - 4, 'F');
+        }
+
+        diagY += 76;
+    });
+
     doc.save(`Technical-Layout-${reportNumber}.pdf`);
     return true;
 };

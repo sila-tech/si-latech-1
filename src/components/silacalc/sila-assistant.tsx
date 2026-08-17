@@ -335,7 +335,7 @@ export function SilaAssistant() {
 
   return (
     <div className={cn(
-      "fixed left-4 md:left-6 z-[999990] flex flex-col items-start gap-2 select-none transition-all duration-300",
+      "fixed left-4 md:left-6 z-[999990] flex flex-col items-start gap-2 select-none transition-all duration-300 print:hidden no-print",
       hasMobileBar ? "bottom-20 md:bottom-6" : "bottom-5 md:bottom-6"
     )}>
       
