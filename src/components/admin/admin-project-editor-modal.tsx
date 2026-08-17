@@ -45,6 +45,7 @@ import type { Room, CalculationDefaults } from '@/lib/calculator';
 import { DEFAULTS, calcRoomBlocksAndBeams, calculateProjectTotals } from '@/lib/calculator';
 import { generateQuotePdf, generatePromaxPdf } from '@/lib/pdf-utils';
 import type { ProjectData, PlanData, PlanRoomData } from '@/firebase/data-manager';
+import { logBlueprintActiveLearning } from '@/firebase/blueprint-learning';
 
 interface AdminProjectEditorModalProps {
   open: boolean;
@@ -55,7 +56,7 @@ interface AdminProjectEditorModalProps {
   onSaveSuccess?: () => void;
 }
 
-const compressImage = (dataUri: string, maxWidth = 1600, maxHeight = 1600, quality = 0.85): Promise<string> => {
+const compressImage = (dataUri: string, maxWidth = 3200, maxHeight = 3200, quality = 0.90): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.src = dataUri;
@@ -79,6 +80,8 @@ const compressImage = (dataUri: string, maxWidth = 1600, maxHeight = 1600, quali
         resolve(dataUri);
         return;
       }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
@@ -314,6 +317,13 @@ export function AdminProjectEditorModal({
         clientChangeRequestNotes,
         updatedAt: serverTimestamp()
       };
+
+      if (parsedRooms.length > 0) {
+        logBlueprintActiveLearning(firestore, {
+          verifiedRooms: parsedRooms,
+          originalAiRooms: parsedRooms,
+        });
+      }
 
       let currentProjId = project?.id;
 
