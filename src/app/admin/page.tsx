@@ -999,6 +999,31 @@ export default function AdminDashboardPage() {
                 </DialogContent>
             </Dialog>
 
+            {/* Dedicated Top-Level Printable Sheet */}
+            <div id="printable-layout-sheet" className="hidden print:block bg-white p-6">
+                <div className="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-start">
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-950 tracking-tight">SI-LATECH</h1>
+                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Prestressed Beams &amp; Concrete Blocks</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xs font-bold text-slate-900 uppercase">TECHNICAL LAYOUT SHEET</p>
+                        <p className="text-xs text-slate-500">{new Date().toLocaleDateString('en-GB')}</p>
+                        <p className="text-xs font-bold text-slate-700 mt-1">{selectedProject ? getProjectName(selectedProject) : ''}</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 gap-8">
+                    {selectedProject?.rooms?.map((r: any, idx: number) => {
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+                        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }, BEAM_PRICE_PER_METER, r.name);
+                        return <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />;
+                    })}
+                </div>
+                <div className="mt-8 border-t pt-4 text-center">
+                    <p className="text-xs text-slate-400 italic">SI-LATECH Technical Site Placement Sheet (No Financial Figures)</p>
+                </div>
+            </div>
+
             {/* Layout Diagrams */}
             <Dialog open={isLayoutViewOpen} onOpenChange={setIsLayoutViewOpen}>
                 <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col print-dialog-content">
