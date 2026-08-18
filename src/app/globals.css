@@ -116,14 +116,14 @@ html, body {
 
 /* Technical Layout Diagrams Print Stylesheet */
 @media print {
-  /* Hide web application layout, headers, footers, sidebars, buttons, and dialog portals */
+  /* Hide non-printable UI elements, headers, sidebars, buttons, and popups */
   header, nav, aside, sidebar, main, footer,
   button, [role="dialog"], [data-radix-portal],
   .no-print, .print\:hidden {
     display: none !important;
   }
 
-  /* Expose top-level printable container */
+  /* Expose top-level printable sheet */
   #printable-layout-sheet {
     display: block !important;
     position: absolute !important;
@@ -138,23 +138,52 @@ html, body {
     z-index: 999999 !important;
   }
 
-  #printable-layout-sheet * {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-
-  /* Technical Room Card printable formats */
-  .print-room-card {
+  /* Room card printable styling */
+  #printable-layout-sheet .print-room-card {
     background: white !important;
     border: 1px solid #cbd5e1 !important;
+    border-radius: 16px !important;
     box-shadow: none !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     padding: 20px !important;
-    margin-bottom: 20px !important;
+    margin-bottom: 24px !important;
+    overflow: hidden !important;
   }
 
-  /* Ensure page margins are clean and remove default browser headers/footers */
+  /* SVG Diagram box inside room card */
+  #printable-layout-sheet .relative {
+    height: 220px !important;
+    max-height: 220px !important;
+    padding: 16px !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* SVG element strictly contained */
+  #printable-layout-sheet svg {
+    max-width: 100% !important;
+    max-height: 180px !important;
+    height: 180px !important;
+    width: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  /* Sub-cards grid */
+  #printable-layout-sheet .grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px !important;
+    margin-top: 16px !important;
+  }
+
+  /* Ensure page margins are clean */
   @page {
     size: A4 portrait;
     margin: 12mm;
