@@ -123,19 +123,17 @@ html, body {
     display: none !important;
   }
 
-  /* Expose top-level printable sheet */
+  /* Expose top-level printable sheet in multi-page flow */
   #printable-layout-sheet {
     display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    position: static !important;
     width: 100% !important;
     height: auto !important;
+    overflow: visible !important;
     background: white !important;
     color: black !important;
     padding: 0 !important;
     margin: 0 !important;
-    z-index: 999999 !important;
   }
 
   /* Room card printable styling */
@@ -193,5 +191,7 @@ html, body {
     background: white !important;
     padding: 0 !important;
     margin: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 }
