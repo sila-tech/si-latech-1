@@ -116,16 +116,31 @@ html, body {
 
 /* Technical Layout Diagrams Print Stylesheet */
 @media print {
-  /* Hide non-printable UI elements, headers, sidebars, buttons, and popups */
-  header, nav, aside, sidebar, main, footer,
+  /* Hide navigation controls, headers, sidebars, buttons, and pop-up dialog portals */
+  header, nav, aside, sidebar, footer,
   button, [role="dialog"], [data-radix-portal],
   .no-print, .print\:hidden {
+    display: none !important;
+  }
+
+  /* Main wrapper reset for printing */
+  main {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Hide all main children except the dedicated printable sheet */
+  main > *:not(#printable-layout-sheet) {
     display: none !important;
   }
 
   /* Expose top-level printable sheet in multi-page flow */
   #printable-layout-sheet {
     display: block !important;
+    visibility: visible !important;
     position: static !important;
     width: 100% !important;
     height: auto !important;

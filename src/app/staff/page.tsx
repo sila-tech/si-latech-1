@@ -254,6 +254,44 @@ export default function StaffDashboardPage() {
 
     return (
         <div className="flex min-h-screen bg-slate-50/60 w-full">
+            {/* Dedicated Top-Level Printable Sheet (outside main and sidebar) */}
+            <div id="printable-layout-sheet" className="hidden print:block bg-white p-6 w-full">
+                <div className="border-b border-slate-200 pb-4 mb-6">
+                    <div className="flex justify-between items-start mb-6">
+                        <div>
+                            <h1 className="text-3xl font-black text-slate-950 tracking-tight">SI-LATECH</h1>
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">PRESTRESSED BEAMS &amp; CONCRETE BLOCKS</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs font-bold text-slate-900 uppercase tracking-widest">TECHNICAL LAYOUT SHEET</p>
+                            <p className="text-sm font-semibold text-slate-600 mt-1">{new Date().toLocaleDateString('en-GB')}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-6 pt-3 border-t border-slate-200 text-left">
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PROJECT NAME</p>
+                            <p className="text-sm font-bold text-slate-900">{selectedProject?.name || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CLIENT NAME</p>
+                            <p className="text-sm font-bold text-slate-900">{selectedProject?.clientName || 'Valued Client'}</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">LOCATION</p>
+                            <p className="text-sm font-bold text-slate-900">{selectedProject?.projectLocation || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-8">
+                    {selectedProject?.rooms?.map((r: any, idx: number) => {
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 500;
+                        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }, BEAM_PRICE_PER_METER, r.name);
+                        return <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />;
+                    })}
+                </div>
+            </div>
             <StaffSidebar
                 activeSection={activeSection}
                 onSectionChange={setActiveSection}
@@ -313,44 +351,7 @@ export default function StaffDashboardPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Dedicated Top-Level Printable Sheet */}
-            <div id="printable-layout-sheet" className="hidden print:block bg-white p-6">
-                <div className="border-b border-slate-200 pb-4 mb-6">
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <h1 className="text-3xl font-black text-slate-950 tracking-tight">SI-LATECH</h1>
-                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">PRESTRESSED BEAMS &amp; CONCRETE BLOCKS</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-xs font-bold text-slate-900 uppercase tracking-widest">TECHNICAL LAYOUT SHEET</p>
-                            <p className="text-sm font-semibold text-slate-600 mt-1">{new Date().toLocaleDateString('en-GB')}</p>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-6 pt-3 border-t border-slate-200 text-left">
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">PROJECT NAME</p>
-                            <p className="text-sm font-bold text-slate-900">{selectedProject?.name || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CLIENT NAME</p>
-                            <p className="text-sm font-bold text-slate-900">{selectedProject?.clientName || 'Valued Client'}</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">LOCATION</p>
-                            <p className="text-sm font-bold text-slate-900">{selectedProject?.projectLocation || 'N/A'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-8">
-                    {selectedProject?.rooms?.map((r: any, idx: number) => {
-                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? 950 : 500;
-                        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }, BEAM_PRICE_PER_METER, r.name);
-                        return <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />;
-                    })}
-                </div>
-            </div>
 
             {/* Layout Diagrams Dialog */}
             <Dialog open={isLayoutViewOpen} onOpenChange={setIsLayoutViewOpen}>
