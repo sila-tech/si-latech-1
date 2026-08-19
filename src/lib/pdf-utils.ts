@@ -797,3 +797,70 @@ export const generateTechnicalLayoutPdf = (data: {
     }
     return true;
 };
+
+export const exportLayoutSheetToPdf = async (elementId: string = 'printable-layout-sheet', fileName: string = 'Technical-Layout-Sheet.pdf') => {
+    if (typeof window === 'undefined') return false;
+    const targetEl = document.getElementById(elementId);
+    if (!targetEl) return false;
+
+    const html2canvas = (await import('html2canvas')).default;
+
+    const prevDisplay = targetEl.style.display;
+    const prevPos = targetEl.style.position;
+    const prevLeft = targetEl.style.left;
+    const prevTop = targetEl.style.top;
+    const prevWidth = targetEl.style.width;
+
+    targetEl.style.display = 'block';
+    targetEl.style.position = 'absolute';
+    targetEl.style.left = '-9999px';
+    targetEl.style.top = '0px';
+    targetEl.style.width = '794px';
+
+    try {
+        const canvas = await html2canvas(targetEl, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        });
+
+        targetEl.style.display = prevDisplay;
+        targetEl.style.position = prevPos;
+        targetEl.style.left = prevLeft;
+        targetEl.style.top = prevTop;
+        targetEl.style.width = prevWidth;
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pdfHeight;
+        }
+
+        pdf.save(fileName);
+        return true;
+    } catch (err) {
+        console.error('Error generating layout PDF:', err);
+        targetEl.style.display = prevDisplay;
+        targetEl.style.position = prevPos;
+        targetEl.style.left = prevLeft;
+        targetEl.style.top = prevTop;
+        targetEl.style.width = prevWidth;
+        return false;
+    }
+};
