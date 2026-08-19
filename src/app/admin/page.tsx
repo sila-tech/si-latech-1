@@ -1087,7 +1087,29 @@ export default function AdminDashboardPage() {
                             >
                                 <Download size={15} className="mr-1.5" /> Download PDF Sheet
                             </Button>
-                            <Button onClick={() => window.print()} className="bg-primary font-bold"><Download size={15} className="mr-1.5" /> Print Layout</Button>
+                            <Button
+                                onClick={() => {
+                                    if (!selectedProject) return;
+                                    const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+                                    const perRoomCalculations = selectedProject.rooms?.map((r: any) => {
+                                        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2 }, BEAM_PRICE_PER_METER, r.name);
+                                        return { room: r, roomCalcs };
+                                    }) || [];
+                                    generateTechnicalLayoutPdf({
+                                        clientInfo: {
+                                            projectName: getProjectName(selectedProject),
+                                            projectLocation: getProjectLocation(selectedProject),
+                                            clientName: selectedProject.clientName || 'Valued Client',
+                                            beamType: selectedProject.settings?.beamType || 'flat'
+                                        },
+                                        perRoomCalculations,
+                                        action: 'print'
+                                    });
+                                }}
+                                className="bg-primary font-bold"
+                            >
+                                <Download size={15} className="mr-1.5" /> Print Layout
+                            </Button>
                         </div>
                     </CardFooter>
                 </DialogContent>

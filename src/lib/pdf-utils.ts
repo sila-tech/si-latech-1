@@ -609,8 +609,9 @@ export const generateTechnicalLayoutPdf = (data: {
         beamType?: string;
     };
     perRoomCalculations: any[];
+    action?: 'download' | 'print';
 }) => {
-    const { clientInfo, perRoomCalculations } = data;
+    const { clientInfo, perRoomCalculations, action = 'download' } = data;
     const doc = new jsPDF();
     const primaryColor = '#0f172a'; // Slate-900
     
@@ -785,6 +786,14 @@ export const generateTechnicalLayoutPdf = (data: {
         diagY += 76;
     });
 
-    doc.save(`Technical-Layout-${reportNumber}.pdf`);
+    if (action === 'print') {
+        const blobUrl = doc.output('bloburl');
+        const printWin = window.open(blobUrl, '_blank');
+        if (printWin) {
+            printWin.focus();
+        }
+    } else {
+        doc.save(`Technical-Layout-${clientInfo.projectName || 'Site'}.pdf`);
+    }
     return true;
 };
