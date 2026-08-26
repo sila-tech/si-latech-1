@@ -1,12 +1,14 @@
-
 'use server';
 
 /**
- * @fileOverview Analyzes a floor plan image to extract room dimensions.
+ * @fileOverview High-Accuracy AI Floor Plan & Blueprint Reader for SilaCalc.
  *
- * - analyzePlan - A function that analyzes a floor plan image.
- * - AnalyzePlanInput - The input type for the analyzePlan function.
- * - AnalyzePlanOutput - The return type for the analyzePlan function.
+ * Implements multi-stage reasoning, architectural few-shot prompting,
+ * mathematical geometric reconciliation, and scale calibration.
+ *
+ * - analyzePlan - Analyzes a floor plan image/blueprint and returns verified rooms.
+ * - AnalyzePlanInput - Input schema including optional calibration data.
+ * - AnalyzePlanOutput - Return schema with rooms, detected scale, and confidence.
  */
 
 import { ai } from '@/ai/genkit';
@@ -15,38 +17,62 @@ import { z } from 'zod';
 
 const AnalyzePlanInputSchema = z.object({
   photoDataUri: z.string().describe(
-    "A photo of a floor plan, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    "A photo or render of a floor plan, as a data URI with Base64 encoding ('data:<mimetype>;base64,<data>')."
+  ),
+  calibrationScale: z.number().optional().describe(
+    "Optional user-calibrated scale factor representing normalized pixels (out of 1000) per real-world metre."
+  ),
+  customNote: z.string().optional().describe(
+    "Optional user context or instructions (e.g. '3-bedroom bungalow ground floor')."
   ),
 });
 export type AnalyzePlanInput = z.infer<typeof AnalyzePlanInputSchema>;
 
 const RoomSchema = z.object({
   name: z.string().describe(
-    'The full descriptive name of the room. Rules: (1) Balconies and verandahs MUST include the word "Balcony" or "Verandah" in the name — this triggers special beam-direction logic. (2) Staircases and voids MUST be named "Staircase (Opening)". (3) Use human-readable names like "Master Bedroom", "Lounge", "Kitchen" — not abbreviations. (4) For multi-floor or multi-unit plans, prefix with floor and unit: e.g. "Ground Floor: Unit T1 - Bedroom 1".'
+    'The full descriptive name of the room. Rules: (1) Balconies/verandahs MUST include "Balcony" or "Verandah". (2) Staircases/voids MUST include "(Opening)". (3) Use human-readable names like "Master Bedroom", "Lounge", "Kitchen". (4) For multi-unit plans: "Ground Floor: Unit A - Lounge".'
   ),
   length: z.number().describe(
-    'The LONGER dimension of the room in METRES (not millimetres, not feet). Must be > 0. If the plan dimensions are in millimetres (e.g. 3000), divide by 1000 first. Minimum: 0.5.'
+    'The LONGER clear span dimension in METRES (e.g. 4.2). Must be > 0. If in mm (e.g. 4200), divide by 1000.'
   ),
   width: z.number().describe(
-    'The SHORTER dimension of the room in METRES (not millimetres, not feet). Must be > 0 and <= length. If the plan dimensions are in millimetres (e.g. 2800), divide by 1000 first. Minimum: 0.5.'
+    'The SHORTER clear span dimension in METRES (e.g. 3.6). Must be > 0 and <= length. If in mm, divide by 1000.'
   ),
   blockName: z.string().optional().describe(
-    'The name of the building block/wing this room belongs to (e.g. "Block 1", "Block A"). Omit if there are no separate blocks or if this is a common area outside blocks.'
+    'The building block/wing (e.g. "Block 1", "Block A").'
   ),
   apartmentName: z.string().optional().describe(
-    'The name of the apartment unit/flat this room belongs to (e.g. "Apt A", "Unit 1"). Omit if this is a common area outside units.'
+    'The apartment unit/flat (e.g. "Unit 1", "Apt A").'
   ),
   sequenceInApartment: z.number().optional().describe(
-    'The 1-based sequence order of this room within the apartment/unit (e.g., Lounge=1, Bedroom=2, Kitchen=3), representing which rooms are adjacent side-by-side. If rooms are arranged in a row or share walls, assign sequential sequence numbers.'
+    '1-based sequence order for shared wall deductions (1, 2, 3...).'
   ),
   boundingBox: z.array(z.number()).optional().describe(
-    'The bounding box coordinates of the room on the floor plan image as [ymin, xmin, ymax, xmax], with values normalized from 0 to 1000. Omit if not clearly identifiable.'
+    'Bounding box coordinates on the image as [ymin, xmin, ymax, xmax] normalized from 0 to 1000.'
+  ),
+  confidence: z.number().optional().describe(
+    'Confidence score from 0.0 to 1.0 based on text clarity and dimension witness lines.'
+  ),
+  aspectRatioWarning: z.boolean().optional().describe(
+    'True if bounding box geometry differs from extracted dimensions.'
   ),
 });
 
 const AnalyzePlanOutputSchema = z.object({
   rooms: z.array(RoomSchema).describe(
-    'An array of ALL rooms detected in the floor plan. Every structural space that will receive a beam-and-block slab must appear here. Do not omit any rooms. Do not include gardens, external walls, or site boundaries.'
+    'An array of all detected rooms with verified dimensions in metres.'
+  ),
+  detectedScale: z.string().optional().describe(
+    'The detected drawing scale (e.g., "1:100", "1:50", "1:200", or "Unspecified").'
+  ),
+  detectedUnits: z.string().optional().describe(
+    'The dimension units detected on the drawing (e.g., "mm", "m", "ft/in").'
+  ),
+  drawingType: z.string().optional().describe(
+    'Type of drawing identified (e.g., "Architectural Floor Plan", "Structural Slab Layout").'
+  ),
+  summary: z.string().optional().describe(
+    'Brief structural summary of the detected layout and total rooms.'
   ),
 });
 export type AnalyzePlanOutput = z.infer<typeof AnalyzePlanOutputSchema>;
@@ -61,16 +87,105 @@ export interface AnalyzePlanResult {
     apartmentName?: string; 
     sequenceInApartment?: number; 
     boundingBox?: number[];
+    confidence?: number;
+    aspectRatioWarning?: boolean;
   }>;
+  detectedScale?: string;
+  detectedUnits?: string;
+  drawingType?: string;
+  summary?: string;
   error?: string;
+}
+
+/**
+ * Mathematical Geometric Reconciliation & Validation Layer.
+ * Cross-references visual bounding boxes with extracted numerical dimensions,
+ * rectifies unscaled millimetres, and applies physical sanity checks.
+ */
+function reconcileAndValidateRooms(output: AnalyzePlanOutput, calibrationScale?: number): AnalyzePlanOutput {
+  const reconciledRooms = (output.rooms || []).map((room, idx) => {
+    let length = Number(room.length) || 3.0;
+    let width = Number(room.width) || 2.5;
+
+    // 1. Automatic Millimetre / Centimetre Rectification
+    if (length > 25) length = length / 1000;
+    if (width > 25) width = width / 1000;
+
+    // Minimum sensible structural dimension in construction (0.5m)
+    length = Math.max(0.5, Math.round(length * 100) / 100);
+    width = Math.max(0.5, Math.round(width * 100) / 100);
+
+    // Ensure length >= width
+    if (width > length) {
+      const temp = length;
+      length = width;
+      width = temp;
+    }
+
+    let aspectRatioWarning = false;
+    let confidence = room.confidence ?? 0.90;
+
+    // 2. Bounding Box Geometric Validation
+    if (room.boundingBox && Array.isArray(room.boundingBox) && room.boundingBox.length === 4) {
+      const [ymin, xmin, ymax, xmax] = room.boundingBox;
+      const boxHeight = Math.abs(ymax - ymin);
+      const boxWidth = Math.abs(xmax - xmin);
+
+      if (boxHeight > 5 && boxWidth > 5) {
+        const boxRatio = Math.max(boxWidth, boxHeight) / Math.min(boxWidth, boxHeight);
+        const dimRatio = length / width;
+        const ratioDiff = Math.abs(boxRatio - dimRatio) / Math.max(boxRatio, dimRatio);
+
+        // If bounding box aspect ratio deviates > 35% from numerical dimensions, flag for user inspection
+        if (ratioDiff > 0.35) {
+          aspectRatioWarning = true;
+          confidence = Math.max(0.60, confidence - 0.20);
+        }
+
+        // 3. User Calibration Scale Cross-Verification (if supplied)
+        if (calibrationScale && calibrationScale > 0) {
+          const visualLengthM = Math.max(boxWidth, boxHeight) / calibrationScale;
+          const visualWidthM = Math.min(boxWidth, boxHeight) / calibrationScale;
+
+          // If extracted dimension is wildly deviant (>60%) or unreadable, calibrate from physical pixels
+          const lengthDev = Math.abs(visualLengthM - length) / Math.max(visualLengthM, length);
+          if (lengthDev > 0.60 && visualLengthM >= 0.8) {
+            length = Math.round(visualLengthM * 10) / 10;
+            width = Math.round(visualWidthM * 10) / 10;
+            aspectRatioWarning = false;
+            confidence = 0.85;
+          }
+        }
+      }
+    }
+
+    return {
+      ...room,
+      length,
+      width,
+      confidence: Math.round(confidence * 100) / 100,
+      aspectRatioWarning,
+    };
+  });
+
+  return {
+    ...output,
+    rooms: reconciledRooms,
+  };
 }
 
 export async function analyzePlan(input: AnalyzePlanInput): Promise<AnalyzePlanResult> {
   try {
-    const result = await analyzePlanFlow(input);
+    const rawOutput = await analyzePlanFlow(input);
+    const validatedOutput = reconcileAndValidateRooms(rawOutput, input.calibrationScale);
+
     return {
       success: true,
-      rooms: result.rooms,
+      rooms: validatedOutput.rooms,
+      detectedScale: validatedOutput.detectedScale,
+      detectedUnits: validatedOutput.detectedUnits,
+      drawingType: validatedOutput.drawingType,
+      summary: validatedOutput.summary,
     };
   } catch (err: any) {
     console.error('Plan analysis failed in Server Action:', err);
@@ -99,332 +214,99 @@ const analyzePlanFlow = ai.defineFlow(
     outputSchema: AnalyzePlanOutputSchema,
   },
   async (input) => {
-    console.log("Starting analyzePlanFlow. Input photoDataUri length:", input.photoDataUri?.length);
-      const promptParts = [
+    console.log("Starting high-accuracy analyzePlanFlow. Input photoDataUri length:", input.photoDataUri?.length);
+    
+    const promptParts = [
       { media: { url: input.photoDataUri } },
-      { text: `You are SilaCalc AI — a specialist architectural plan reader built exclusively for the SI-LATECH beam-and-block slab estimation system used in Kenya. Your ONLY job is to examine the uploaded floor plan and return a precise list of rooms with their dimensions, formatted so that SilaCalc's calculation engine can directly process them.
+      { text: `You are SilaCalc AI — a specialist architectural plan reader built exclusively for the SI-LATECH beam-and-block slab estimation system in Kenya. Your task is to perform high-accuracy computer vision extraction of all room spaces, clear span dimensions, and bounding boxes from the blueprint.
+
+${input.customNote ? `USER CONTEXT NOTE: "${input.customNote}"` : ''}
 
 ═══════════════════════════════════════════════════════
-PART 0 — DRAWING SHEET DISAMBIGUATION & VIEW FILTERING
+STAGE 1: DRAWING METADATA & SCALE CALIBRATION
 ═══════════════════════════════════════════════════════
-
-When an uploaded blueprint sheet contains multiple drawings or details:
-• FOCUS ONLY ON: Architectural Floor Plans (Ground Floor Plan, 1st Floor Plan, etc.) or Structural Concrete Slab Layout Plans.
-• EXCLUDE / DO NOT EXTRACT ROOMS FROM:
-  - Site Plans / Location Maps (plot boundaries, roads, drainage).
-  - Foundation Trench / Footing Plans (unless marked as suspended ground slab).
-  - Elevations (Front, Rear, Side views).
-  - Cross Sections (Section A-A, Section B-B).
-  - Roof Truss / Carpentry Framing Plans (timber/mabati roofing — NO concrete slab).
-  - Door and Window Schedules, Septic Tank / Soak Pit details.
+1. Detect the drawing type: "Architectural Floor Plan", "Structural Slab Layout", etc.
+2. Read the drawing scale from the title block if present (e.g., 1:50, 1:100, 1:200).
+3. Detect the dimension units:
+   - "mm" if numbers are in thousands (e.g., 3600, 4200) → MUST DIVIDE BY 1000 to return metres.
+   - "m" if numbers have decimals (e.g., 3.60, 4.20) → use directly.
+   - "feet/inches" (e.g., 12'-0") → convert: (feet + inches/12) * 0.3048.
+4. Distinguish between Centerline (c/c) and Clear Internal Spans:
+   - If dimension strings run along grid lines or are marked c/c, deduct wall thickness (Kenya standard: 200 mm for external walls, 150 mm or 100 mm for internal partitions).
+   - Example: 4000 mm c/c between 200 mm walls → Clear span = 4000 - 200 = 3800 mm = 3.80 m.
 
 ═══════════════════════════════════════════════════════
-PART 1 — HOW THE SILACALC STRUCTURAL SYSTEM WORKS
-(You must understand this to name rooms correctly)
+STAGE 2: BEAM-AND-BLOCK SLAB STRUCTURAL RULES
 ═══════════════════════════════════════════════════════
-
-SilaCalc uses a beam-and-block slab system:
-• Prestressed concrete beams are placed at 0.55 m centre-to-centre intervals.
-• Hollow concrete blocks (400 mm × 200 mm face) fill the gaps between beams.
-• Each beam is 150 mm wide and extends 100 mm into each wall (individual beam length = clear span + 0.20 m).
-• Blocks per row = (individual beam length × 4) + 1 extra block on each row.
-
-BEAM DIRECTION RULE — this is the most critical distinction:
-▸ STANDARD ROOMS (Bedroom, Lounge, Kitchen, Bathroom, Corridor, Store, etc.):
-  Beams span across the SHORTER dimension of the room.
-  Beam count = LONGER dimension / 0.55 (add extra beam if remainder >= 0.09)
-▸ BALCONY / VERANDAH rooms (including cantilevers/overhangs):
+• STANDARD ROOMS (Bedroom, Lounge, Kitchen, Dining, Store, Corridor, etc.):
+  Beams span across the SHORTER dimension.
+• BALCONIES & VERANDAHS (including cantilevers/porches):
   Beams span across the LONGER dimension (parallel to building face).
-  Beam count = SHORTER dimension / 0.55 (add extra beam if remainder >= 0.09)
-
-The calculator detects balcony/verandah automatically if the room name contains ANY of these words (case-insensitive):
-  balcony | verandah | veranda | velander | velanda | baraza
-
-⚠ CRITICAL: If you label a balcony incorrectly as "Terrace", "Porch", or "Open Area", the beam direction will be WRONG and the entire material estimate will be incorrect. Always use "Balcony" or "Verandah" in the name.
-
-⚠ SUNKEN SLABS / DROP SLABS:
-Wet areas (Bathrooms, WC, Master En-suite, Laundry, Kitchens) are often annotated as "SUNKEN SLAB" or "DROP SLAB" (100mm–150mm drop for plumbing).
-These ARE STILL CONCRETE SLABS! Extract them as regular rooms with dimensions. Do NOT tag them as openings.
+  ⚠ CRITICAL: The room name MUST contain "Balcony" or "Verandah" (or "Baraza") to trigger proper beam direction logic.
+• VOIDS / OPENINGS (Stairwells, Lift Shafts, Light Wells, Courtyards, Ducts):
+  Must include "(Opening)" in the name (e.g., "Staircase (Opening)", "Lift (Opening)").
+• SUNKEN SLABS:
+  Bathrooms, En-suites, Kitchens marked as "Sunken Slab" ARE CONCRETE SLABS. Extract them as regular rooms.
 
 ═══════════════════════════════════════════════════════
-PART 2 — BUILDING TYPE RECOGNITION
+STAGE 3: FEW-SHOT BLUEPRINT EXAMPLES (GROUND TRUTH)
 ═══════════════════════════════════════════════════════
 
-Before extracting rooms, first identify the building type from the plan title or layout pattern:
+EXAMPLE A — 3-Bedroom Kenyan Maisonette Ground Floor:
+Output JSON:
+{
+  "detectedScale": "1:100",
+  "detectedUnits": "mm",
+  "drawingType": "Architectural Floor Plan",
+  "summary": "3-Bedroom Ground Floor with Lounge, Dining, Kitchen, Master En-suite, Verandah, and Stair Void.",
+  "rooms": [
+    { "name": "Lounge", "length": 5.4, "width": 4.2, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 1, "boundingBox": [320, 150, 680, 480], "confidence": 0.95 },
+    { "name": "Dining Room", "length": 3.9, "width": 3.3, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 2, "boundingBox": [320, 480, 580, 720], "confidence": 0.92 },
+    { "name": "Kitchen", "length": 3.3, "width": 2.7, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 3, "boundingBox": [580, 480, 850, 720], "confidence": 0.94 },
+    { "name": "Master Bedroom", "length": 4.0, "width": 3.6, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 4, "boundingBox": [100, 150, 320, 480], "confidence": 0.96 },
+    { "name": "En-Suite Bathroom", "length": 2.4, "width": 1.8, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 5, "boundingBox": [100, 480, 240, 620], "confidence": 0.90 },
+    { "name": "Verandah", "length": 4.5, "width": 1.8, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 6, "boundingBox": [680, 150, 850, 450], "confidence": 0.95 },
+    { "name": "Staircase (Opening)", "length": 3.0, "width": 2.2, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 7, "boundingBox": [240, 480, 320, 620], "confidence": 0.92 }
+  ]
+}
 
-A. BUNGALOW / MAISONETTE (single-family, 1–2 floors):
-   - All rooms belong to ONE family. Extract every room individually.
-   - Typical rooms: Master Bedroom (en-suite), Bedrooms, Lounge, Dining, Kitchen, Store, Verandah, Garage.
-   - Maisonette upper floor → prefix rooms with "Upper Floor: ".
-
-B. APARTMENT BLOCK / FLAT (multi-unit, multi-floor):
-   - Multiple self-contained units per floor (T1, T2, A, B, 1A, 1B, etc.).
-   - Extract ALL rooms in ALL units as separate entries.
-   - Shared spaces → prefix with "Common: " (e.g., "Common: Staircase (Opening)", "Common: Corridor").
-
-C. BEDSITTER / STUDIO: One open room = bed + sitting. → "Bedsitter - Room", "Bedsitter - Kitchenette", "Bedsitter - Bathroom".
-D. ONE-BEDROOM FLAT (1BR): → "1BR - Lounge", "1BR - Bedroom", "1BR - Kitchen", "1BR - Bathroom", "1BR - Balcony".
-E. TWO-BEDROOM FLAT (2BR): → "2BR - Lounge", "2BR - Master Bedroom", "2BR - Bedroom 2", "2BR - Kitchen", "2BR - Bathroom", "2BR - En-Suite Bathroom".
-F. THREE-BEDROOM FLAT/HOUSE (3BR): as 2BR but add "3BR - Bedroom 3".
-G. COMMERCIAL / MIXED-USE: ground floor → "Shop 1", "Office", "Reception". Upper floors → treat as apartments.
-H. INSTITUTIONAL: classrooms → "Classroom 1"; hospital → "Ward", "Consultation Room"; church → "Sanctuary", "Vestry".
-I. SERVANT QUARTER / DSQ / BQ / SQ: include as normal slab rooms → "DSQ - Room", "DSQ - Bathroom".
-J. ROOFTOP / PENTHOUSE: include roof slab spaces → "Penthouse: Bedroom 1", "Roof Terrace Verandah".
-
-═══════════════════════════════════════════════════════
-PART 3 — COMPREHENSIVE ROOM VOCABULARY & LOCAL SWAHILI TERMS
-═══════════════════════════════════════════════════════
-
-A. BEDROOMS:
-   "MASTER BEDROOM","MASTER","MBR","M/BED","M.BED","CHUMBA KIKUU" → "Master Bedroom"
-   "BEDROOM 1","BED 1","BR1","BED NO.1","CHUMBA 1" → "Bedroom 1"
-   "BEDROOM 2","BED 2","BR2","CHUMBA 2" → "Bedroom 2"
-   "BEDROOM 3","BED 3","BR3","CHUMBA 3" → "Bedroom 3"
-   "BOYS ROOM","CHILDREN ROOM","KIDS ROOM" → "Bedroom"
-   "GUEST ROOM","GUEST BEDROOM" → "Guest Bedroom"
-   "SINGLE ROOM","ROOM 1","ROOM 2" → "Room 1","Room 2"
-
-B. LIVING SPACES:
-   "LOUNGE","SITTING ROOM","LIVING ROOM","SITTING","SEBULE" → "Lounge"
-   "DINING","DINING ROOM","DINING AREA" → "Dining Room"
-   "LOUNGE/DINING","L/D","S/D","SITTING/DINING" → "Lounge/Dining"
-   "FAMILY ROOM","TV ROOM","TV LOUNGE" → "Family Room"
-   "STUDY","HOME OFFICE","LIBRARY" → "Study"
-   "PRAYER ROOM","CHAPEL" → "Prayer Room"
-
-C. KITCHENS:
-   "KITCHEN","KIT","K","JIKONI" → "Kitchen"
-   "KITCHENETTE","COOK","COOKING AREA" → "Kitchenette"
-   "KITCHEN/DINING","K/D" → "Kitchen/Dining"
-   "SCULLERY","WET KITCHEN","BACK KITCHEN" → "Scullery"
-   "PANTRY" → "Pantry"
-
-D. BATHROOMS:
-   "BATHROOM","BATH","B/R","BTH","CHOO","TOILET" → "Bathroom"
-   "EN-SUITE","EN SUITE","ENSUITE","MASTER BATH" → "En-Suite Bathroom"
-   "WC","WATER CLOSET","WASHROOM" → "Bathroom"
-   "SHOWER ROOM","SHOWER" → "Shower Room"
-   "EXTERNAL WC","OUTHOUSE" → "External WC"
-   "STAFF WC","COMMON WC","PUBLIC TOILET" → "Common Bathroom"
-
-E. UTILITY / SERVICE:
-   "STORE","STORAGE ROOM","STOREROOM","S/R","STOO" → "Store"
-   "LAUNDRY","LAUNDRY ROOM","WASH AREA" → "Laundry"
-   "UTILITY ROOM","UTILITY" → "Utility Room"
-   "GENERATOR ROOM","GEN ROOM","GENSET" → "Generator Room"
-   "METER ROOM","ELECTRICAL ROOM","DB ROOM" → "Meter Room"
-   "WATER TANK","TANK ROOM","PUMP ROOM" → "Tank Room"
-   "RUBBISH ROOM","BIN STORE" → "Rubbish Room"
-   "LINEN ROOM","LINEN CLOSET" → "Linen Room"
-   "BOREHOLE ROOM","PUMP HOUSE" → "Pump House"
-   "W/I WARDROBE","WIW","DRESSING ROOM","WALK-IN" → "Walk-In Wardrobe"
-
-F. CIRCULATION:
-   "CORRIDOR","PASSAGE","PASSAGEWAY","LINK","NJIA" → "Corridor"
-   "HALLWAY","HALL","ENTRY HALL","ENTRANCE HALL" → "Hallway"
-   "LANDING","UPPER LANDING","STAIR LANDING" → "Landing"
-   "LOBBY","RECEPTION LOBBY","LIFT LOBBY" → "Lobby"
-   "RECEPTION","FOYER","ENTRANCE" → "Reception"
-   "PORCH","ENTRANCE PORCH" → "Verandah" ← use Verandah keyword
-
-G. OUTDOOR WITH SLAB → MUST use "Balcony" or "Verandah" keyword:
-   "BALCONY","BALC" → "Balcony"
-   "VERANDAH","VERANDA","VELANDA","VELANDER","BARAZA" → "Verandah"
-   "TERRACE","ROOF TERRACE","SUN DECK" → "Verandah"
-   "COVERED WALKWAY","COVERED AREA" → "Verandah"
-
-H. VOIDS / NO SLAB → MUST use "(Opening)" in name:
-   "STAIRCASE","STAIRWELL","STAIRS","STAIR VOID" → "Staircase (Opening)"
-   "LIFT SHAFT","ELEVATOR SHAFT","LIFT" → "Staircase (Opening)"
-   "VOID","OPEN TO BELOW","ATRIUM","LIGHT WELL","DOUBLE HEIGHT" → "Staircase (Opening)"
-   "DUCT","PIPE DUCT","SERVICE DUCT","SHAFT" → "Duct (Opening)"
-   "SWIMMING POOL","POOL" → "Staircase (Opening)"
-   "COURTYARD" (open-air) → "Staircase (Opening)"
-   "CARPORT","COVERED PARKING" (open structure) → "Carport (Opening)"
-   "BASEMENT PARKING","PARKING LEVEL" → "Parking (Opening)"
-
-I. COMMERCIAL:
-   "SHOP 1","SHOP 2","RETAIL" → "Shop 1","Shop 2"
-   "OFFICE","OPEN OFFICE" → "Office"
-   "BOARDROOM","CONFERENCE ROOM","MEETING ROOM" → "Boardroom"
-   "SERVER ROOM","IT ROOM" → "Server Room"
-   "RESTAURANT","CAFETERIA","CANTEEN" → "Restaurant"
-   "GYM","FITNESS ROOM","GYMNASIUM" → "Gym"
-
-J. GUARDS / ANCILLARY:
-   "GUARD HOUSE","GUARD ROOM","SECURITY ROOM" → "Guard Room"
-   "SERVANT QUARTER","STAFF QUARTER","SQ","DSQ","BQ" → "Staff Quarter Room"
-   "GATEHOUSE","GATE ROOM" → "Gatehouse"
-   "CARETAKER ROOM","WATCHMAN ROOM" → "Caretaker Room"
+EXAMPLE B — Multi-Unit Bedsitter Row (Shared Walls):
+Output JSON:
+{
+  "detectedScale": "1:100",
+  "detectedUnits": "mm",
+  "drawingType": "Architectural Floor Plan",
+  "summary": "Block of 3 Bedsitters side-by-side with shared walls.",
+  "rooms": [
+    { "name": "Bedsitter 1 - Room", "length": 3.6, "width": 3.0, "blockName": "Block 1", "apartmentName": "Unit 1", "sequenceInApartment": 1, "boundingBox": [100, 50, 400, 300], "confidence": 0.95 },
+    { "name": "Bedsitter 1 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 1", "sequenceInApartment": 2, "boundingBox": [400, 50, 550, 200], "confidence": 0.91 },
+    { "name": "Bedsitter 2 - Room", "length": 3.6, "width": 3.0, "blockName": "Block 1", "apartmentName": "Unit 2", "sequenceInApartment": 1, "boundingBox": [100, 300, 400, 550], "confidence": 0.95 },
+    { "name": "Bedsitter 2 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 2", "sequenceInApartment": 2, "boundingBox": [400, 300, 550, 450], "confidence": 0.91 },
+    { "name": "Bedsitter 3 - Room", "length": 3.6, "width": 3.0, "blockName": "Block 1", "apartmentName": "Unit 3", "sequenceInApartment": 1, "boundingBox": [100, 550, 400, 800], "confidence": 0.95 },
+    { "name": "Bedsitter 3 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 3", "sequenceInApartment": 2, "boundingBox": [400, 550, 550, 700], "confidence": 0.91 },
+    { "name": "Common Verandah", "length": 9.0, "width": 1.5, "blockName": "Block 1", "boundingBox": [550, 50, 700, 800], "confidence": 0.94 }
+  ]
+}
 
 ═══════════════════════════════════════════════════════
-PART 4 — MULTI-FLOOR DETECTION & ROOF SLAB TYPES
+STAGE 4: SWAHILI & LOCAL VOCABULARY REFERENCE
 ═══════════════════════════════════════════════════════
-
-Scan the image for floor title blocks and use these prefixes:
-   "GROUND FLOOR PLAN"    → "Ground Floor: "
-   "FIRST FLOOR PLAN"     → "First Floor: "
-   "SECOND FLOOR PLAN"    → "Second Floor: "
-   "THIRD FLOOR PLAN"     → "Third Floor: "
-   "FOURTH FLOOR PLAN"    → "Fourth Floor: "
-   "FIFTH FLOOR PLAN"     → "Fifth Floor: "
-   "TYPICAL FLOOR PLAN"   → "Typical Floor: "
-   "UPPER FLOOR PLAN"     → "Upper Floor: "
-   "LOWER GROUND FLOOR"   → "Lower Ground: "
-   "BASEMENT PLAN"        → "Basement: "
-   "MEZZANINE FLOOR"      → "Mezzanine: "
-   "PENTHOUSE FLOOR"      → "Penthouse: "
-   "ROOF SLAB PLAN"       → "Roof Level: " (ONLY if flat concrete slab)
-   "SITE PLAN"            → IGNORE — not a slab floor
-
-Floor number codes: G/GF/G/F/0 = Ground | 1/1st/F1/FF = First | TF/T/F = Typical
-
-FLAT ROOF SLAB vs PITCHED TIMBER ROOF:
-• Concrete Flat Roof Slab / Roof Terrace / Water Tank Slab: Extract room spaces with "Roof Level: " prefix.
-• Pitched Timber Roof / Iron Sheet (Mabati) Roof: DO NOT extract rooms for roof cover unless concrete ceiling/top slab is explicitly specified.
+- Sebule / S/D / L/D → "Lounge" or "Lounge/Dining"
+- Jikoni / Kit → "Kitchen"
+- Chumba Kikuu / MBR → "Master Bedroom"
+- Chumba / BR / Bed 1/2/3 → "Bedroom 1", "Bedroom 2", "Bedroom 3"
+- Choo / B/R / Bth / Washroom → "Bathroom" or "En-Suite Bathroom"
+- Stoo / S/R → "Store"
+- Baraza / Velanda / Velander → "Verandah"
+- SQ / DSQ / BQ → "Staff Quarter Room"
 
 ═══════════════════════════════════════════════════════
-PART 5 — APARTMENT UNIT RECOGNITION
+STAGE 5: FINAL OUTPUT REQUIREMENTS
 ═══════════════════════════════════════════════════════
-
-Unit code patterns to detect:
-   T1,T2,T3,T4 | A,B,C,D | 1A,1B,2A,2B | Unit 1,Unit 2
-   Flat 1,Flat 2 | Apt 1,Apt 2 | Left/Right Unit | Front/Back Unit | Wing A,Wing B
-
-Naming format: "[Floor]: Unit [Code] - [Room Type]"
-Examples:
-   "Ground Floor: Unit T1 - Lounge"
-   "Ground Floor: Unit T1 - Balcony"
-   "Typical Floor: Unit A - Master Bedroom"
-   "Typical Floor: Unit A - En-Suite Bathroom"
-
-Common shared spaces:
-   "Common: Staircase (Opening)" | "Common: Lift Lobby"
-   "Common: Corridor" | "Common: Meter Room" | "Common: Generator Room"
-
-EN-SUITE: If a bathroom is directly inside/attached to a bedroom (no public corridor) → name it "En-Suite Bathroom" or "Bedroom 2 En-Suite". List as a SEPARATE room entry.
-WALK-IN WARDROBE: Always a separate room entry.
-
-═══════════════════════════════════════════════════════
-PART 6 — ADVANCED DIMENSION EXTRACTION & CENTERLINE CONVERSION
-═══════════════════════════════════════════════════════
-
-1. DIMENSION SOURCES: dimension strings, grid line annotations, room labels with sizes (e.g., "BEDROOM 3.0×2.8"), scale bar.
-
-2. CENTERLINE (c/c) TO CLEAR SPAN CONVERSION:
-   - SilaCalc requires CLEAR INTERNAL ROOM SPANS (wall-to-wall).
-   - If dimension strings are drawn from wall centerline to wall centerline (marked "c/c" or running along grid lines A, B, C):
-     * Deduct wall thickness: External masonry walls in Kenya = 200 mm (0.20 m). Internal partition walls = 150 mm (0.15 m) or 100 mm (0.10 m).
-     * Example: Grid dimension 4000 mm c/c between 200 mm walls → Clear span = 4000 - 200 = 3800 mm = 3.80 m.
-
-3. UNIT DETECTION:
-   >= 1000 no decimal → MILLIMETRES → ÷1000 → metres
-   1–20 with decimal → METRES → use as-is
-   Feet & inches (10'-6") → metres: (feet + inches/12) × 0.3048
-   Context check: bedroom is 2.4–4.5 m. "30" likely means 3.0 m.
-
-4. GRID READING: Grid lines A,B,C (horizontal) and 1,2,3 (vertical). Room dim = sum of grid spacings spanning that room minus wall thicknesses.
-
-5. ASSIGNMENT: length = longer, width = shorter. Square rooms: length = width.
-
-6. WALL THICKNESS: External wall = 200–225 mm. If external overall dimensions are given, subtract 0.20–0.225 m per external wall face.
-
-7. IRREGULAR SHAPES & L-SHAPED ROOMS:
-   - L-shaped Lounge/Dining or Corridor → split into two rectangular beam panels: "[Room] (Part 1)" and "[Room] (Part 2)"
-   - Split along wall alignment so each panel has clear rectangular dimensions.
-   - Trapezoid → average width, longest internal length.
-   - Bay window → use main rectangle only.
-   - Circular → diameter as both length and width.
-
-8. PROPORTION CALIBRATION (WHEN TEXT IS BLURRY):
-   If dimension numbers are partially obscured, calibrate pixel scale against standard architectural fixtures:
-   - Standard interior door width = 0.90 m
-   - Main entrance door width = 1.00 m
-   - WC / Powder room width = 0.90 – 1.10 m
-   - Wall thickness = 0.20 m
-
-9. SANITY CHECKS (flag with "(check dim)" if below minimum):
-   Bathroom: min 1.2×1.0 m | Bedroom: min 2.4×2.4 m | Kitchen: min 1.8×1.5 m
-   Corridor: min 0.9 m wide | Balcony: min 0.9 m wide | Store: min 1.0×0.9 m
-   Max realistic dimension: 20 m. If > 20, likely in mm — divide by 1000.
-
-═══════════════════════════════════════════════════════
-PART 7 — KENYAN STANDARD LAYOUTS (USE WHEN UNCLEAR)
-═══════════════════════════════════════════════════════
-
-BEDSITTER: Room 3.6×3.0 | Kitchenette 2.0×1.5 | Bathroom 1.5×1.2
-
-1-BEDROOM FLAT: Bedroom 3.3×3.0 | Lounge 3.6×3.3 | Kitchen 2.4×2.0 | Bathroom 2.0×1.5 | Balcony 3.0×1.2
-
-2-BEDROOM FLAT: Master Bed 3.6×3.3 | Bed 2 3.3×3.0 | Lounge 4.5×3.6 | Kitchen 3.0×2.4
-   Master Bath 2.0×1.5 | Bathroom 2.0×1.5 | Balcony 3.6×1.2
-
-3-BEDROOM FLAT/HOUSE: Master Bed 3.9×3.6 | Bed 2 3.3×3.0 | Bed 3 3.0×2.8
-   Lounge 5.0×4.0 | Dining 3.6×3.0 | Kitchen 3.0×2.7
-   Master Bath 2.4×1.8 | Bathroom 2.0×1.5 | Store 2.0×1.2 | Corridor 3.0×1.2 | Verandah 4.0×1.5
-
-4-BEDROOM BUNGALOW/MAISONETTE: Master Bed 4.0×3.6 | Beds 2–4: 3.3×3.0 each
-   Lounge 5.4×4.2 | Dining 3.9×3.3 | Kitchen 3.3×2.7 | Scullery 2.4×1.8
-   Master Bath 2.4×2.0 | Bathroom 2.0×1.5 | Store 2.0×1.5 | Corridor 4.0×1.2
-   Verandah 5.0×1.8 | Garage 5.5×3.0
-
-GUARD HOUSE / DSQ / SQ / BQ: Room 3.0×2.5 | Bathroom 1.5×1.2
-
-STAIRCASE (Opening) standards:
-   Straight: 3.0×1.2 | Dog-leg: 2.8×2.5 | Spiral: 1.8×1.8
-
-═══════════════════════════════════════════════════════
-PART 8 — QUALITY RULES BEFORE RETURNING OUTPUT
-═══════════════════════════════════════════════════════
-
-✅ Every room: name (string), length (metres), width (metres), and optional boundingBox as [ymin, xmin, ymax, xmax].
-✅ Human-readable names: "Master Bedroom" NOT "MBR". "Bedroom 1" NOT "BR1".
-✅ Balcony/Verandah/Terrace/Porch → MUST contain "Balcony" or "Verandah" (or "Baraza").
-✅ Staircase/Lift/Void/Pool/Duct → MUST contain "(Opening)".
-✅ En-suites and walk-in wardrobes → SEPARATE room entries.
-✅ Exclude: gardens, driveways, site/plot outlines, north arrows, title blocks, scale bars, foundation plans, elevations.
-✅ Duplicate units → list EVERY unit's rooms separately.
-✅ All values > 0.5 m. Values > 20 m → likely mm, divide by 1000.
-✅ If rooms belong to separate blocks or apartments, identify and populate blockName, apartmentName, and sequenceInApartment.
-✅ Bounding Boxes: Detect visual boundaries of each room on the floor plan, estimating ymin, xmin, ymax, xmax (numbers from 0 to 1000 normalized). For example: [100, 150, 400, 500]. Omit if plan is completely unclear.
-
-═══════════════════════════════════════════════════════
-PART 9 — DETECTING BUILDING BLOCKS, APARTMENTS, AND SHARED WALLS
-═══════════════════════════════════════════════════════
-
-For every room, identify if it belongs to a specific Building Block, Apartment/Unit, and its sequence in that unit:
-
-1. BUILDING BLOCKS:
-   - A block is a physically separate building, wing, or distinct section on the floor plan (e.g., "Block A", "Block B", or "Block 1", "Block 2").
-   - If the floor plan consists of multiple separate buildings side-by-side or distinct sections, assign rooms to "Block 1", "Block 2", etc.
-   - If it is a single-block building, default to "Block 1".
-
-2. APARTMENTS / UNITS:
-   - An apartment/unit is a self-contained group of rooms (e.g., "Apt A", "Unit 1", "Flat 1").
-   - If a building has multiple rooms/units arranged in a row (e.g., 14 bedrooms/bedsitters sharing walls side-by-side), treat each separate room/unit as its own Apartment (e.g., "Unit 1", "Unit 2", ..., "Unit 14").
-   - Group all rooms that belong to the same apartment/unit under the same 'apartmentName'.
-
-3. SHARED WALLS & SEQUENCE IN APARTMENT:
-   - The calculator uses room adjacency to deduct shared walls (lintels).
-   - In a multi-room apartment (e.g. Lounge, Bedroom, Kitchen), if rooms are arranged side-by-side, assign them sequential 'sequenceInApartment' numbers (1, 2, 3, etc.) to indicate they share walls in that order.
-   - In a row of single-room apartments or bedsitters (e.g., Bedsitter 1, Bedsitter 2, Bedsitter 3 sharing walls side-by-side):
-     * Assign them to the same Block (e.g., "Block 1").
-     * Assign each room to its own Apartment (e.g., "Unit 1", "Unit 2", "Unit 3").
-     * The calculator will automatically deduct the shared wall between adjacent apartments in the same block.
-   - Use the visual layout or room numbering on the plan to determine the correct order of sequence (e.g., from left to right, or bottom to top).
-
-4. COMMON AREAS:
-   - Common areas like stairs, common corridors, lift lobbies, or external boundary walls that do not belong to any specific block or apartment should omit 'blockName' and 'apartmentName'.
-
-═══════════════════════════════════════════════════════
-PART 10 — WHEN THE PLAN IS UNCLEAR OR LOW RESOLUTION
-═══════════════════════════════════════════════════════
-
-If blurry, low-res, or partially cut off:
-• NEVER return an empty array — always return something.
-• Identify rooms visually even without reading dimensions.
-• Fill missing dimensions from PART 7 standard layouts.
-• If only building type is identifiable, return the full standard layout for that type.` }
+1. Return EVERY structural room space requiring a slab.
+2. Length and Width MUST be positive floating-point numbers in METRES.
+3. Accurate boundingBox [ymin, xmin, ymax, xmax] coordinates between 0 and 1000.
+4. Exclude site boundary fences, exterior landscaping, roof timber framing, foundation trench footings, and elevations.` }
     ];
 
     let result = null;
@@ -456,11 +338,8 @@ If blurry, low-res, or partially cut off:
     }
 
     const { output } = result;
-    console.log("Raw AI output:", JSON.stringify(output, null, 2));
+    console.log("Raw AI output summary:", output.summary || `Found ${output.rooms?.length} rooms`);
 
-    if (!output) {
-      throw new Error('The AI model did not return a valid output.');
-    }
     return output;
   }
 );

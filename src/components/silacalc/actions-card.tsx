@@ -1099,9 +1099,9 @@ export function ActionsCard() {
 
       currentY += 12;
 
-      const flatBeamPrice = pricingRates.beamFlatRate || 520;
-      const tbeamPrice = pricingRates.beamTbeamRate || 1100;
-      const flatBlockPrice = pricingRates.blockFlatRate || 85;
+      const flatBeamPrice = pricingRates.beamFlatRate || 545;
+      const tbeamPrice = pricingRates.beamTbeamRate || 1200;
+      const flatBlockPrice = pricingRates.blockFlatRate || 90;
       const tbeamBlockPrice = pricingRates.blockTbeamRate || 100;
 
       const flatBeamsCost = flatTotals.totalInvoiceBeamLength * flatBeamPrice;
@@ -1224,7 +1224,7 @@ export function ActionsCard() {
       // 1. T-Beam Calculations & PDF Page
       const tbeamSettings = { ...settings, beamType: 'tbeam' as const };
       const tbeamTotals = calculateProjectTotals(rooms, tbeamSettings, lintelLength, isOptimized);
-      const tbeamBeamPrice = pricingRates.beamTbeamRate || 1100;
+      const tbeamBeamPrice = pricingRates.beamTbeamRate || 1200;
       const tbeamBlockPrice = pricingRates.blockTbeamRate || 100;
       const tbeamBeamsTotal = tbeamTotals.totalInvoiceBeamLength * tbeamBeamPrice;
       const tbeamBlocksTotal = tbeamTotals.totalBlocks * tbeamBlockPrice;
@@ -1242,8 +1242,8 @@ export function ActionsCard() {
       // 2. Flat Beam Calculations & PDF Page
       const flatSettings = { ...settings, beamType: 'flat' as const };
       const flatTotals = calculateProjectTotals(rooms, flatSettings, lintelLength, isOptimized);
-      const flatBeamPrice = pricingRates.beamFlatRate || 520;
-      const flatBlockPrice = pricingRates.blockFlatRate || 85;
+      const flatBeamPrice = pricingRates.beamFlatRate || 545;
+      const flatBlockPrice = pricingRates.blockFlatRate || 90;
       const flatBeamsTotal = flatTotals.totalInvoiceBeamLength * flatBeamPrice;
       const flatBlocksTotal = flatTotals.totalBlocks * flatBlockPrice;
 
@@ -1400,8 +1400,9 @@ export function ActionsCard() {
 
   const handleDownloadPromaxBreakdown = (clientInfo: ClientInfo, isOptimized: boolean = false) => {
     const activeTotals = calculateProjectTotals(rooms, settings, lintelLength, isOptimized);
+    const activeBeamPrice = settings.beamType === 'tbeam' ? (pricingRates.beamTbeamRate || 1200) : (pricingRates.beamFlatRate || 545);
     const perRoomCalculations = rooms.map(r => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1100 : 520, r.name, isOptimized);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, activeBeamPrice, r.name, isOptimized);
       return { room: r, roomCalcs };
     });
     generatePromaxPdf({
@@ -1561,8 +1562,9 @@ export function ActionsCard() {
     const reportDate = new Date().toLocaleDateString('en-GB');
     const reportNumber = `TIMBER-${String(Date.now()).slice(-6)}`;
     
+    const activeBeamPrice = settings.beamType === 'tbeam' ? (pricingRates.beamTbeamRate || 1200) : (pricingRates.beamFlatRate || 545);
     const activePerRoomCalcs = rooms.map((r) => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, settings.beamType === 'tbeam' ? 1100 : 520, r.name, isOptimized);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, activeBeamPrice, r.name, isOptimized);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
       const timberCalcs = calcTimberAndProps(r, settings);

@@ -84,10 +84,10 @@ export default function AdminDashboardPage() {
     const { toast } = useToast();
 
     const [tempRates, setTempRates] = useState<any>({
-        beamFlatRate: 500,
-        beamTbeamRate: 950,
-        blockFlatRate: 80,
-        blockTbeamRate: 95,
+        beamFlatRate: 545,
+        beamTbeamRate: 1200,
+        blockFlatRate: 90,
+        blockTbeamRate: 100,
         cementRate: 800,
         sandRate: 3000,
         ballastRate: 3200,
@@ -103,10 +103,10 @@ export default function AdminDashboardPage() {
 
     const handleSaveRates = async () => {
         await updatePricingRates({
-            beamFlatRate: Number(tempRates.beamFlatRate) || 500,
-            beamTbeamRate: Number(tempRates.beamTbeamRate) || 950,
-            blockFlatRate: Number(tempRates.blockFlatRate) || 80,
-            blockTbeamRate: Number(tempRates.blockTbeamRate) || 95,
+            beamFlatRate: Number(tempRates.beamFlatRate) || 545,
+            beamTbeamRate: Number(tempRates.beamTbeamRate) || 1200,
+            blockFlatRate: Number(tempRates.blockFlatRate) || 90,
+            blockTbeamRate: Number(tempRates.blockTbeamRate) || 100,
             cementRate: Number(tempRates.cementRate) || 800,
             sandRate: Number(tempRates.sandRate) || 3000,
             ballastRate: Number(tempRates.ballastRate) || 3200,
@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
     };
 
     const handleDownloadPromax = (proj: any) => {
-        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+        const BEAM_PRICE_PER_METER = proj.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
         const settings = {
             ...(proj.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10, propSpacing: 1.2, concreteThickness: 0.05 }),
             blockCommissionRate: 5
@@ -784,7 +784,7 @@ export default function AdminDashboardPage() {
 
                 <div className="grid grid-cols-1 gap-8">
                     {selectedProject?.rooms?.map((r: any, idx: number) => {
-                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
                         const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }, BEAM_PRICE_PER_METER, r.name);
                         return <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />;
                     })}
@@ -846,10 +846,10 @@ export default function AdminDashboardPage() {
                             </h4>
                             <div className="grid grid-cols-2 gap-4">
                                 {[
-                                    { key: 'beamTbeamRate', label: 'T-Beam Rate (KSh / meter)', placeholder: '950' },
-                                    { key: 'beamFlatRate', label: 'Flat Beam Rate (KSh / meter)', placeholder: '500' },
-                                    { key: 'blockTbeamRate', label: 'T-Beam Block Rate (KSh / pcs)', placeholder: '95' },
-                                    { key: 'blockFlatRate', label: 'Flat Block Rate (KSh / pcs)', placeholder: '80' },
+                                    { key: 'beamTbeamRate', label: 'T-Beam Rate (KSh / meter)', placeholder: '1200' },
+                                    { key: 'beamFlatRate', label: 'Flat Beam Rate (KSh / meter)', placeholder: '545' },
+                                    { key: 'blockTbeamRate', label: 'T-Beam Block Rate (KSh / pcs)', placeholder: '100' },
+                                    { key: 'blockFlatRate', label: 'Flat Block Rate (KSh / pcs)', placeholder: '90' },
                                 ].map(field => (
                                     <div key={field.key} className="space-y-1.5 bg-slate-50 p-3 rounded-lg border">
                                         <label className="font-semibold text-slate-700 block">{field.label}</label>
@@ -910,7 +910,7 @@ export default function AdminDashboardPage() {
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:hidden">
                     {(() => {
                         if (!selectedProject) return null;
-                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+                        const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
                         const settings = {
                             ...(selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10, propSpacing: 1.2, concreteThickness: 0.05 }),
                             blockCommissionRate: 5
@@ -1055,7 +1055,7 @@ export default function AdminDashboardPage() {
                     <div className="flex-1 overflow-y-auto pr-2 print:overflow-visible print:h-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 py-6 print:grid-cols-1 print:gap-12 print:py-0">
                             {selectedProject?.rooms?.map((r: any, idx: number) => {
-                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
+                                const BEAM_PRICE_PER_METER = selectedProject.settings?.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
                                 const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, selectedProject.settings || { beamSpacing: 0.55, blockWidth: 0.2, wastagePercentage: 10 }, BEAM_PRICE_PER_METER, r.name);
                                 return <RoomLayoutVisualizer key={idx} calc={roomCalcs} roomName={r.name} showInternal={true} />;
                             })}

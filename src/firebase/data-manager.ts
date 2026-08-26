@@ -18,12 +18,17 @@ export interface PlanRoomData {
   blockName?: string;
   apartmentName?: string;
   sequenceInApartment?: number;
-  boundingBox?: [number, number, number, number];
+  boundingBox?: [number, number, number, number] | number[];
+  confidence?: number;
+  aspectRatioWarning?: boolean;
 }
 
 export interface PlanData {
   imageUri?: string;
   parsedRooms?: PlanRoomData[];
+  detectedScale?: string;
+  detectedUnits?: string;
+  scalePixelsPerMeter?: number;
 }
 
 export interface ProjectData {

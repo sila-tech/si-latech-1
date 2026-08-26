@@ -220,10 +220,10 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [displayUnit, setDisplayUnit] = useState<'m' | 'ft'>('m');
   const [costEstimationEnabled, setCostEstimationEnabled] = useState<boolean>(false);
   const [pricingRates, setPricingRates] = useState({
-    beamFlatRate: 500,
-    beamTbeamRate: 950,
-    blockFlatRate: 80,
-    blockTbeamRate: 95,
+    beamFlatRate: 545,
+    beamTbeamRate: 1200,
+    blockFlatRate: 90,
+    blockTbeamRate: 100,
     cementRate: 800,
     sandRate: 3000,
     ballastRate: 3200,
@@ -561,7 +561,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   
 
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
-    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? (pricingRates.beamTbeamRate || 950) : (pricingRates.beamFlatRate || 500); 
+    const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? (pricingRates.beamTbeamRate || 1200) : (pricingRates.beamFlatRate || 545); 
     return rooms.map((r) => {
       const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
       const concreteCalcs = calcConcrete(roomCalcs, settings);

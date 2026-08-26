@@ -74,11 +74,11 @@ export function ComparisonTab() {
     ballastRate: pricingRates?.ballastRate || 3200,
     brcRate: pricingRates?.brcRate || 25000,
     beamRate: settings?.beamType === 'tbeam' 
-      ? (pricingRates?.beamTbeamRate || 1100) 
-      : (pricingRates?.beamFlatRate || 520),
+      ? (pricingRates?.beamTbeamRate || 1200) 
+      : (pricingRates?.beamFlatRate || 545),
     blockRate: settings?.beamType === 'tbeam' 
       ? (pricingRates?.blockTbeamRate || 100) 
-      : (pricingRates?.blockFlatRate || 85),
+      : (pricingRates?.blockFlatRate || 90),
     
     // Traditional-specific rates (Kenyan averages)
     traditionalSteelRate: 130,        // KSh/kg for Y10 rebars

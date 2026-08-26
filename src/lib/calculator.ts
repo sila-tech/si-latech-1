@@ -237,8 +237,8 @@ export const DEFAULTS: CalculationDefaults = {
   steel_wastage_pct: 5,
   standard_bar_length: 12.0,
   beamType: 'flat',
-  beamFlatRate: 500,
-  beamTbeamRate: 950,
+  beamFlatRate: 545,
+  beamTbeamRate: 1200,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -258,14 +258,14 @@ export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
   opts: Partial<CalculationDefaults> = {},
-  beamPricePerMeter: number = 500,
+  beamPricePerMeter: number = 545,
   roomName: string = '',
   optimizeExcess: boolean = true
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
   const area = lengthMeters * widthMeters;
-  const defaultPrice = C.beamType === 'tbeam' ? (C.beamTbeamRate || 950) : (C.beamFlatRate || 500);
-  const beamPrice = (beamPricePerMeter && beamPricePerMeter !== 500 && beamPricePerMeter !== 520) ? beamPricePerMeter : defaultPrice;
+  const defaultPrice = C.beamType === 'tbeam' ? (C.beamTbeamRate || 1200) : (C.beamFlatRate || 545);
+  const beamPrice = (beamPricePerMeter && beamPricePerMeter !== 500 && beamPricePerMeter !== 520 && beamPricePerMeter !== 545) ? beamPricePerMeter : defaultPrice;
 
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
@@ -565,7 +565,7 @@ export function calcLintelSteel(totalLintelLength: number, opts: Partial<Calcula
 
 export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationDefaults, optimizeExcess: boolean = true): AggregatedRoomGroup[] {
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
-  const beamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1100) : (settings.beamFlatRate || 520);
+  const beamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1200) : (settings.beamFlatRate || 545);
   rooms.forEach(room => {
       const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, beamPrice, room.name, optimizeExcess);
       const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
@@ -661,7 +661,7 @@ export function calculateProjectTotals(
     }
   };
 
-  const projectBeamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 950) : (settings.beamFlatRate || 500);
+  const projectBeamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1200) : (settings.beamFlatRate || 545);
   const perRoomCalculations = rooms.map((r) => {
     const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, projectBeamPrice, r.name, optimizeExcess);
     const concreteCalcs = calcConcrete(roomCalcs, settings);

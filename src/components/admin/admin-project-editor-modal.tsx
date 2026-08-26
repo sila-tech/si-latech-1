@@ -190,8 +190,8 @@ export function AdminProjectEditorModal({
     return calculateProjectTotals(rooms, activeSettings, 0, false);
   }, [rooms, activeSettings]);
 
-  const defaultBeamPrice = beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 950) : (pricingRates?.beamFlatRate || 500);
-  const defaultBlockPrice = beamType === 'tbeam' ? (pricingRates?.blockTbeamRate || 95) : (pricingRates?.blockFlatRate || 80);
+  const defaultBeamPrice = beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
+  const defaultBlockPrice = beamType === 'tbeam' ? (pricingRates?.blockTbeamRate || 100) : (pricingRates?.blockFlatRate || 90);
 
   const beamPrice = typeof customBeamRate === 'number' && customBeamRate > 0 ? customBeamRate : defaultBeamPrice;
   const blockPrice = typeof customBlockRate === 'number' && customBlockRate > 0 ? customBlockRate : defaultBlockPrice;
@@ -604,14 +604,14 @@ export function AdminProjectEditorModal({
                         onClick={() => setBeamType('tbeam')}
                         className={beamType === 'tbeam' ? 'bg-[#095388] text-white font-bold text-xs h-7 px-3 shadow-2xs' : 'border-slate-200 text-slate-600 text-xs h-7 px-3'}
                       >
-                        T-Beam (KSh {pricingRates?.beamTbeamRate || 950}/m)
+                        T-Beam (KSh {pricingRates?.beamTbeamRate || 1200}/m)
                       </Button>
                       <Button 
                         variant={beamType === 'flat' ? 'default' : 'outline'}
                         onClick={() => setBeamType('flat')}
                         className={beamType === 'flat' ? 'bg-[#095388] text-white font-bold text-xs h-7 px-3 shadow-2xs' : 'border-slate-200 text-slate-600 text-xs h-7 px-3'}
                       >
-                        Flat Beam (KSh {pricingRates?.beamFlatRate || 500}/m)
+                        Flat Beam (KSh {pricingRates?.beamFlatRate || 545}/m)
                       </Button>
                     </div>
                   </div>

@@ -198,8 +198,8 @@ export function SilaAssistant() {
     setIsLoading(true);
 
     // Calculate details to pass as current state
-    const BEAM_PRICE = settings.beamType === 'tbeam' ? 1100 : 520;
-    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 100 : 85;
+    const BEAM_PRICE = settings.beamType === 'tbeam' ? 1200 : 545;
+    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 100 : 90;
     
     const calculatorState = {
       beamType: settings.beamType || 'flat',
