@@ -224,9 +224,11 @@ export default function PartnerDashboard() {
     const quoteGrandTotal = beamsInvoiceTotal + blocksInvoiceTotal;
 
     const partnerProfitAmount = totals.totalPartnerProfitValue || (totals.totalPartnerProfitMetres * BEAM_PRICE);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     // PDF Quote generation
-    const handleDownloadQuote = () => {
+    const handleDownloadQuote = async () => {
+        setIsDownloading(true);
         try {
             const invoiceNumber = `QT-${String(Date.now()).slice(-6)}`;
             generateQuotePdf({
@@ -251,10 +253,12 @@ export default function PartnerDashboard() {
                     partnerProfitPercentage: profitPercentage
                 }
             });
-            toast({ title: 'Quote Downloaded', description: 'Official client quotation generated successfully.' });
+            toast({ title: 'Quote Downloaded', description: 'Official client quotation generated and downloaded successfully.' });
         } catch (e: any) {
-            console.error('PDF error:', e);
+            console.error('PDF generation error:', e);
             toast({ title: 'Download Error', description: 'Could not generate PDF quote. Please try again.', variant: 'destructive' });
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -652,10 +656,11 @@ export default function PartnerDashboard() {
                             {/* Download Button */}
                             <Button
                                 onClick={handleDownloadQuote}
-                                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                                disabled={isDownloading}
+                                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                             >
-                                <Download size={18} />
-                                Download Client Quote PDF
+                                <Download size={18} className={isDownloading ? 'animate-bounce' : ''} />
+                                {isDownloading ? 'Generating Quote PDF...' : 'Download Client Quote PDF'}
                             </Button>
 
                             {/* Mandatory Uneditable Footer Notice */}

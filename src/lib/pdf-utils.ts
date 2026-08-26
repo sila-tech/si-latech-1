@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { calculateProjectTotals, calcRoomBlocksAndBeams, calcBilledBlocks } from './calculator';
 
 export const addLogoToPdf = (doc: jsPDF, color: string) => {
@@ -174,7 +174,7 @@ export const generateQuotePdf = (data: {
         ]
     ];
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
         body: tableRows,
         startY: metaY + 15,
@@ -278,7 +278,22 @@ export const generateQuotePdf = (data: {
         ? `${partnerCompanyInfo.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-Quote-${invoiceNumber}.pdf`
         : `SI-LATECH-Quote-${invoiceNumber}.pdf`;
 
-    doc.save(pdfFileName);
+    try {
+        doc.save(pdfFileName);
+    } catch (saveErr) {
+        console.warn('doc.save failed, triggering fallback download:', saveErr);
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = pdfFileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 200);
+    }
     return true;
 };
 
@@ -408,7 +423,7 @@ export const generatePromaxPdf = (data: {
         { content: `${grandTotalBeamMeters.toFixed(2)} m`, styles: { fontStyle: 'bold', halign: 'right' } }
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [factoryBeamColumn],
         body: factoryBeamRows,
         startY: 77,
@@ -432,7 +447,7 @@ export const generatePromaxPdf = (data: {
 
     const roomColumn = ['ROOM / SLAB AREA', 'ROOM SPAN', 'BEAM CUT LENGTH', 'BEAM QTY', 'TOTAL BEAM LM', 'HOLLOW BLOCKS'];
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [roomColumn],
         body: roomBreakdownRows,
         startY: currentY + 5,
@@ -468,7 +483,7 @@ export const generatePromaxPdf = (data: {
         ]
     ];
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [blockColumn],
         body: blockRows,
         startY: currentY + 5,
@@ -547,7 +562,7 @@ export const generateProfitRequestPdf = (data: {
         ['Block Commission', `${totals.totalBlocks || 0} pcs`, 'KSh 5 / pcs', `Ksh ${totals.blockCommission.toLocaleString()}`],
     ];
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 81,
@@ -621,7 +636,7 @@ export const generateMaterialSchedulePdf = (data: {
         ]);
     });
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 81,
@@ -727,7 +742,7 @@ export const generateTechnicalLayoutPdf = (data: {
         { content: `${grandTotalBlocks} pcs`, styles: { fontStyle: 'bold', halign: 'right' } }
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 77,
