@@ -1,6 +1,8 @@
-const CACHE_NAME = 'silacalc-cache-v1';
+const CACHE_NAME = 'silacalc-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
+  '/partner',
+  '/partner/login',
   '/manifest.webmanifest',
   '/logo.png',
   '/icon.png',

@@ -58,10 +58,22 @@ export function Header() {
               {label}
             </a>
           ))}
+          <Link
+            href="/partner/login"
+            className="px-3 py-2 rounded-lg text-sm font-semibold transition-colors text-slate-700 hover:bg-slate-100 hover:text-primary"
+          >
+            Sign In
+          </Link>
         </nav>
 
         {/* Desktop Right CTA Buttons */}
         <div className="hidden md:flex items-center gap-3">
+          <Link
+            href="/partner/login"
+            className="hidden sm:inline-flex items-center justify-center border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs"
+          >
+            Sign In
+          </Link>
           <a
             href={whatsappUrl}
             target="_blank"
@@ -131,6 +143,13 @@ export function Header() {
               {label}
             </a>
           ))}
+          <Link
+            href="/partner/login"
+            onClick={() => setMobileOpen(false)}
+            className="block px-4 py-3.5 rounded-xl text-sm font-bold text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+          >
+            Sign In
+          </Link>
           <div className="pt-3 grid grid-cols-2 gap-2.5 border-t border-slate-100">
             <a
               href={whatsappUrl}

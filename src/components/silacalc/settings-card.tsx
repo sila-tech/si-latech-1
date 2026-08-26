@@ -127,7 +127,7 @@ export function SettingsCard() {
             id={key}
             type="number"
             className="bg-[#eff3f8] border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary"
-            value={settings[key as keyof CalculationDefaults]}
+            value={typeof settings[key as keyof CalculationDefaults] === 'number' || typeof settings[key as keyof CalculationDefaults] === 'string' ? (settings[key as keyof CalculationDefaults] as string | number) : ''}
             onChange={(e) => handleSettingChange(key as keyof CalculationDefaults, e.target.value)}
             min="0"
             step={key.includes('dia') || key === 'num_longitudinal' ? '1' : step}

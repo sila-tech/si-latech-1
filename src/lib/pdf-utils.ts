@@ -36,6 +36,13 @@ export const generateQuotePdf = (data: {
     paymentMethods?: string[];
     customPaymentNotes?: string;
     clientChangeRequestNotes?: string;
+    partnerCompanyInfo?: {
+        name?: string;
+        phone?: string;
+        email?: string;
+        isPartner?: boolean;
+        partnerProfitPercentage?: number;
+    };
 }) => {
     const { 
         invoiceNumber, 
@@ -46,7 +53,8 @@ export const generateQuotePdf = (data: {
         discountValue = 0,
         paymentMethods = [],
         customPaymentNotes = '',
-        clientChangeRequestNotes = ''
+        clientChangeRequestNotes = '',
+        partnerCompanyInfo
     } = data;
 
     const doc = new jsPDF();
@@ -78,25 +86,45 @@ export const generateQuotePdf = (data: {
     }
     const netGrandTotal = Math.max(0, grossTotal - discountAmount);
 
-    // --- Header (Identical to main calculator) ---
-    addLogoToPdf(doc, primaryColor);
+    const isPartner = partnerCompanyInfo?.isPartner || false;
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(primaryColor);
-    doc.text('OFFICIAL QUOTE', 75, 22);
+    // --- Header ---
+    if (isPartner && partnerCompanyInfo?.name) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.setTextColor(primaryColor);
+        doc.text(partnerCompanyInfo.name.toUpperCase(), 14, 18);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(100);
-    doc.text('Head Office: Ruiru, behind Rubis petrol station', 140, 22);
-    doc.text('Tel: +254 141 981 315', 140, 27);
-    doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text('Powered by SI-LATECH', 14, 24);
 
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        if (partnerCompanyInfo.phone) doc.text(`Tel: ${partnerCompanyInfo.phone}`, 140, 18);
+        if (partnerCompanyInfo.email) doc.text(`Email: ${partnerCompanyInfo.email}`, 140, 23);
+        doc.text(`Official Quotation`, 140, 28);
+    } else {
+        addLogoToPdf(doc, primaryColor);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(primaryColor);
+        doc.text('OFFICIAL QUOTE', 75, 22);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text('Head Office: Ruiru, behind Rubis petrol station', 140, 22);
+        doc.text('Tel: +254 141 981 315', 140, 27);
+        doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text('@si-latech, a better simpler and cost effective way to build.', 14, 38);
+    }
 
     let currentY = 60;
     const invoiceToX = 14;
@@ -216,7 +244,7 @@ export const generateQuotePdf = (data: {
     doc.text(`1. BRC Mesh: Based on your calculations, you may require ${brcRollsNeeded} roll(s) of BRC mesh (48m x 2.4m). This is not included in the quote total.`, 14, notesY);
     notesY += 5;
 
-    doc.text('2. Payment: All payments for beams and blocks are to be made to Promax Kenya Limited. Account details will be provided.', 14, notesY);
+    doc.text('2. Payment: All materials are to be paid to PROMAX KENYA LTD.', 14, notesY);
     notesY += 5;
 
     if (customPaymentNotes) {
@@ -226,6 +254,13 @@ export const generateQuotePdf = (data: {
 
     doc.text(`${customPaymentNotes ? '4' : '3'}. We provide a technician paid by the client.`, 14, notesY);
     notesY += 5;
+
+    if (isPartner) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(primaryColor);
+        doc.text('Powered by SI-LATECH', 14, notesY + 3);
+        notesY += 8;
+    }
 
     if (clientChangeRequestNotes) {
         doc.setFont('helvetica', 'bold');
@@ -239,7 +274,11 @@ export const generateQuotePdf = (data: {
 
     addPdfBackground(doc);
 
-    doc.save(`SI-LATECH-Quote-${invoiceNumber}.pdf`);
+    const pdfFileName = isPartner && partnerCompanyInfo?.name
+        ? `${partnerCompanyInfo.name.replace(/[^a-zA-Z0-9_-]/g, '_')}-Quote-${invoiceNumber}.pdf`
+        : `SI-LATECH-Quote-${invoiceNumber}.pdf`;
+
+    doc.save(pdfFileName);
     return true;
 };
 

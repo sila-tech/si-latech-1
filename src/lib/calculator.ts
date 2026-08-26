@@ -71,6 +71,9 @@ export interface CalculationDefaults {
   beamType?: 'flat' | 'tbeam';
   beamFlatRate?: number;
   beamTbeamRate?: number;
+  isPartnerMode?: boolean;
+  partnerProfitPercentage?: number;
+  partnerCompanyId?: string;
 }
 
 export interface RoomCalculation {
@@ -95,6 +98,12 @@ export interface RoomCalculation {
   netExtraMetresProfit: number;
   blockCommission: number;
   totalRoomProfit: number;
+  isPartnerMode?: boolean;
+  partnerBaseBeamLength?: number;
+  partnerProfitMetres?: number;
+  partnerProfitValue?: number;
+  siLatechProfitBeamLength?: number;
+  siLatechProfitValue?: number;
   layout: {
     gapAtEnd: number;
     needsExtraBeam: boolean;
@@ -375,9 +384,31 @@ export function calcRoomBlocksAndBeams(
   let invoiceTotalBeamLength: number;
   let invoiceBeamCount: number;
   
-  // Detect if this is a "Quick Quote" (Meter Square) or a manual "Room"
+  let partnerBaseBeamLength = 0;
+  let partnerProfitMetres = 0;
+  let partnerProfitValue = 0;
+  let siLatechProfitBeamLength = 0;
+  let siLatechProfitValue = 0;
 
-  if (isAreaMode) {
+  // Detect if this is a "Partner Mode", "Quick Quote" (Meter Square) or a manual "Room"
+  if (C.isPartnerMode) {
+    // PARTNER MODE:
+    // 1. SI-LATECH Base Cut: 1 automatic profit beam per room
+    const siLatechProfitBeams = 1;
+    const partnerBaseBeamCount = effectiveBeamCount + siLatechProfitBeams;
+    partnerBaseBeamLength = partnerBaseBeamCount * individualBeamLength;
+
+    // 2. Partner Margin (Percentage-based, defaults to 15%)
+    const partnerMarginPct = C.partnerProfitPercentage !== undefined ? C.partnerProfitPercentage : 15;
+    partnerProfitMetres = partnerBaseBeamLength * (partnerMarginPct / 100);
+    partnerProfitValue = partnerProfitMetres * beamPrice;
+
+    siLatechProfitBeamLength = 1 * individualBeamLength;
+    siLatechProfitValue = siLatechProfitBeamLength * beamPrice;
+
+    invoiceTotalBeamLength = partnerBaseBeamLength + partnerProfitMetres;
+    invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : partnerBaseBeamCount;
+  } else if (isAreaMode) {
     // METRE SQUARE MODE: Multiply Area by 2.4
     invoiceTotalBeamLength = area * 2.4;
     invoiceBeamCount = shorter > 0 ? ceil(invoiceTotalBeamLength / shorter) : 0;
@@ -398,14 +429,34 @@ export function calcRoomBlocksAndBeams(
 
   // --- 3. PROFIT CALCULATION ---
   const isTBeam = C.beamType === 'tbeam';
-  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // Extra metres
-  const grossExtraMetresValue = profitBeamLength * beamPrice;
-  const extraMetresVat = grossExtraMetresValue * 0.16; // 16% VAT deducted on extra metres
-  const netExtraMetresProfit = grossExtraMetresValue * 0.84;
-  const actualMetresProfit = actualTotalBeamLength * (isTBeam ? 100 : 20);
-  const blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 0));
-  const beamProfitValue = actualMetresProfit + netExtraMetresProfit;
-  const totalRoomProfit = actualMetresProfit + blockCommission + netExtraMetresProfit;
+  let profitBeamLength = 0;
+  let grossExtraMetresValue = 0;
+  let extraMetresVat = 0;
+  let netExtraMetresProfit = 0;
+  let actualMetresProfit = 0;
+  let blockCommission = 0;
+  let beamProfitValue = 0;
+  let totalRoomProfit = 0;
+
+  if (C.isPartnerMode) {
+    profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
+    grossExtraMetresValue = profitBeamLength * beamPrice;
+    extraMetresVat = grossExtraMetresValue * 0.16;
+    netExtraMetresProfit = grossExtraMetresValue * 0.84;
+    actualMetresProfit = 0;
+    blockCommission = 0;
+    beamProfitValue = partnerProfitValue;
+    totalRoomProfit = partnerProfitValue;
+  } else {
+    profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // Extra metres
+    grossExtraMetresValue = profitBeamLength * beamPrice;
+    extraMetresVat = grossExtraMetresValue * 0.16; // 16% VAT deducted on extra metres
+    netExtraMetresProfit = grossExtraMetresValue * 0.84;
+    actualMetresProfit = actualTotalBeamLength * (isTBeam ? 100 : 20);
+    blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 0));
+    beamProfitValue = actualMetresProfit + netExtraMetresProfit;
+    totalRoomProfit = actualMetresProfit + blockCommission + netExtraMetresProfit;
+  }
   
   const startWithBlock = optimizeExcess && physicalEndGap >= 0.40;
 
@@ -431,6 +482,12 @@ export function calcRoomBlocksAndBeams(
     netExtraMetresProfit,
     blockCommission,
     totalRoomProfit,
+    isPartnerMode: C.isPartnerMode,
+    partnerBaseBeamLength,
+    partnerProfitMetres,
+    partnerProfitValue,
+    siLatechProfitBeamLength,
+    siLatechProfitValue,
     layout: {
       gapAtEnd: startWithBlock
         ? Math.max(0, spanLength - (0.40 + (effectiveBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier)))
@@ -645,6 +702,13 @@ export function calculateProjectTotals(
     totalNetExtraMetresProfit: 0,
     totalBlockCommission: 0,
     totalProjectProfit: 0,
+    totalPartnerBaseBeamLength: 0,
+    totalPartnerProfitMetres: 0,
+    totalPartnerProfitValue: 0,
+    totalSiLatechProfitBeamLength: 0,
+    totalSiLatechProfitValue: 0,
+    isPartnerMode: !!settings.isPartnerMode,
+    partnerProfitPercentage: settings.partnerProfitPercentage ?? 15,
     totalConcreteVolume: 0,
     totalCementBags: 0,
     totalSandTonnes: 0,
@@ -697,6 +761,14 @@ export function calculateProjectTotals(
     acc.totalNetExtraMetresProfit += p.roomCalcs.netExtraMetresProfit;
     acc.totalBlockCommission += p.roomCalcs.blockCommission;
     acc.totalProjectProfit += p.roomCalcs.totalRoomProfit;
+
+    if (p.roomCalcs.isPartnerMode) {
+      acc.totalPartnerBaseBeamLength += (p.roomCalcs.partnerBaseBeamLength || 0);
+      acc.totalPartnerProfitMetres += (p.roomCalcs.partnerProfitMetres || 0);
+      acc.totalPartnerProfitValue += (p.roomCalcs.partnerProfitValue || 0);
+      acc.totalSiLatechProfitBeamLength += (p.roomCalcs.siLatechProfitBeamLength || 0);
+      acc.totalSiLatechProfitValue += (p.roomCalcs.siLatechProfitValue || 0);
+    }
 
     acc.timber.total3x2pieces += p.timberCalcs.pieces3x2;
     acc.timber.total3x2m += p.timberCalcs.total3x2m;
