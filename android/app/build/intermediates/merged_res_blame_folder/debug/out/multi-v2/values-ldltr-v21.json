@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.silatech.calc.app-mergeDebugResources-30:/values-ldltr-v21/values-ldltr-v21.xml",
+            "outputFile": "com.silatech.calc.app-mergeDebugResources-62:/values-ldltr-v21/values-ldltr-v21.xml",
             "map": [
                 {
                     "source": "C:\\Users\\Admin\\.gradle\\caches\\transforms-3\\1390ed0e93696117e0bd1340aa2458d6\\transformed\\appcompat-1.6.1\\res\\values-ldltr-v21\\values-ldltr-v21.xml",

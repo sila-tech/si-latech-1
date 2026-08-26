@@ -1,26 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.silatech.calc"
-    android:versionCode="1"
-    android:versionName="1.0.0" >
+    android:versionCode="2"
+    android:versionName="2.0.0" >
 
     <uses-sdk
-        android:minSdkVersion="24"
+        android:minSdkVersion="26"
         android:targetSdkVersion="34" />
 
+    <!-- Internet for Firestore sync when online -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- For picking files on Android 12 and below -->
+    <!-- Write to Downloads for PDF export -->
     <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-
-    <!-- We declare camera as optional so devices without physical cameras can still install SilaCalc -->
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <permission
         android:name="com.silatech.calc.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
@@ -35,11 +30,10 @@
         android:extractNativeLibs="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="SilaCalc"
+        android:label="SI-LATECH"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SilaCalc"
-        android:usesCleartextTraffic="true" >
+        android:theme="@style/Theme.SilaCalc" >
         <activity
             android:name="com.silatech.calc.MainActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -52,6 +46,7 @@
             </intent-filter>
         </activity>
 
+        <!-- FileProvider for sharing generated PDFs -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.silatech.calc.fileprovider"
@@ -61,6 +56,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <activity
+            android:name="androidx.compose.ui.tooling.PreviewActivity"
+            android:exported="true" />
+        <activity
+            android:name="androidx.activity.ComponentActivity"
+            android:exported="true" />
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="com.silatech.calc.androidx-startup"
@@ -75,6 +78,11 @@
                 android:name="androidx.profileinstaller.ProfileInstallerInitializer"
                 android:value="androidx.startup" />
         </provider>
+
+        <service
+            android:name="androidx.room.MultiInstanceInvalidationService"
+            android:directBootAware="true"
+            android:exported="false" />
 
         <receiver
             android:name="androidx.profileinstaller.ProfileInstallReceiver"

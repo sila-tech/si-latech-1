@@ -1,26 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Internet for Firestore sync when online -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    
-    <!-- For picking files on Android 12 and below -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    
-    <!-- We declare camera as optional so devices without physical cameras can still install SilaCalc -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Write to Downloads for PDF export -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="SilaCalc"
+        android:label="SI-LATECH"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.SilaCalc"
-        android:hardwareAccelerated="true"
-        android:usesCleartextTraffic="true">
-        
+        android:hardwareAccelerated="true">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -31,10 +28,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
+
+        <!-- FileProvider for sharing generated PDFs -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.silatech.calc.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

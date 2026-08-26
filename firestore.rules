@@ -109,6 +109,22 @@ service cloud.firestore {
     match /settings/{document=**} {
       allow read, write: if true;
     }
+
+    // Partners collection
+    match /partners/{partnerId} {
+      allow read, write: if true;
+    }
+    match /partners/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Partner Projects collection
+    match /partnerProjects/{projectId} {
+      allow read, write: if true;
+    }
+    match /partnerProjects/{document=**} {
+      allow read, write: if true;
+    }
     
     // Deny all other access
     match /{document=**} {

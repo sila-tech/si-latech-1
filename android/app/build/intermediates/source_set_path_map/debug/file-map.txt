@@ -1,34 +1,66 @@
-com.silatech.calc.app-recyclerview-1.1.0-0 C:\Users\Admin\.gradle\caches\transforms-3\0780361fbfc02d60bbedcf624638433b\transformed\recyclerview-1.1.0\res
-com.silatech.calc.app-appcompat-1.6.1-1 C:\Users\Admin\.gradle\caches\transforms-3\1390ed0e93696117e0bd1340aa2458d6\transformed\appcompat-1.6.1\res
-com.silatech.calc.app-jetified-emoji2-views-helper-1.2.0-2 C:\Users\Admin\.gradle\caches\transforms-3\269d4a321b8b3b15ed1cb151ad66685f\transformed\jetified-emoji2-views-helper-1.2.0\res
-com.silatech.calc.app-lifecycle-viewmodel-2.6.1-3 C:\Users\Admin\.gradle\caches\transforms-3\2c5257ca0b4750fbc6993d9832ce9e8a\transformed\lifecycle-viewmodel-2.6.1\res
-com.silatech.calc.app-material-1.11.0-4 C:\Users\Admin\.gradle\caches\transforms-3\3a347358b13a1901f4709358b2ed9945\transformed\material-1.11.0\res
-com.silatech.calc.app-transition-1.2.0-5 C:\Users\Admin\.gradle\caches\transforms-3\3d5a9a4578d2969d4bd4315ff0055d9a\transformed\transition-1.2.0\res
-com.silatech.calc.app-jetified-viewpager2-1.0.0-6 C:\Users\Admin\.gradle\caches\transforms-3\4b3ad8ec29879db50f390fac60e4166e\transformed\jetified-viewpager2-1.0.0\res
-com.silatech.calc.app-lifecycle-runtime-2.6.1-7 C:\Users\Admin\.gradle\caches\transforms-3\4c99685c9a3b53a84587d4da3afaf2a1\transformed\lifecycle-runtime-2.6.1\res
-com.silatech.calc.app-jetified-profileinstaller-1.3.0-8 C:\Users\Admin\.gradle\caches\transforms-3\4fe9f85f1db47f470d7a1d0e318b4ef2\transformed\jetified-profileinstaller-1.3.0\res
-com.silatech.calc.app-jetified-annotation-experimental-1.3.0-9 C:\Users\Admin\.gradle\caches\transforms-3\55ad8ab1556954c38d621789326c4ac1\transformed\jetified-annotation-experimental-1.3.0\res
-com.silatech.calc.app-coordinatorlayout-1.1.0-10 C:\Users\Admin\.gradle\caches\transforms-3\585a83745d6f9e1fac22fc0bb53982d6\transformed\coordinatorlayout-1.1.0\res
-com.silatech.calc.app-cardview-1.0.0-11 C:\Users\Admin\.gradle\caches\transforms-3\7192bc092133145dc42fdafeebe5edee\transformed\cardview-1.0.0\res
-com.silatech.calc.app-lifecycle-livedata-core-2.6.1-12 C:\Users\Admin\.gradle\caches\transforms-3\7394e92b1c8f049e2d75df259411992f\transformed\lifecycle-livedata-core-2.6.1\res
-com.silatech.calc.app-jetified-core-ktx-1.12.0-13 C:\Users\Admin\.gradle\caches\transforms-3\780c71dd374ec3576a1888cfa199f044\transformed\jetified-core-ktx-1.12.0\res
-com.silatech.calc.app-swiperefreshlayout-1.1.0-14 C:\Users\Admin\.gradle\caches\transforms-3\82504041c7c2d8eefa1742e9fce3b836\transformed\swiperefreshlayout-1.1.0\res
-com.silatech.calc.app-lifecycle-livedata-2.6.1-15 C:\Users\Admin\.gradle\caches\transforms-3\884ff50124331334b950ccd18aba8e68\transformed\lifecycle-livedata-2.6.1\res
-com.silatech.calc.app-constraintlayout-2.1.4-16 C:\Users\Admin\.gradle\caches\transforms-3\899eb6999f1668ce0807a12ae7b79a42\transformed\constraintlayout-2.1.4\res
-com.silatech.calc.app-core-runtime-2.2.0-17 C:\Users\Admin\.gradle\caches\transforms-3\b142b6c20290fb766ef825d652df3fe1\transformed\core-runtime-2.2.0\res
-com.silatech.calc.app-jetified-savedstate-1.2.1-18 C:\Users\Admin\.gradle\caches\transforms-3\be6eef0429a268cff5a976e65c0a3ebc\transformed\jetified-savedstate-1.2.1\res
-com.silatech.calc.app-jetified-lifecycle-viewmodel-savedstate-2.6.1-19 C:\Users\Admin\.gradle\caches\transforms-3\c0dfd2bfd601b3407e2055c12828e266\transformed\jetified-lifecycle-viewmodel-savedstate-2.6.1\res
-com.silatech.calc.app-jetified-activity-1.8.0-20 C:\Users\Admin\.gradle\caches\transforms-3\c150d6625fb3963b1b053f0898b29d15\transformed\jetified-activity-1.8.0\res
-com.silatech.calc.app-jetified-emoji2-1.2.0-21 C:\Users\Admin\.gradle\caches\transforms-3\c4dab8d1a445d82bbdf5c45e5c471e0a\transformed\jetified-emoji2-1.2.0\res
-com.silatech.calc.app-jetified-startup-runtime-1.1.1-22 C:\Users\Admin\.gradle\caches\transforms-3\ce3e9ac7dc18033e0f3e95d90653e06f\transformed\jetified-startup-runtime-1.1.1\res
-com.silatech.calc.app-core-1.12.0-23 C:\Users\Admin\.gradle\caches\transforms-3\db3f6b8020888a7f113f2982cc217484\transformed\core-1.12.0\res
-com.silatech.calc.app-jetified-lifecycle-process-2.6.1-24 C:\Users\Admin\.gradle\caches\transforms-3\ea8e01bdab487f57e89cfd2a57773ff1\transformed\jetified-lifecycle-process-2.6.1\res
-com.silatech.calc.app-jetified-appcompat-resources-1.6.1-25 C:\Users\Admin\.gradle\caches\transforms-3\eff7e710aa29c6a43a1e81c06f61df29\transformed\jetified-appcompat-resources-1.6.1\res
-com.silatech.calc.app-fragment-1.3.6-26 C:\Users\Admin\.gradle\caches\transforms-3\f857ed6359b5be8e560853431861bafa\transformed\fragment-1.3.6\res
-com.silatech.calc.app-drawerlayout-1.1.1-27 C:\Users\Admin\.gradle\caches\transforms-3\fc1fa3c9bb04819bb481e180355a8187\transformed\drawerlayout-1.1.1\res
-com.silatech.calc.app-resValues-28 C:\Users\Admin\Downloads\si-latech 1\android\app\build\generated\res\resValues\debug
-com.silatech.calc.app-packageDebugResources-29 C:\Users\Admin\Downloads\si-latech 1\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.silatech.calc.app-packageDebugResources-30 C:\Users\Admin\Downloads\si-latech 1\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.silatech.calc.app-merged_res-31 C:\Users\Admin\Downloads\si-latech 1\android\app\build\intermediates\merged_res\debug
-com.silatech.calc.app-debug-32 C:\Users\Admin\Downloads\si-latech 1\android\app\src\debug\res
-com.silatech.calc.app-main-33 C:\Users\Admin\Downloads\si-latech 1\android\app\src\main\res
+com.silatech.calc.app-sqlite-framework-2.4.0-0 C:\Users\Admin\.gradle\caches\transforms-3\02a4a933e01c5298a598dc3226933aa9\transformed\sqlite-framework-2.4.0\res
+com.silatech.calc.app-jetified-ui-test-manifest-1.6.1-1 C:\Users\Admin\.gradle\caches\transforms-3\10a30fb869ad957683114052d86928b1\transformed\jetified-ui-test-manifest-1.6.1\res
+com.silatech.calc.app-navigation-common-ktx-2.7.7-2 C:\Users\Admin\.gradle\caches\transforms-3\1268196c950c42ae8f10129f546b101b\transformed\navigation-common-ktx-2.7.7\res
+com.silatech.calc.app-appcompat-1.6.1-3 C:\Users\Admin\.gradle\caches\transforms-3\1390ed0e93696117e0bd1340aa2458d6\transformed\appcompat-1.6.1\res
+com.silatech.calc.app-room-runtime-2.6.1-4 C:\Users\Admin\.gradle\caches\transforms-3\14d13a8a143358ed406566e479e85cc4\transformed\room-runtime-2.6.1\res
+com.silatech.calc.app-jetified-lifecycle-runtime-ktx-2.7.0-5 C:\Users\Admin\.gradle\caches\transforms-3\17e13e44f13ebd7d981e3b69e666a7a0\transformed\jetified-lifecycle-runtime-ktx-2.7.0\res
+com.silatech.calc.app-jetified-room-ktx-2.6.1-6 C:\Users\Admin\.gradle\caches\transforms-3\21638bacdb64a9ee306dc6c76c814170\transformed\jetified-room-ktx-2.6.1\res
+com.silatech.calc.app-jetified-customview-poolingcontainer-1.0.0-7 C:\Users\Admin\.gradle\caches\transforms-3\2bc8701df29703ca06bace73a96ffd07\transformed\jetified-customview-poolingcontainer-1.0.0\res
+com.silatech.calc.app-jetified-runtime-saveable-release-8 C:\Users\Admin\.gradle\caches\transforms-3\3023de82a612f137a69ee4bac63b1ea9\transformed\jetified-runtime-saveable-release\res
+com.silatech.calc.app-jetified-animation-core-release-9 C:\Users\Admin\.gradle\caches\transforms-3\33d8aa023bc8bbb2d868c7c0384483dd\transformed\jetified-animation-core-release\res
+com.silatech.calc.app-navigation-common-2.7.7-10 C:\Users\Admin\.gradle\caches\transforms-3\399fe45d727cb0c0a283d35b961703fe\transformed\navigation-common-2.7.7\res
+com.silatech.calc.app-jetified-lifecycle-process-2.7.0-11 C:\Users\Admin\.gradle\caches\transforms-3\46eea9eff17ad561ab19765e17354f70\transformed\jetified-lifecycle-process-2.7.0\res
+com.silatech.calc.app-jetified-profileinstaller-1.3.0-12 C:\Users\Admin\.gradle\caches\transforms-3\4fe9f85f1db47f470d7a1d0e318b4ef2\transformed\jetified-profileinstaller-1.3.0\res
+com.silatech.calc.app-jetified-lifecycle-runtime-compose-2.7.0-13 C:\Users\Admin\.gradle\caches\transforms-3\5731101413a5180038787130a01712e4\transformed\jetified-lifecycle-runtime-compose-2.7.0\res
+com.silatech.calc.app-jetified-ui-graphics-release-14 C:\Users\Admin\.gradle\caches\transforms-3\5ec67b4831311648a12a2715a690b7f4\transformed\jetified-ui-graphics-release\res
+com.silatech.calc.app-jetified-material-icons-core-release-15 C:\Users\Admin\.gradle\caches\transforms-3\662676a955014325b955f9579a98dfca\transformed\jetified-material-icons-core-release\res
+com.silatech.calc.app-jetified-ui-util-release-16 C:\Users\Admin\.gradle\caches\transforms-3\67f1ad40b95f74e1fc38da1c62ab7d6b\transformed\jetified-ui-util-release\res
+com.silatech.calc.app-jetified-navigation-compose-2.7.7-17 C:\Users\Admin\.gradle\caches\transforms-3\6b73edc59a1e2b5e1d75fff48c3463e0\transformed\jetified-navigation-compose-2.7.7\res
+com.silatech.calc.app-jetified-ui-release-18 C:\Users\Admin\.gradle\caches\transforms-3\7702ad7991073d3d1bcbeee5560a7e78\transformed\jetified-ui-release\res
+com.silatech.calc.app-jetified-core-ktx-1.12.0-19 C:\Users\Admin\.gradle\caches\transforms-3\780c71dd374ec3576a1888cfa199f044\transformed\jetified-core-ktx-1.12.0\res
+com.silatech.calc.app-jetified-ui-text-release-20 C:\Users\Admin\.gradle\caches\transforms-3\78329a9a7227faede511a4494437b883\transformed\jetified-ui-text-release\res
+com.silatech.calc.app-lifecycle-runtime-2.7.0-21 C:\Users\Admin\.gradle\caches\transforms-3\7940096e3e98252c892440d3f2c3373f\transformed\lifecycle-runtime-2.7.0\res
+com.silatech.calc.app-lifecycle-livedata-2.7.0-22 C:\Users\Admin\.gradle\caches\transforms-3\79c948d5a563d256f9c321ca2d8c85c7\transformed\lifecycle-livedata-2.7.0\res
+com.silatech.calc.app-jetified-lifecycle-viewmodel-ktx-2.7.0-23 C:\Users\Admin\.gradle\caches\transforms-3\7be8d646e0af838db9dbe862de994734\transformed\jetified-lifecycle-viewmodel-ktx-2.7.0\res
+com.silatech.calc.app-jetified-ui-unit-release-24 C:\Users\Admin\.gradle\caches\transforms-3\7fe0e188c40e01b44716577078f58757\transformed\jetified-ui-unit-release\res
+com.silatech.calc.app-jetified-runtime-release-25 C:\Users\Admin\.gradle\caches\transforms-3\8864d09fbc45326cfaf774a89cf996c8\transformed\jetified-runtime-release\res
+com.silatech.calc.app-navigation-runtime-2.7.7-26 C:\Users\Admin\.gradle\caches\transforms-3\8d2863a2908ff3335a13f85e55d7d958\transformed\navigation-runtime-2.7.7\res
+com.silatech.calc.app-lifecycle-viewmodel-2.7.0-27 C:\Users\Admin\.gradle\caches\transforms-3\914177849f88652c8b10113371a0cf60\transformed\lifecycle-viewmodel-2.7.0\res
+com.silatech.calc.app-jetified-material3-release-28 C:\Users\Admin\.gradle\caches\transforms-3\92065f95d03e788915f8bca7a75db968\transformed\jetified-material3-release\res
+com.silatech.calc.app-jetified-animation-release-29 C:\Users\Admin\.gradle\caches\transforms-3\97707b07944a41fea43611f5b7c737cd\transformed\jetified-animation-release\res
+com.silatech.calc.app-jetified-ui-geometry-release-30 C:\Users\Admin\.gradle\caches\transforms-3\9801a442868da41ef564728aed984dc9\transformed\jetified-ui-geometry-release\res
+com.silatech.calc.app-jetified-emoji2-views-helper-1.3.0-31 C:\Users\Admin\.gradle\caches\transforms-3\a221fbc42775f5e68d0e75744c8e794b\transformed\jetified-emoji2-views-helper-1.3.0\res
+com.silatech.calc.app-jetified-annotation-experimental-1.4.0-32 C:\Users\Admin\.gradle\caches\transforms-3\a63b0b5b4bd47a0c7e1500042278776f\transformed\jetified-annotation-experimental-1.4.0\res
+com.silatech.calc.app-jetified-material-ripple-release-33 C:\Users\Admin\.gradle\caches\transforms-3\a93040146ce4b124fc76738cc3387248\transformed\jetified-material-ripple-release\res
+com.silatech.calc.app-jetified-material-release-34 C:\Users\Admin\.gradle\caches\transforms-3\a9a47f047a34cd841b790f9d4605b3cb\transformed\jetified-material-release\res
+com.silatech.calc.app-lifecycle-livedata-core-2.7.0-35 C:\Users\Admin\.gradle\caches\transforms-3\ab49a795ee8f8e9fbe38869e9ae78d2f\transformed\lifecycle-livedata-core-2.7.0\res
+com.silatech.calc.app-jetified-foundation-layout-release-36 C:\Users\Admin\.gradle\caches\transforms-3\b025f0e77f9390544ae6d3cee8c26e33\transformed\jetified-foundation-layout-release\res
+com.silatech.calc.app-core-runtime-2.2.0-37 C:\Users\Admin\.gradle\caches\transforms-3\b142b6c20290fb766ef825d652df3fe1\transformed\core-runtime-2.2.0\res
+com.silatech.calc.app-jetified-ui-tooling-release-38 C:\Users\Admin\.gradle\caches\transforms-3\b576f848a277bd681995354e10645c0e\transformed\jetified-ui-tooling-release\res
+com.silatech.calc.app-jetified-material-icons-extended-release-39 C:\Users\Admin\.gradle\caches\transforms-3\b9f9946307b0f30e470aa77bdb42ce28\transformed\jetified-material-icons-extended-release\res
+com.silatech.calc.app-jetified-ui-tooling-preview-release-40 C:\Users\Admin\.gradle\caches\transforms-3\ba9f05d8f21d1a6510d7897ba0fa93d8\transformed\jetified-ui-tooling-preview-release\res
+com.silatech.calc.app-jetified-lifecycle-viewmodel-savedstate-2.7.0-41 C:\Users\Admin\.gradle\caches\transforms-3\bb5356ae3f907e79c0eba1a5615e57ea\transformed\jetified-lifecycle-viewmodel-savedstate-2.7.0\res
+com.silatech.calc.app-jetified-lifecycle-viewmodel-compose-2.7.0-42 C:\Users\Admin\.gradle\caches\transforms-3\bb76c607caab3e5b98f4d65b3480a631\transformed\jetified-lifecycle-viewmodel-compose-2.7.0\res
+com.silatech.calc.app-jetified-savedstate-1.2.1-43 C:\Users\Admin\.gradle\caches\transforms-3\be6eef0429a268cff5a976e65c0a3ebc\transformed\jetified-savedstate-1.2.1\res
+com.silatech.calc.app-jetified-activity-1.8.2-44 C:\Users\Admin\.gradle\caches\transforms-3\c13e510ed025e88d1f56a21400098a58\transformed\jetified-activity-1.8.2\res
+com.silatech.calc.app-jetified-activity-ktx-1.8.2-45 C:\Users\Admin\.gradle\caches\transforms-3\c16233c863e7e114d540654012b2b1c4\transformed\jetified-activity-ktx-1.8.2\res
+com.silatech.calc.app-sqlite-2.4.0-46 C:\Users\Admin\.gradle\caches\transforms-3\c307c684d38fba66851d62f2b7db6750\transformed\sqlite-2.4.0\res
+com.silatech.calc.app-jetified-foundation-release-47 C:\Users\Admin\.gradle\caches\transforms-3\c3a516c54dde9f79b1dd8879b1576b3d\transformed\jetified-foundation-release\res
+com.silatech.calc.app-jetified-ui-tooling-data-release-48 C:\Users\Admin\.gradle\caches\transforms-3\c98dd3dd2a75bf945bec294520a8c17a\transformed\jetified-ui-tooling-data-release\res
+com.silatech.calc.app-jetified-startup-runtime-1.1.1-49 C:\Users\Admin\.gradle\caches\transforms-3\ce3e9ac7dc18033e0f3e95d90653e06f\transformed\jetified-startup-runtime-1.1.1\res
+com.silatech.calc.app-jetified-emoji2-1.3.0-50 C:\Users\Admin\.gradle\caches\transforms-3\cecc8e06ac39063e71a6aab5e975a357\transformed\jetified-emoji2-1.3.0\res
+com.silatech.calc.app-jetified-datastore-preferences-1.0.0-51 C:\Users\Admin\.gradle\caches\transforms-3\cefc3d9fdb554d593aa08c4cc2d9a07d\transformed\jetified-datastore-preferences-1.0.0\res
+com.silatech.calc.app-core-1.12.0-52 C:\Users\Admin\.gradle\caches\transforms-3\db3f6b8020888a7f113f2982cc217484\transformed\core-1.12.0\res
+com.silatech.calc.app-jetified-lifecycle-livedata-core-ktx-2.7.0-53 C:\Users\Admin\.gradle\caches\transforms-3\e69b66723f7187272e522748bce51c35\transformed\jetified-lifecycle-livedata-core-ktx-2.7.0\res
+com.silatech.calc.app-jetified-activity-compose-1.8.2-54 C:\Users\Admin\.gradle\caches\transforms-3\e7f6e2b982042ea469e18625f977bd28\transformed\jetified-activity-compose-1.8.2\res
+com.silatech.calc.app-jetified-savedstate-ktx-1.2.1-55 C:\Users\Admin\.gradle\caches\transforms-3\edfefebbde715805550fcdc0e46c18a4\transformed\jetified-savedstate-ktx-1.2.1\res
+com.silatech.calc.app-jetified-appcompat-resources-1.6.1-56 C:\Users\Admin\.gradle\caches\transforms-3\eff7e710aa29c6a43a1e81c06f61df29\transformed\jetified-appcompat-resources-1.6.1\res
+com.silatech.calc.app-navigation-runtime-ktx-2.7.7-57 C:\Users\Admin\.gradle\caches\transforms-3\f267978409a48942b618881286487b97\transformed\navigation-runtime-ktx-2.7.7\res
+com.silatech.calc.app-jetified-datastore-1.0.0-58 C:\Users\Admin\.gradle\caches\transforms-3\f33fbc0f0d25def32bdd7eb6ff9d4372\transformed\jetified-datastore-1.0.0\res
+com.silatech.calc.app-fragment-1.3.6-59 C:\Users\Admin\.gradle\caches\transforms-3\f857ed6359b5be8e560853431861bafa\transformed\fragment-1.3.6\res
+com.silatech.calc.app-resValues-60 C:\Users\Admin\Downloads\si-latech 1\android\app\build\generated\res\resValues\debug
+com.silatech.calc.app-packageDebugResources-61 C:\Users\Admin\Downloads\si-latech 1\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.silatech.calc.app-packageDebugResources-62 C:\Users\Admin\Downloads\si-latech 1\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.silatech.calc.app-merged_res-63 C:\Users\Admin\Downloads\si-latech 1\android\app\build\intermediates\merged_res\debug
+com.silatech.calc.app-debug-64 C:\Users\Admin\Downloads\si-latech 1\android\app\src\debug\res
+com.silatech.calc.app-main-65 C:\Users\Admin\Downloads\si-latech 1\android\app\src\main\res
