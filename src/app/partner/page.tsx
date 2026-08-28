@@ -38,7 +38,7 @@ import {
     PartnerCompany,
     PartnerProject
 } from '@/lib/partner-storage';
-import { calculateProjectTotals, CalculationDefaults, DEFAULTS } from '@/lib/calculator';
+import { calculateProjectTotals, calcRoomBlocksAndBeams, CalculationDefaults, DEFAULTS } from '@/lib/calculator';
 import { generateQuotePdf } from '@/lib/pdf-utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -242,9 +242,14 @@ export default function PartnerDashboard() {
                 },
                 totals: {
                     ...totals,
+                    beamType,
                     beamPrice: BEAM_PRICE,
                     blockPrice: BLOCK_PRICE,
                 },
+                perRoomCalculations: formattedRooms.map(r => {
+                    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, calculationSettings, BEAM_PRICE, r.name);
+                    return { room: r, roomCalcs };
+                }),
                 partnerCompanyInfo: {
                     name: company?.name || 'Partner Contractor',
                     phone: company?.phone || '',

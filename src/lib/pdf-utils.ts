@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import { calculateProjectTotals, calcRoomBlocksAndBeams, calcBilledBlocks } from './calculator';
 
 export const addLogoToPdf = (doc: jsPDF, color: string) => {
@@ -174,21 +175,37 @@ export const generateQuotePdf = (data: {
         ]
     ];
 
-    autoTable(doc, {
-        head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
-        body: tableRows,
-        startY: metaY + 15,
-        theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 9, fontStyle: 'bold' },
-        columnStyles: {
-            1: { halign: 'right' },
-            2: { halign: 'right' },
-            3: { halign: 'right' },
-        }
-    });
+    if (typeof (doc as any).autoTable === 'function') {
+        (doc as any).autoTable({
+            head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
+            body: tableRows,
+            startY: metaY + 15,
+            theme: 'grid',
+            headStyles: { fillColor: [9, 83, 136], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9, fontStyle: 'bold' },
+            columnStyles: {
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+            }
+        });
+    } else if (typeof autoTable === 'function') {
+        autoTable(doc, {
+            head: [['DESCRIPTION', 'QTY / MTRS', 'RATE (KSH)', 'AMOUNT (KSH)']],
+            body: tableRows,
+            startY: metaY + 15,
+            theme: 'grid',
+            headStyles: { fillColor: [9, 83, 136], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9, fontStyle: 'bold' },
+            columnStyles: {
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+            }
+        });
+    }
 
-    let finalY = (doc as any).lastAutoTable.finalY;
+    let finalY = (doc as any).lastAutoTable?.finalY ?? (metaY + 45);
     const totalsX = 145;
     const totalsValueX = 200;
     
