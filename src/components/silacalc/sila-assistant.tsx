@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Send, Volume2, VolumeX, Sparkles, X, MessageSquare, Trash2, Headphones, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { usePathname } from 'next/navigation';
 import { useCalculator } from '@/context/calculator-context';
 import { processSilaMessage } from '@/ai/flows/sila-voice-flow';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +18,7 @@ interface Message {
 }
 
 export function SilaAssistant() {
+  const pathname = usePathname();
   const { rooms, setRooms, clearCalculator, settings, totals } = useCalculator();
   const { toast } = useToast();
   
@@ -330,7 +332,11 @@ export function SilaAssistant() {
     ]);
   };
 
-  // Don't render on the server — prevents hydration mismatch from Date/localStorage
+  // Don't render on the server or on dedicated partner/admin/staff dashboard routes
+  if (!mounted || pathname?.startsWith('/admin') || pathname?.startsWith('/partner') || pathname?.startsWith('/staff')) {
+    return null;
+  }
+
   const hasMobileBar = (totals?.totalArea || 0) > 0;
 
   return (

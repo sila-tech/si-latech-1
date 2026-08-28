@@ -29,7 +29,7 @@ export function WhatsAppButton() {
     };
   }, []);
 
-  if (!isVisible || pathname?.startsWith('/admin')) return null;
+  if (!isVisible || pathname?.startsWith('/admin') || pathname?.startsWith('/partner') || pathname?.startsWith('/staff')) return null;
 
   return (
     <div className={cn(

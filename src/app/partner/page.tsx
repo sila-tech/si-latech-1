@@ -660,9 +660,10 @@ export default function PartnerDashboard() {
 
                             {/* Download Button */}
                             <Button
+                                type="button"
                                 onClick={handleDownloadQuote}
                                 disabled={isDownloading}
-                                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+                                className="w-full h-12 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-black text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed select-none relative z-20"
                             >
                                 <Download size={18} className={isDownloading ? 'animate-bounce' : ''} />
                                 {isDownloading ? 'Generating Quote PDF...' : 'Download Client Quote PDF'}

@@ -296,20 +296,29 @@ export const generateQuotePdf = (data: {
         : `SI-LATECH-Quote-${invoiceNumber}.pdf`;
 
     try {
-        doc.save(pdfFileName);
-    } catch (saveErr) {
-        console.warn('doc.save failed, triggering fallback download:', saveErr);
         const blob = doc.output('blob');
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = pdfFileName;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
         document.body.appendChild(a);
         a.click();
         setTimeout(() => {
-            document.body.removeChild(a);
+            if (document.body.contains(a)) {
+                document.body.removeChild(a);
+            }
             URL.revokeObjectURL(url);
-        }, 200);
+        }, 1500);
+    } catch (blobErr) {
+        console.warn('Blob download failed, trying doc.save:', blobErr);
+        try {
+            doc.save(pdfFileName);
+        } catch (saveErr) {
+            console.error('All PDF download methods failed:', saveErr);
+            throw saveErr;
+        }
     }
     return true;
 };
