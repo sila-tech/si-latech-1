@@ -79,6 +79,7 @@ export async function generateQuotePdfBuffer(clientInfo: any, rooms: any[]): Pro
   doc.setTextColor(100);
   doc.text('Thank you for choosing SI-LATECH Solutions.', 14, currentY);
   doc.text('Note: This quote is valid for 30 days and includes material costs only.', 14, currentY + 5);
+  doc.text('Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.', 14, currentY + 10, { maxWidth: 182 });
 
   const arrayBuffer = doc.output('arraybuffer');
   return Buffer.from(arrayBuffer);

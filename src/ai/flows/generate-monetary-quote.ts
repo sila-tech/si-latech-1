@@ -34,7 +34,7 @@ const generateMonetaryQuoteFlow = ai.defineFlow(
   },
   async (input) => {
     const { text } = await ai.generate({
-      prompt: `You are a construction cost estimator. Based on the material quantities and the region provided, you will generate a monetary quote.
+      prompt: `You are a professional construction cost estimator for SI-LATECH. Based on the material quantities and the region provided, you will generate a monetary quote.
 
 Material Quantities:
 - Blocks: ${input.blocks}
@@ -44,6 +44,8 @@ Material Quantities:
 Region: ${input.region}
 
 Consider regional pricing variances when generating the quote. Include a breakdown of the costs for each material.
+Include payment terms note: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.
+Do NOT mention that this quote is AI generated.
 
 Return the quote in a clear and concise format.`,
       output: { format: 'text' },

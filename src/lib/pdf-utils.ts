@@ -264,12 +264,15 @@ export const generateQuotePdf = (data: {
     doc.text('2. Payment: All materials are to be paid to PROMAX KENYA LTD.', 14, notesY);
     notesY += 5;
 
+    doc.text('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.', 14, notesY, { maxWidth: 182 });
+    notesY += 8;
+
     if (customPaymentNotes) {
-        doc.text(`3. Payment Note: ${customPaymentNotes}`, 14, notesY);
-        notesY += 5;
+        doc.text(`4. Payment Note: ${customPaymentNotes}`, 14, notesY, { maxWidth: 182 });
+        notesY += 6;
     }
 
-    doc.text(`${customPaymentNotes ? '4' : '3'}. We provide a technician paid by the client.`, 14, notesY);
+    doc.text(`${customPaymentNotes ? '5' : '4'}. We provide a technician paid by the client.`, 14, notesY);
     notesY += 5;
 
     if (isPartner) {

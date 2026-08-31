@@ -124,10 +124,13 @@ export function SampleQuoteModal({ open, onOpenChange }: SampleQuoteModalProps) 
             </div>
 
             {/* Note */}
-            <div className="text-[11px] text-slate-500 bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-900">
+            <div className="text-[11px] text-slate-500 bg-amber-50 p-3 rounded-lg border border-amber-200 text-amber-900 space-y-1">
               <p className="font-semibold flex items-center gap-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-amber-600" />
                 Includes beam placement guidance & custom material schedule.
+              </p>
+              <p className="text-[10px] text-amber-800">
+                • Payment terms: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.
               </p>
             </div>
 
