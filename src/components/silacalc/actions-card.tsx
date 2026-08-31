@@ -748,17 +748,22 @@ export function ActionsCard() {
       doc.text('NOTES', 14, notesY);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50);
-      notesY += 5;
+      notesY += 6;
+
+      const printNote = (text: string) => {
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, 14, notesY);
+        notesY += (lines.length * 4.5) + 2;
+      };
+
       if (costEstimationEnabled) {
-        doc.text('1. Material Estimates: Cement, sand, ballast, BRC mesh, and support props costs have been included in the estimated grand total.', 14, notesY);
+        printNote('1. Material Estimates: Cement, sand, ballast, BRC mesh, and support props costs have been included in the estimated grand total.');
       } else {
-        doc.text(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+        printNote(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`);
       }
-      doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
-      notesY += 5;
-      doc.text('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.', 14, notesY, { maxWidth: 182 });
-      notesY += 8;
-      doc.text('4. We provide a technician paid by the client.', 14, notesY);
+      printNote('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.');
+      printNote('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.');
+      printNote('4. We provide a technician paid by the client.');
     };
 
     const selectedFloor = clientInfo.selectedFloor || 'all';
@@ -1057,17 +1062,22 @@ export function ActionsCard() {
       doc.text('NOTES', 14, notesY);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50);
-      notesY += 5;
+      notesY += 6;
+
+      const printNote = (text: string) => {
+        const lines = doc.splitTextToSize(text, 180);
+        doc.text(lines, 14, notesY);
+        notesY += (lines.length * 4.5) + 2;
+      };
+
       if (costEstimationEnabled) {
-        doc.text('1. Material Estimates: Cement, sand, ballast, BRC mesh, and support props costs have been included in the estimated grand total.', 14, notesY);
+        printNote('1. Material Estimates: Cement, sand, ballast, BRC mesh, and support props costs have been included in the estimated grand total.');
       } else {
-        doc.text(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`, 14, notesY);
+        printNote(`1. BRC Mesh: Based on your calculations, you may require ${pageTotals.brc.rollsNeeded} roll(s) of BRC mesh. This is not included in the total.`);
       }
-      doc.text('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.', 14, notesY);
-      notesY += 5;
-      doc.text('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.', 14, notesY, { maxWidth: 182 });
-      notesY += 8;
-      doc.text('4. We provide a technician paid by the client.', 14, notesY);
+      printNote('2. Payment: All payments for beam and blocks are to be made to Promax Kenya Ltd. Account details will be provided.');
+      printNote('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.');
+      printNote('4. We provide a technician paid by the client.');
     };
 
     const renderProfitVariationsPage = (

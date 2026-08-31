@@ -256,23 +256,23 @@ export const generateQuotePdf = (data: {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(50);
-    notesY += 5;
+    notesY += 6;
 
-    doc.text(`1. BRC Mesh: Based on your calculations, you may require ${brcRollsNeeded} roll(s) of BRC mesh (48m x 2.4m). This is not included in the quote total.`, 14, notesY);
-    notesY += 5;
+    const printNote = (text: string) => {
+      const lines = doc.splitTextToSize(text, 180);
+      doc.text(lines, 14, notesY);
+      notesY += (lines.length * 4.5) + 2;
+    };
 
-    doc.text('2. Payment: All materials are to be paid to PROMAX KENYA LTD.', 14, notesY);
-    notesY += 5;
-
-    doc.text('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.', 14, notesY, { maxWidth: 182 });
-    notesY += 8;
+    printNote(`1. BRC Mesh: Based on your calculations, you may require ${brcRollsNeeded} roll(s) of BRC mesh (48m x 2.4m). This is not included in the quote total.`);
+    printNote('2. Payment: All materials are to be paid to PROMAX KENYA LTD.');
+    printNote('3. Terms of Payment: A 50% deposit must be made by the client before materials are processed, and the remainder before materials are disbursed.');
 
     if (customPaymentNotes) {
-        doc.text(`4. Payment Note: ${customPaymentNotes}`, 14, notesY, { maxWidth: 182 });
-        notesY += 6;
+        printNote(`4. Payment Note: ${customPaymentNotes}`);
     }
 
-    doc.text(`${customPaymentNotes ? '5' : '4'}. We provide a technician paid by the client.`, 14, notesY);
+    printNote(`${customPaymentNotes ? '5' : '4'}. We provide a technician paid by the client.`);
     notesY += 5;
 
     if (isPartner) {
