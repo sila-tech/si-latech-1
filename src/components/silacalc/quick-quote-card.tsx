@@ -92,6 +92,70 @@ export function QuickQuoteCard() {
     );
   }, [tbeamTotals, pricingRates]);
 
+  // Traditional 150mm Solid Concrete Slab Benchmark Cost
+  const tradCost = useMemo(() => {
+    if (typeof area !== 'number' || area <= 0) return 0;
+    const tradThickness = 0.15; // 150mm solid concrete
+    const tradConcreteVol = area * tradThickness;
+    const tradDryVol = tradConcreteVol * 1.54;
+
+    // Class 20 mix (1:2:4 ratio, 10% wastage)
+    const tradCementBags = Math.ceil((tradDryVol * (1 / 7) * 1440 * 1.1) / 50);
+    const tradSandT = (tradDryVol * (2 / 7) * 1600 * 1.1) / 1000;
+    const tradBallastT = (tradDryVol * (4 / 7) * 1500 * 1.1) / 1000;
+    const tradSteelKg = area * 22.0; // 22 kg rebar per m²
+
+    const cementRate = pricingRates.cementRate || 800;
+    const sandRate = pricingRates.sandRate || 3000;
+    const ballastRate = pricingRates.ballastRate || 3200;
+    const tradSteelRate = 130; // KES/kg
+    const tradShutteringRate = 800; // KES/m² (plywood & framing)
+    const tradLaborRate = 800; // KES/m² (rebar fixing + formwork + casting)
+
+    const concreteCost =
+      tradCementBags * cementRate + tradSandT * sandRate + tradBallastT * ballastRate;
+    const steelCost = tradSteelKg * tradSteelRate;
+    const timberCost = area * tradShutteringRate;
+    const laborCost = area * tradLaborRate;
+
+    return concreteCost + steelCost + timberCost + laborCost;
+  }, [area, pricingRates]);
+
+  // SI-LATECH Installed Cost (Materials + simple labor ~300/m² + prop rental ~100/prop)
+  const silaLaborRate = 300;
+  const silaPropRental = 100;
+
+  const flatInstalledCost = useMemo(() => {
+    if (!flatTotals || typeof area !== 'number' || area <= 0) return 0;
+    return flatCost + area * silaLaborRate + (flatTotals.timber?.totalProps || 0) * silaPropRental;
+  }, [flatCost, flatTotals, area]);
+
+  const tbeamInstalledCost = useMemo(() => {
+    if (!tbeamTotals || typeof area !== 'number' || area <= 0) return 0;
+    return tbeamCost + area * silaLaborRate + (tbeamTotals.timber?.totalProps || 0) * silaPropRental;
+  }, [tbeamCost, tbeamTotals, area]);
+
+  // Savings vs Traditional Slab
+  const flatTradSavings = useMemo(() => {
+    if (!tradCost || !flatInstalledCost) return 0;
+    return Math.max(0, tradCost - flatInstalledCost);
+  }, [tradCost, flatInstalledCost]);
+
+  const flatTradSavingsPct = useMemo(() => {
+    if (!tradCost || tradCost <= 0) return 0;
+    return Math.round((flatTradSavings / tradCost) * 100);
+  }, [flatTradSavings, tradCost]);
+
+  const tbeamTradSavings = useMemo(() => {
+    if (!tradCost || !tbeamInstalledCost) return 0;
+    return Math.max(0, tradCost - tbeamInstalledCost);
+  }, [tradCost, tbeamInstalledCost]);
+
+  const tbeamTradSavingsPct = useMemo(() => {
+    if (!tradCost || tradCost <= 0) return 0;
+    return Math.round((tbeamTradSavings / tradCost) * 100);
+  }, [tbeamTradSavings, tradCost]);
+
   const handleApplyEstimate = (beamTypeToApply: 'flat' | 'tbeam' = selectedBeamType) => {
     if (typeof area !== 'number' || area <= 0) {
       toast({
@@ -211,124 +275,132 @@ export function QuickQuoteCard() {
           </div>
         )}
 
-        {/* Side-by-Side System Comparison & Savings */}
+        {/* Side-by-Side System Comparison & Savings vs Traditional Slab */}
         {generatedRooms.length > 0 && flatTotals && tbeamTotals && (
           <div className="space-y-3">
-            <Label className="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Layers size={14} /> Compare Systems for this Area
-            </Label>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <Layers size={14} /> Savings vs Traditional 150mm Solid Concrete Slab
+              </Label>
+              <span className="text-[11px] text-slate-500">
+                Traditional Benchmark: ~KES {Math.round(tradCost).toLocaleString()}
+              </span>
+            </div>
 
-            {(() => {
-              const savingsAmount = Math.max(0, tbeamCost - flatCost);
-              const savingsPct = tbeamCost > 0 ? Math.round((savingsAmount / tbeamCost) * 100) : 0;
-
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Flat Beam Option */}
-                  <div
-                    onClick={() => setSelectedBeamType('flat')}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
-                      selectedBeamType === 'flat'
-                        ? 'border-emerald-600 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-600'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Flat Beam Option */}
+              <div
+                onClick={() => setSelectedBeamType('flat')}
+                className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                  selectedBeamType === 'flat'
+                    ? 'border-emerald-600 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-600'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 mb-1">
-                            Standard Domestic
-                          </span>
-                          <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
-                            <Building2 size={16} className="text-emerald-700" />
-                            Flat Beam System
-                          </h4>
-                        </div>
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border ${
-                            selectedBeamType === 'flat'
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300'
-                          }`}
-                        >
-                          {selectedBeamType === 'flat' && <Check size={12} strokeWidth={3} />}
-                        </div>
-                      </div>
-
-                      {/* Approximate Savings Highlight */}
-                      <div className="mt-3 p-3 bg-emerald-100/70 border border-emerald-200 rounded-xl">
-                        <div className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
-                          Approximate Savings
-                        </div>
-                        <div className="text-2xl font-black text-emerald-900 mt-0.5">
-                          Save ~KES {Math.round(savingsAmount).toLocaleString()}
-                        </div>
-                        <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
-                          ~{savingsPct}% more economical than T-Beam
-                        </div>
-                      </div>
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 mb-1">
+                        Standard Domestic
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
+                        <Building2 size={16} className="text-emerald-700" />
+                        Flat Beam System
+                      </h4>
                     </div>
-
-                    <div className="mt-3 text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
-                      ✓ Ideal for domestic spans ≤ 4.0m. Lighter to handle on site and budget-friendly.
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                        selectedBeamType === 'flat'
+                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          : 'border-slate-300'
+                      }`}
+                    >
+                      {selectedBeamType === 'flat' && <Check size={12} strokeWidth={3} />}
                     </div>
                   </div>
 
-                  {/* T-Beam Option */}
-                  <div
-                    onClick={() => setSelectedBeamType('tbeam')}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
-                      selectedBeamType === 'tbeam'
-                        ? 'border-[#095388] bg-blue-50/40 shadow-xs ring-1 ring-[#095388]'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-blue-100 text-[#095388] mb-1">
-                            Heavy Duty & Commercial
-                          </span>
-                          <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
-                            <Building2 size={16} className="text-[#095388]" />
-                            T-Beam System
-                          </h4>
-                        </div>
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border ${
-                            selectedBeamType === 'tbeam'
-                              ? 'bg-[#095388] border-[#095388] text-white'
-                              : 'border-slate-300'
-                          }`}
-                        >
-                          {selectedBeamType === 'tbeam' && <Check size={12} strokeWidth={3} />}
-                        </div>
-                      </div>
-
-                      {/* Structural Specs Highlight */}
-                      <div className="mt-3 p-3 bg-blue-100/60 border border-blue-200 rounded-xl">
-                        <div className="text-[10px] font-extrabold text-[#095388] uppercase tracking-wider">
-                          Structural Profile
-                        </div>
-                        <div className="text-xl font-black text-slate-900 mt-0.5">
-                          Heavy Duty Baseline
-                        </div>
-                        <div className="text-[11px] text-blue-800 font-semibold mt-0.5">
-                          Higher section modulus & deflection stiffness
-                        </div>
-                      </div>
+                  {/* Savings vs Traditional Highlight */}
+                  <div className="mt-3 p-3 bg-emerald-100/70 border border-emerald-200 rounded-xl">
+                    <div className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
+                      Savings vs Traditional Slab
                     </div>
-
-                    <div className="mt-3 text-[11px] text-[#095388] bg-blue-50 p-2.5 rounded-lg border border-blue-100">
-                      ✓ High rigidity and heavy load capacity. Recommended for commercial loads or future floors.
+                    <div className="text-2xl font-black text-emerald-900 mt-0.5">
+                      Save ~KES {Math.round(flatTradSavings).toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                      ~{flatTradSavingsPct}% saved vs 150mm cast-in-situ solid slab
                     </div>
                   </div>
                 </div>
-              );
-            })()}
+
+                <div className="mt-3 text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 space-y-1">
+                  <div className="font-bold">✓ Maximum Cost Savings</div>
+                  <div>Zero plywood formwork, 60% less concrete, ideal for domestic spans ≤ 4.0m.</div>
+                </div>
+              </div>
+
+              {/* T-Beam Option */}
+              <div
+                onClick={() => setSelectedBeamType('tbeam')}
+                className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                  selectedBeamType === 'tbeam'
+                    ? 'border-[#095388] bg-blue-50/40 shadow-xs ring-1 ring-[#095388]'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-blue-100 text-[#095388] mb-1">
+                        Heavy Duty & Commercial
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
+                        <Building2 size={16} className="text-[#095388]" />
+                        T-Beam System
+                      </h4>
+                    </div>
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                        selectedBeamType === 'tbeam'
+                          ? 'bg-[#095388] border-[#095388] text-white'
+                          : 'border-slate-300'
+                      }`}
+                    >
+                      {selectedBeamType === 'tbeam' && <Check size={12} strokeWidth={3} />}
+                    </div>
+                  </div>
+
+                  {/* Savings vs Traditional Highlight */}
+                  <div className="mt-3 p-3 bg-blue-100/70 border border-blue-200 rounded-xl">
+                    <div className="text-[10px] font-extrabold text-[#095388] uppercase tracking-wider">
+                      Savings vs Traditional Slab
+                    </div>
+                    <div className="text-2xl font-black text-[#095388] mt-0.5">
+                      Save ~KES {Math.round(tbeamTradSavings).toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-blue-700 font-semibold mt-0.5">
+                      ~{tbeamTradSavingsPct}% saved vs 150mm cast-in-situ solid slab
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 text-[11px] text-[#095388] bg-blue-50 p-2.5 rounded-lg border border-blue-100 space-y-1">
+                  <div className="font-bold">✓ Heavy Duty & Superior Rigidity</div>
+                  <div>Higher load capacity and 3 weeks faster than traditional slab while still saving cost.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center gap-2 text-xs text-slate-500">
+              <Info size={14} className="text-primary shrink-0" />
+              <span>
+                Savings compare against a standard 150mm solid concrete slab (including 22kg/m² steel rebars, timber formwork & casting labor).
+              </span>
+            </div>
           </div>
         )}
       </CardContent>
+
 
       <CardFooter className="flex flex-col sm:flex-row gap-3 pt-2">
         <Button
