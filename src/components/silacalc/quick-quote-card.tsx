@@ -211,132 +211,121 @@ export function QuickQuoteCard() {
           </div>
         )}
 
-        {/* Side-by-Side Live Quote Comparison */}
+        {/* Side-by-Side System Comparison & Savings */}
         {generatedRooms.length > 0 && flatTotals && tbeamTotals && (
           <div className="space-y-3">
             <Label className="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <Layers size={14} /> Compare Systems for this Area
             </Label>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Flat Beam Option */}
-              <div
-                onClick={() => setSelectedBeamType('flat')}
-                className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
-                  selectedBeamType === 'flat'
-                    ? 'border-emerald-600 bg-emerald-50/40 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 mb-1">
-                      Standard Domestic
-                    </span>
-                    <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
-                      <Building2 size={16} className="text-emerald-700" />
-                      Flat Beam System
-                    </h4>
-                  </div>
+            {(() => {
+              const savingsAmount = Math.max(0, tbeamCost - flatCost);
+              const savingsPct = tbeamCost > 0 ? Math.round((savingsAmount / tbeamCost) * 100) : 0;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Flat Beam Option */}
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                    onClick={() => setSelectedBeamType('flat')}
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
                       selectedBeamType === 'flat'
-                        ? 'bg-emerald-600 border-emerald-600 text-white'
-                        : 'border-slate-300'
+                        ? 'border-emerald-600 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-600'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
-                    {selectedBeamType === 'flat' && <Check size={12} strokeWidth={3} />}
-                  </div>
-                </div>
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 mb-1">
+                            Standard Domestic
+                          </span>
+                          <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
+                            <Building2 size={16} className="text-emerald-700" />
+                            Flat Beam System
+                          </h4>
+                        </div>
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                            selectedBeamType === 'flat'
+                              ? 'bg-emerald-600 border-emerald-600 text-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {selectedBeamType === 'flat' && <Check size={12} strokeWidth={3} />}
+                        </div>
+                      </div>
 
-                <div className="mt-3 text-2xl font-black text-slate-900">
-                  KES {Math.round(flatCost).toLocaleString()}
-                  <span className="text-xs font-normal text-slate-500 ml-1.5">(est. materials)</span>
-                </div>
+                      {/* Approximate Savings Highlight */}
+                      <div className="mt-3 p-3 bg-emerald-100/70 border border-emerald-200 rounded-xl">
+                        <div className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
+                          Approximate Savings
+                        </div>
+                        <div className="text-2xl font-black text-emerald-900 mt-0.5">
+                          Save ~KES {Math.round(savingsAmount).toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                          ~{savingsPct}% more economical than T-Beam
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Beams (Billed):</span>
-                    <strong className="text-slate-800">{flatTotals.totalInvoiceBeamLength.toFixed(1)} m</strong>
+                    <div className="mt-3 text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100">
+                      ✓ Ideal for domestic spans ≤ 4.0m. Lighter to handle on site and budget-friendly.
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Blocks:</span>
-                    <strong className="text-slate-800">{flatTotals.totalBlocks.toLocaleString()} pcs</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Cement Topping:</span>
-                    <strong className="text-slate-800">{flatTotals.totalCementBags} bags</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Props Required:</span>
-                    <strong className="text-slate-800">{flatTotals.timber?.totalProps || 0} props</strong>
-                  </div>
-                </div>
 
-                <div className="mt-3 text-[11px] text-emerald-800 bg-emerald-100/50 p-2 rounded-lg">
-                  ✓ Ideal for spans ≤ 4.0m. Lighter and budget-friendly.
-                </div>
-              </div>
-
-              {/* T-Beam Option */}
-              <div
-                onClick={() => setSelectedBeamType('tbeam')}
-                className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
-                  selectedBeamType === 'tbeam'
-                    ? 'border-[#095388] bg-blue-50/40 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-blue-100 text-[#095388] mb-1">
-                      Heavy Duty & Commercial
-                    </span>
-                    <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
-                      <Building2 size={16} className="text-[#095388]" />
-                      T-Beam System
-                    </h4>
-                  </div>
+                  {/* T-Beam Option */}
                   <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                    onClick={() => setSelectedBeamType('tbeam')}
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
                       selectedBeamType === 'tbeam'
-                        ? 'bg-[#095388] border-[#095388] text-white'
-                        : 'border-slate-300'
+                        ? 'border-[#095388] bg-blue-50/40 shadow-xs ring-1 ring-[#095388]'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
-                    {selectedBeamType === 'tbeam' && <Check size={12} strokeWidth={3} />}
-                  </div>
-                </div>
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-blue-100 text-[#095388] mb-1">
+                            Heavy Duty & Commercial
+                          </span>
+                          <h4 className="font-bold text-slate-900 text-base flex items-center gap-1.5">
+                            <Building2 size={16} className="text-[#095388]" />
+                            T-Beam System
+                          </h4>
+                        </div>
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                            selectedBeamType === 'tbeam'
+                              ? 'bg-[#095388] border-[#095388] text-white'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {selectedBeamType === 'tbeam' && <Check size={12} strokeWidth={3} />}
+                        </div>
+                      </div>
 
-                <div className="mt-3 text-2xl font-black text-slate-900">
-                  KES {Math.round(tbeamCost).toLocaleString()}
-                  <span className="text-xs font-normal text-slate-500 ml-1.5">(est. materials)</span>
-                </div>
+                      {/* Structural Specs Highlight */}
+                      <div className="mt-3 p-3 bg-blue-100/60 border border-blue-200 rounded-xl">
+                        <div className="text-[10px] font-extrabold text-[#095388] uppercase tracking-wider">
+                          Structural Profile
+                        </div>
+                        <div className="text-xl font-black text-slate-900 mt-0.5">
+                          Heavy Duty Baseline
+                        </div>
+                        <div className="text-[11px] text-blue-800 font-semibold mt-0.5">
+                          Higher section modulus & deflection stiffness
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Beams (Billed):</span>
-                    <strong className="text-slate-800">{tbeamTotals.totalInvoiceBeamLength.toFixed(1)} m</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Blocks:</span>
-                    <strong className="text-slate-800">{tbeamTotals.totalBlocks.toLocaleString()} pcs</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Cement Topping:</span>
-                    <strong className="text-slate-800">{tbeamTotals.totalCementBags} bags</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Props Required:</span>
-                    <strong className="text-slate-800">{tbeamTotals.timber?.totalProps || 0} props</strong>
+                    <div className="mt-3 text-[11px] text-[#095388] bg-blue-50 p-2.5 rounded-lg border border-blue-100">
+                      ✓ High rigidity and heavy load capacity. Recommended for commercial loads or future floors.
+                    </div>
                   </div>
                 </div>
-
-                <div className="mt-3 text-[11px] text-[#095388] bg-blue-100/50 p-2 rounded-lg">
-                  ✓ High rigidity and heavy load capacity. Single rib layout for spans ≤ 4.2m.
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         )}
       </CardContent>
