@@ -1,6 +1,7 @@
 import { sendWhatsAppMessage, uploadWhatsAppMedia, sendWhatsAppDocument } from './whatsapp-api';
 import { extractWhatsAppMeasurements } from '../ai/flows/extract-whatsapp-measurements';
 import { generateQuotePdfBuffer } from './pdf-generator';
+import { subdivideAreaToRooms } from './calculator';
 
 type UserState = 'IDLE' | 'AWAITING_NAME' | 'AWAITING_DIMENSIONS';
 
@@ -50,17 +51,31 @@ export async function processWhatsAppMessage(from: string, text: string) {
     sessionStore.set(from, session);
     await sendWhatsAppMessage(from, `Thanks, ${session.name}! Now, please send me your room dimensions (e.g., '3 by 4 meters').`);
   } else if (session.state === 'AWAITING_DIMENSIONS') {
-    if (extraction.action === 'QUOTE' && extraction.rooms && extraction.rooms.length > 0) {
-      const room = extraction.rooms[0];
-      await sendWhatsAppMessage(from, `Calculating official quote for a ${room.length}m x ${room.width}m room... Please wait a moment.`);
-      
+    const hasDimensions = extraction.action === 'QUOTE' && extraction.rooms && extraction.rooms.length > 0;
+    const hasArea = extraction.action === 'QUOTE' && extraction.isAreaMode && extraction.totalArea && extraction.totalArea > 0;
+
+    if (hasDimensions || hasArea) {
+      let roomsToQuote: { id: string; name: string; length: number; width: number }[] = [];
+
+      if (hasDimensions && extraction.rooms) {
+        const room = extraction.rooms[0];
+        await sendWhatsAppMessage(from, `Calculating official quote for a ${room.length}m x ${room.width}m room... Please wait a moment.`);
+        roomsToQuote = [{ id: '1', name: 'Room', length: room.length, width: room.width }];
+      } else if (hasArea && extraction.totalArea) {
+        const totalArea = extraction.totalArea;
+        roomsToQuote = subdivideAreaToRooms(totalArea, 4.0, 3.8);
+        await sendWhatsAppMessage(
+          from,
+          `Calculating official quote for ${totalArea} m² (subdivided into ${roomsToQuote.length} structural panels with safe spans ≤ 4.0m)... Please wait a moment.`
+        );
+      }
+
       const clientInfo = { clientName: session.name, clientContact: from, projectName: 'WhatsApp Instant Quote' };
-      const rooms = [{ id: '1', name: 'Room', length: room.length, width: room.width }];
-      
+
       try {
-        const pdfBuffer = await generateQuotePdfBuffer(clientInfo, rooms);
+        const pdfBuffer = await generateQuotePdfBuffer(clientInfo, roomsToQuote);
         const mediaId = await uploadWhatsAppMedia(pdfBuffer, `Quote_${session.name}.pdf`, 'application/pdf');
-        
+
         if (mediaId) {
           await sendWhatsAppDocument(from, mediaId, `Quote_${session.name}.pdf`, `Here is your official material quote, ${session.name}!`);
         } else {
@@ -70,11 +85,11 @@ export async function processWhatsAppMessage(from: string, text: string) {
         console.error("PDF Generation Error:", err);
         await sendWhatsAppMessage(from, "Sorry, there was an error generating your quote.");
       }
-      
+
       session.state = 'IDLE';
       sessionStore.set(from, session);
     } else {
-      await sendWhatsAppMessage(from, "I didn't quite catch the dimensions. Could you provide them like '4m by 5m'?");
+      await sendWhatsAppMessage(from, "I didn't quite catch that. You can send room dimensions (e.g. '4m by 5m') or total floor area (e.g. '120 square meters')!");
     }
   }
 }

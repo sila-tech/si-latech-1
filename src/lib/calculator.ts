@@ -802,3 +802,54 @@ export function calculateProjectTotals(
   };
 }
 
+/**
+ * Subdivides a total floor area (m²) into realistic structural bays/panels
+ * where neither dimension exceeds maxSpan (default 4.0m).
+ *
+ * In precast beam and block floor systems:
+ * 1. Precast Flat Beams have an effective safe span limit of <= 4.0m.
+ * 2. T-Beams operate with a single beam multiplier (multiplier = 1) for spans <= 4.2m.
+ * 3. Precast beams span between intermediate load-bearing walls or RC ring beams.
+ *
+ * By subdividing a lump-sum area into realistic structural bays of <= 4.0m,
+ * the calculator produces physically sound bills of quantities, props, timber,
+ * and reliable quotes for both Flat Beams and T-Beams.
+ */
+export function subdivideAreaToRooms(
+  totalArea: number,
+  maxSpan: number = 4.0,
+  preferredSpan: number = 3.8
+): Room[] {
+  if (!totalArea || totalArea <= 0) return [];
+
+  const safeMaxSpan = Math.min(4.0, Math.max(2.0, maxSpan));
+  const maxBayArea = safeMaxSpan * safeMaxSpan; // e.g., 4.0 * 4.0 = 16 m²
+  const numBays = Math.max(1, Math.ceil(totalArea / maxBayArea));
+  const avgBayArea = totalArea / numBays;
+
+  const rooms: Room[] = [];
+
+  for (let i = 0; i < numBays; i++) {
+    // Determine the beam span side (shorter side or chosen modular span)
+    // Target a balanced span that stays strictly <= safeMaxSpan
+    const targetSpan = Math.min(safeMaxSpan, Math.min(preferredSpan, Number(Math.sqrt(avgBayArea).toFixed(2))));
+    const span1 = Math.max(2.0, Math.min(safeMaxSpan, targetSpan));
+    const span2 = Math.min(safeMaxSpan, Number((avgBayArea / span1).toFixed(2)));
+    
+    // Recalculate first side to preserve accurate area while strictly respecting safeMaxSpan
+    const adjustedSpan1 = Math.min(safeMaxSpan, Number((avgBayArea / Math.max(0.5, span2)).toFixed(2)));
+
+    const length = Math.max(span2, adjustedSpan1);
+    const width = Math.min(span2, adjustedSpan1);
+
+    rooms.push({
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `bay-${i + 1}-${Date.now()}`,
+      name: `Bay ${i + 1} (${length.toFixed(1)}m × ${width.toFixed(1)}m)`,
+      length: Number(length.toFixed(2)),
+      width: Number(width.toFixed(2)),
+    });
+  }
+
+  return rooms;
+}
+
