@@ -64,7 +64,7 @@ export function HeroSection() {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Animated Hero Background Slideshow */}
+      {/* Animated Hero Background Slideshow - High Clarity & Visibility */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {HERO_SLIDES.map((slide, idx) => {
           const isActive = idx === currentSlide;
@@ -72,7 +72,7 @@ export function HeroSection() {
             <div
               key={slide.id}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                isActive ? 'opacity-40' : 'opacity-0'
+                isActive ? 'opacity-100' : 'opacity-0'
               }`}
             >
               <Image
@@ -82,21 +82,21 @@ export function HeroSection() {
                 priority={idx === 0}
                 style={{ transitionDuration: '7000ms' }}
                 className={`object-cover object-center transition-transform ease-out ${
-                  isActive ? 'scale-110' : 'scale-100'
+                  isActive ? 'scale-105' : 'scale-100'
                 }`}
               />
             </div>
           );
         })}
 
-        {/* Sophisticated Architectural Dark Vignette Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#070b14]/90 via-[#070b14]/65 to-[#070b14] pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070b14]/90 via-transparent to-[#070b14]/90 pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#070b14] to-transparent pointer-events-none" />
+        {/* Ultra-light translucent wash to ensure photos are completely visible and vibrant */}
+        <div className="absolute inset-0 bg-slate-950/25 pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#070b14]/75 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#070b14]/90 to-transparent pointer-events-none" />
       </div>
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center space-y-6">
+        <div className="max-w-3xl mx-auto text-center space-y-6 bg-slate-950/75 backdrop-blur-md p-6 sm:p-10 rounded-3xl border border-white/15 shadow-2xl">
           
           {/* Executive Tag */}
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-500/35 px-4 py-1.5 text-xs font-bold text-emerald-400 backdrop-blur-md shadow-lg shadow-emerald-950/40">
