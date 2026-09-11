@@ -112,15 +112,15 @@ export const DEFAULT_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'full-slab-package',
-    name: 'Complete Slab Materials Package',
+    name: 'Turnkey Precast EcoSlab Package',
     category: 'packages',
     badge: 'All-in-One Site Supply',
     badgeColor: 'bg-purple-600 text-white font-bold',
     price: 'Custom Quote',
     unit: 'turnkey delivered to site',
     image: '/beam-block-finished.jpg',
-    description: 'Complete material package bundled and delivered together: Precast Beams cut to architectural spans, Hollow Infill Blocks, BRC Mesh A142, Cement bags, Sand & Ballast aggregate.',
-    highlight: 'Save up to 30% overall compared to conventional cast-in-situ slabs',
+    description: 'Complete EcoSlab material package bundled and delivered together: Prestressed Precast Beams cut to architectural spans, Hollow Infill Blocks, BRC Mesh A142, Cement bags, Sand & Ballast aggregate.',
+    highlight: 'EcoSlab innovation saves up to 30% overall compared to conventional cast-in-situ slabs',
     order: 5,
     specs: [
       { label: 'Included Components', value: 'Beams + Blocks + BRC + Concrete Materials' },

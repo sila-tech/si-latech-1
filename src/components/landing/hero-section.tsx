@@ -31,12 +31,12 @@ export function HeroSection() {
 
           {/* Luxury Punchy Headline */}
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
-            Precast Floor Slabs &amp; Precision Materials
+            Precast &amp; EcoSlabs
           </h1>
 
           {/* Concise Subtitle */}
           <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-            Order prestressed concrete beams &amp; hollow infill blocks directly from the manufacturer, or calculate exact materials and download your quote in seconds.
+            Order prestressed concrete beams, EcoSlabs &amp; hollow infill blocks directly from the manufacturer, or calculate exact materials and download your quote in seconds.
           </p>
 
           {/* The Two Primary Action Pillars */}

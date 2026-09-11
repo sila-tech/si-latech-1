@@ -18,9 +18,9 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://si-latech.com'),
-  title: 'Beam & Block Calculator Kenya | Free Instant Quotes | SI-LATECH',
-  description: 'Kenya\'s #1 beam and block construction calculator. Get instant, official material quotes for beams, blocks, cement, sand & BRC for your slab project. Serving Nairobi, Mombasa & across Kenya.',
-  keywords: ['SI-LATECH', 'SilaCalc', 'Construction Calculator', 'Beam and Block', 'Kenya Construction', 'Material Estimator', 'Nairobi Construction', 'Beam Block Slab Kenya', 'Construction Quotes Kenya', 'Precast Beams Kenya'],
+  title: 'Precast & EcoSlabs Kenya | Beam & Block Slab Calculator | SI-LATECH',
+  description: 'Kenya\'s leading precast and EcoSlabs manufacturer & estimator. Get instant official material quotes for precast beams, EcoSlab hollow blocks, and turnkey floor systems across Kenya.',
+  keywords: ['SI-LATECH', 'Precast Kenya', 'EcoSlabs', 'EcoSlabs Kenya', 'SilaCalc', 'Construction Calculator', 'Beam and Block', 'Kenya Construction', 'Material Estimator', 'Precast Floor Slabs', 'Precast Beams Kenya'],
   authors: [{ name: 'SI-LATECH' }],
   openGraph: {
     title: 'SI-LATECH | Beam & Block Construction Calculator Kenya',

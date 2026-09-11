@@ -20,11 +20,11 @@ export function Footer() {
               <img src="/logo.png" alt="SI-LATECH Logo" className="h-12 w-12 object-contain" />
               <div>
                 <span className="text-xl font-black text-white block">SI-LATECH</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-[#f59e0b]">Beam & Block Specialists</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#f59e0b]">Precast &amp; EcoSlabs Specialists</span>
               </div>
             </div>
             <p className="text-slate-400 text-sm leading-relaxed mb-5 max-w-sm">
-              Kenya's trusted beam and block specialists. We supply precision precast concrete beams and hollow blocks for residential and commercial construction projects nationwide.
+              Kenya's trusted precast and EcoSlabs specialists. We supply precision prestressed concrete beams, hollow infill blocks, and complete engineered slab systems nationwide.
             </p>
             {/* Social / Contact Icons */}
             <div className="flex items-center gap-3">

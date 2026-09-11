@@ -77,10 +77,10 @@ export default function ProductsPage() {
                 <span>Ruiru Factory Direct Storefront</span>
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
-                SI-LATECH Precast Beams, Blocks &amp; Floor Slab Systems
+                SI-LATECH Precast &amp; EcoSlabs Systems
               </h1>
               <p className="text-slate-300 text-sm sm:text-base md:text-lg leading-relaxed font-normal">
-                Explore Kenya's most comprehensive catalog of precision precast concrete beams, hollow infill blocks, and turnkey slab construction materials. High structural strength, factory-controlled quality, and transparent factory-direct pricing.
+                Explore Kenya's most comprehensive catalog of precision precast concrete beams, EcoSlabs, hollow infill blocks, and turnkey slab construction materials. High structural strength, factory-controlled quality, and transparent factory-direct pricing.
               </p>
             </div>
 

@@ -68,10 +68,10 @@ export function ProductsSection() {
               <span>Material Marketplace</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-950 tracking-tight">
-              Precast Beams &amp; Concrete Products
+              Precast &amp; EcoSlabs Materials
             </h2>
             <p className="text-slate-600 text-xs sm:text-sm">
-              Factory-manufactured precast beams, interlocking hollow blocks, and turnkey slab materials with instant site delivery across Kenya.
+              Factory-manufactured precast beams, EcoSlab systems, interlocking hollow blocks, and turnkey slab materials with instant site delivery across Kenya.
             </p>
           </div>
 

@@ -31,7 +31,7 @@ export function Header() {
           </Link>
           <div className="flex flex-col">
             <span className="text-xl sm:text-2xl font-black leading-none tracking-tight text-slate-950">SI-LATECH</span>
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-600">Precast Floor Slabs</span>
+            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-amber-600">Precast &amp; EcoSlabs</span>
           </div>
         </div>
 
