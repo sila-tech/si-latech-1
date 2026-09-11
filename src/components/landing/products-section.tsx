@@ -71,7 +71,7 @@ export function ProductsSection() {
               Precast &amp; EcoSlabs Materials
             </h2>
             <p className="text-slate-600 text-xs sm:text-sm">
-              Factory-manufactured precast beams, EcoSlab systems, interlocking hollow blocks, and turnkey slab materials with instant site delivery across Kenya.
+              Factory-manufactured precast beams, EcoSlab systems, and hollow infill blocks prepared and cut to your project's exact structural spans on order, with nationwide site delivery across Kenya.
             </p>
           </div>
 

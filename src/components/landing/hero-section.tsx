@@ -48,7 +48,7 @@ export function HeroSection() {
             >
               <a href="#marketplace">
                 <ShoppingBag className="h-4 w-4" />
-                Shop Marketplace
+                Order Materials Now
               </a>
             </Button>
 
