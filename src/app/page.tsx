@@ -3,6 +3,7 @@
 import { Header } from '@/components/header';
 import { HeroSection } from '@/components/landing/hero-section';
 import { HowItWorksSection } from '@/components/landing/how-it-works-section';
+import { ProductsSection } from '@/components/landing/products-section';
 import { WhyChooseSection } from '@/components/landing/why-choose-section';
 import { ProjectsGallerySection } from '@/components/landing/projects-gallery-section';
 import { TestimonialsSection } from '@/components/landing/testimonials-section';
@@ -27,7 +28,10 @@ export default function Home() {
       {/* 2. "How It Works" 3-Step Process & Media */}
       <HowItWorksSection />
 
-      {/* 3. Interactive Calculator Section (#calculator) */}
+      {/* 3. Manufactured Products & Storefront Showcase (#products) */}
+      <ProductsSection />
+
+      {/* 4. Interactive Calculator Section (#calculator) */}
       <section id="calculator" className="py-16 md:py-24 bg-slate-100/70 border-b border-slate-200 scroll-mt-20">
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
           

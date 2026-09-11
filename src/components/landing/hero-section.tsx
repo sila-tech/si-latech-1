@@ -27,19 +27,19 @@ export function HeroSection() {
           {/* Left Column: Headline, CTAs, Social Proof */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             {/* Top Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-amber-400 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 border border-amber-500/30 px-4 py-1.5 text-xs sm:text-sm font-semibold text-amber-400 backdrop-blur-md">
               <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
-              <span>Kenya's #1 Beam & Block Estimator</span>
+              <span>Direct Manufacturer • Prestressed Beams &amp; Hollow Blocks</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.15]">
-              Cut Floor Slab Costs by <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">30%</span> with Our Eco-Friendly Beams & Blocks System
+              Cut Floor Slab Costs by <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">30%</span> with Our Eco-Friendly Beams &amp; Blocks System
             </h1>
 
             {/* Subheadline */}
             <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
-              Get instant material estimates for precast beam and block systems. Trusted by 500+ contractors across Kenya for faster, lighter, and stronger slabs.
+              We manufacture and supply high-strength prestressed concrete beams (from KES 545/m) and precision hollow infill blocks (from KES 90/pc) across Kenya. Estimate materials in seconds or order direct from our factory.
             </p>
 
             {/* CTA Buttons */}
@@ -49,8 +49,8 @@ export function HeroSection() {
                 size="lg"
                 className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-8 py-6 text-base rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-105"
               >
-                <a href="#calculator" className="flex items-center justify-center gap-2">
-                  Get Free Estimate
+                <a href="#products" className="flex items-center justify-center gap-2">
+                  Browse Products &amp; Prices
                   <ArrowRight className="h-5 w-5" />
                 </a>
               </Button>
@@ -59,10 +59,10 @@ export function HeroSection() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="w-full sm:w-auto border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-white font-semibold px-6 py-6 text-base rounded-xl backdrop-blur-sm transition-all"
+                className="w-full sm:w-auto border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-white font-semibold px-6 py-6 text-base rounded-xl backdrop-blur-sm transition-all"
               >
-                <a href="#projects" className="flex items-center justify-center gap-2">
-                  View Completed Projects
+                <a href="#calculator" className="flex items-center justify-center gap-2">
+                  Calculate Slab Materials
                 </a>
               </Button>
             </div>

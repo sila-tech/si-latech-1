@@ -57,6 +57,7 @@ export function Footer() {
             <ul className="space-y-2.5">
               {[
                 { href: '/', label: 'Home' },
+                { href: '/products', label: 'Products & Pricing' },
                 { href: '/#calculator', label: 'Beam & Block Calculator' },
                 { href: '/portfolio', label: 'Our Projects' },
                 { href: '/contact', label: 'Contact Us' },

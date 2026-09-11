@@ -11,11 +11,12 @@ const phoneNumber = '254741557960';
 const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.')}`;
 
 const navLinks = [
-  { href: '/#how-it-works', label: 'How It Works' },
+  { href: '/#products', label: 'Products' },
   { href: '/#calculator', label: 'Calculator' },
+  { href: '/#how-it-works', label: 'How It Works' },
   { href: '/#projects', label: 'Projects' },
   { href: '/#testimonials', label: 'Testimonials' },
-  { href: '/#contact', label: 'Contact' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 export function Header() {
