@@ -4,7 +4,7 @@ import React from 'react';
 import { Phone, MessageCircle, Mail, MapPin, Clock, ArrowRight, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const phoneNumber = '254141981315';
+const phoneNumber = '254741557960';
 const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.')}`;
 
 export function ContactSection() {
@@ -57,8 +57,8 @@ export function ContactSection() {
               <p className="text-xs text-slate-400">Speak directly with our technical team during business hours.</p>
             </div>
             <Button asChild className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl">
-              <a href="tel:+254141981315" className="flex items-center justify-center gap-2">
-                +254 141 981 315
+              <a href="tel:+254741557960" className="flex items-center justify-center gap-2">
+                +254 741 557 960
               </a>
             </Button>
           </div>

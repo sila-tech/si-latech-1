@@ -443,7 +443,7 @@ export function TotalsCard() {
           {/* WhatsApp Share */}
           {totalArea > 0 && (
             <a
-              href={`https://wa.me/254141981315?text=${encodeURIComponent(
+              href={`https://wa.me/254741557960?text=${encodeURIComponent(
                 `Hello SI-LATECH, here is my project summary:
 
 📐 Total Slab Area: ${totalArea.toFixed(2)} m²

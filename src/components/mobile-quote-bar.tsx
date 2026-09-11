@@ -78,7 +78,7 @@ ${costEstimationEnabled ? `💰 Estimated Cost: Ksh ${grandTotal.toLocaleString(
 
 Please send me an official quote and pricing. Thank you.`;
 
-    return `https://wa.me/254141981315?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/254741557960?text=${encodeURIComponent(message)}`;
   };
 
   const handleWhatsAppShare = () => {

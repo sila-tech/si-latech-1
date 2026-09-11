@@ -45,7 +45,7 @@ export function SampleQuoteModal({ open, onOpenChange }: SampleQuoteModalProps) 
                   <span className="text-lg font-black text-slate-900 tracking-tight">SI-LATECH</span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">Beam & Block Floor System Specialists</p>
-                <p className="text-[11px] text-slate-500">Ruiru, Kiambu | Tel: +254 141 981 315</p>
+                <p className="text-[11px] text-slate-500">Ruiru, Kiambu | Tel: +254 741 557 960</p>
               </div>
               <div className="sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <span className="font-bold text-amber-600 block">ESTIMATE #SL-2026-0842</span>

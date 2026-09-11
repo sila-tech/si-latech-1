@@ -617,7 +617,7 @@ export function ActionsCard() {
       doc.setFontSize(9);
       doc.setTextColor(100);
       doc.text('Head Office: Ruiru, behind Rubis petrol station', 140, 22);
-      doc.text('Tel: +254 141 981 315', 140, 27);
+      doc.text('Tel: +254 741 557 960', 140, 27);
       doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
 
       doc.setFont('helvetica', 'italic');
@@ -930,7 +930,7 @@ export function ActionsCard() {
       doc.setFontSize(9);
       doc.setTextColor(100);
       doc.text('Head Office: Ruiru, behind Rubis petrol station', 140, 22);
-      doc.text('Tel: +254 141 981 315', 140, 27);
+      doc.text('Tel: +254 741 557 960', 140, 27);
       doc.text('Email: info.silatechsolutions@gmail.com', 140, 32);
 
       doc.setFont('helvetica', 'italic');

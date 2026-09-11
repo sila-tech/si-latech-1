@@ -13,7 +13,7 @@ export function WhatsAppButton() {
   const hasMobileBar = (totals?.totalArea || 0) > 0;
   const [isVisible, setIsVisible] = useState(true);
   const [showTooltip, setShowTooltip] = useState(false);
-  const phoneNumber = '254141981315';
+  const phoneNumber = '254741557960';
   const message = 'Hello SI-LATECH, I would like to make an inquiry about your Beam and Block Slab system.';
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
