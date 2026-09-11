@@ -56,10 +56,9 @@ export function Footer() {
             <h3 className="text-sm font-black uppercase tracking-wider text-slate-300 mb-4">Quick Links</h3>
             <ul className="space-y-2.5">
               {[
-                { href: '/', label: 'Home' },
-                { href: '/products', label: 'Products & Pricing' },
-                { href: '/#calculator', label: 'Beam & Block Calculator' },
-                { href: '/portfolio', label: 'Our Projects' },
+                { href: '/#marketplace', label: 'Marketplace' },
+                { href: '/#calculator', label: 'Material Estimator' },
+                { href: '/products', label: 'Full Catalog & Specs' },
                 { href: '/contact', label: 'Contact Us' },
               ].map(({ href, label }) => (
                 <li key={label}>
