@@ -116,23 +116,23 @@ export function TotalsCard() {
 
   return (
     <>
-      <Card className="sticky top-24 border border-slate-200 bg-white shadow-md overflow-hidden flex flex-col rounded-xl">
-        <CardHeader className="bg-slate-900 text-white pb-6">
+      <Card className="sticky top-24 border border-slate-200/90 bg-white shadow-xl overflow-hidden flex flex-col rounded-2xl">
+        <CardHeader className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-5 border-b border-slate-800">
           <div className="flex justify-between items-center mb-2">
-            <CardTitle className="font-headline text-xl font-bold flex items-center gap-2">
-              <Calculator size={20} className="text-sky-400" />
+            <CardTitle className="font-headline text-lg font-black flex items-center gap-2 text-white">
+              <Calculator size={18} className="text-amber-400" />
               Project Totals
             </CardTitle>
-            <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border shadow-sm ${
+            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border shadow-xs ${
               settings.beamType === 'tbeam' 
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' 
-                : 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
             }`}>
               {settings.beamType === 'tbeam' ? 'T-Beam System' : 'Flat Beam'}
             </span>
           </div>
           <CardDescription className="text-slate-400 text-xs">
-            Summary of all required structural material quantities.
+            Live bill of quantities with factory-calibrated engineering counts
           </CardDescription>
         </CardHeader>
 
@@ -416,10 +416,16 @@ export function TotalsCard() {
             <>
               <Separator className="bg-slate-100" />
               {/* Grand Total cost display banner */}
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center shadow-xs">
-                <span className="text-[10px] font-black text-emerald-800 uppercase tracking-widest block">Estimated Grand Total Cost</span>
-                <span className="text-2xl font-black text-emerald-600 block mt-0.5">KSh {grandTotal.toLocaleString()}</span>
-                <span className="text-[9px] text-emerald-500 mt-1 block">Subject to transport costs and final site measurements</span>
+              <div className="p-5 bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-2xl text-center shadow-lg relative overflow-hidden">
+                <div className="absolute -right-4 -bottom-4 opacity-15 text-white pointer-events-none">
+                  <Coins size={90} />
+                </div>
+                <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-emerald-50 mb-1.5">
+                  Save up to 40% vs Traditional Slab
+                </div>
+                <span className="text-[10px] font-black text-emerald-100 uppercase tracking-widest block">Estimated Grand Total Cost</span>
+                <span className="text-3xl font-black text-white block mt-0.5 tracking-tight">KSh {grandTotal.toLocaleString()}</span>
+                <span className="text-[10px] text-emerald-100 mt-1 block">Subject to final architectural plan checks &amp; site offloading</span>
               </div>
             </>
           )}

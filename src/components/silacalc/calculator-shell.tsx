@@ -153,47 +153,53 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                 </div>
                 
                 {/* Beam Selector (Flat vs T-beam) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Flat Beam Option */}
                   <div 
                     onClick={() => setSettings(prev => ({ ...prev, beamType: 'flat' }))}
-                    className={`cursor-pointer rounded-xl p-6 border-2 transition-all duration-300 relative select-none ${
+                    className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 relative select-none shadow-sm ${
                       settings.beamType !== 'tbeam' 
-                        ? 'border-primary bg-sky-50/10 shadow-sm ring-1 ring-primary/10' 
+                        ? 'border-emerald-600 bg-gradient-to-br from-emerald-50/60 to-white ring-2 ring-emerald-500/20 shadow-md scale-[1.01]' 
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-extrabold text-slate-900 text-lg">Flat Beam System</h4>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Standard Residential</p>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 mb-1.5">
+                          <span>Save up to 40% vs Solid Slab</span>
+                        </div>
+                        <h4 className="font-black text-slate-950 text-xl">Flat Beam System</h4>
+                        <p className="text-xs text-slate-500 font-bold mt-0.5">KES 545/m • KES 90 Infill Blocks</p>
                       </div>
                       {settings.beamType !== 'tbeam' && (
-                        <span className="bg-primary text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full tracking-wider">ACTIVE</span>
+                        <span className="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-wider shadow-xs">SELECTED</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed italic">Best for regular spans and cost-efficient residential floor systems. Spaced at standard center-to-center offsets.</p>
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">Most economical choice for residential homes, bungalows, and spans ≤ 4.0m. Crane-free manual placement.</p>
                   </div>
 
                   {/* T-Beam Option */}
                   <div 
                     onClick={() => setSettings(prev => ({ ...prev, beamType: 'tbeam' }))}
-                    className={`cursor-pointer rounded-xl p-6 border-2 transition-all duration-300 relative select-none ${
+                    className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 relative select-none shadow-sm ${
                       settings.beamType === 'tbeam' 
-                        ? 'border-primary bg-sky-50/10 shadow-sm ring-1 ring-primary/10' 
+                        ? 'border-amber-500 bg-gradient-to-br from-amber-50/60 to-white ring-2 ring-amber-500/20 shadow-md scale-[1.01]' 
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-extrabold text-slate-900 text-lg">T-Beam System</h4>
-                        <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-0.5">Heavy Duty Span</p>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 mb-1.5">
+                          <span>NO Formwork Needed</span>
+                        </div>
+                        <h4 className="font-black text-slate-950 text-xl">T-Beam System</h4>
+                        <p className="text-xs text-amber-700 font-bold mt-0.5">KES 1,200/m • KES 100 Blocks • 2,800-3,500/m²</p>
                       </div>
                       {settings.beamType === 'tbeam' && (
-                        <span className="bg-primary text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full tracking-wider">ACTIVE</span>
+                        <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full tracking-wider shadow-xs">SELECTED</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed italic">Ideal for heavy loads, commercial spans, and industrial floor systems. Designed for maximum structural support.</p>
+                    <p className="text-xs text-slate-600 leading-relaxed font-normal">Heavy-duty inverted T prestressed beams. Self-supporting with zero timber deck shuttering or timber formwork required.</p>
                   </div>
                 </div>
 
@@ -358,57 +364,66 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
           <div className="space-y-8 lg:col-span-2">
             
             {/* Beam Type Selector Card */}
-            <Card className="border border-slate-200 bg-white shadow-sm overflow-hidden mb-6">
-              <CardHeader className="bg-slate-50/50 border-b pb-4">
-                <CardTitle className="text-lg font-bold text-slate-900 font-headline">Select Concrete Beam System</CardTitle>
-                <CardDescription className="text-xs">Choose the structural beam system before inputting measurements.</CardDescription>
+            <Card className="border border-slate-200/90 bg-white shadow-sm overflow-hidden mb-6 rounded-2xl">
+              <CardHeader className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 border-b border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-black text-white font-headline">Select Concrete Beam System</CardTitle>
+                    <CardDescription className="text-xs text-slate-300">Choose your structural system before computing materials</CardDescription>
+                  </div>
+                  <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Save up to 40% vs solid slab
+                  </span>
+                </div>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="p-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Flat Beam Option */}
                   <div 
                     onClick={() => setSettings(prev => ({ ...prev, beamType: 'flat' }))}
-                    className={`cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 relative select-none ${
+                    className={`cursor-pointer rounded-2xl p-5 border-2 transition-all duration-300 relative select-none ${
                       settings.beamType !== 'tbeam' 
-                        ? 'border-primary bg-sky-50/10 shadow-sm ring-1 ring-primary/10' 
-                        : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-xs'
+                        ? 'border-emerald-600 bg-gradient-to-br from-emerald-50/60 to-white shadow-md ring-2 ring-emerald-500/20 scale-[1.01]' 
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex justify-between items-start mb-2.5">
                       <div>
-                        <h3 className="font-bold text-slate-900">Flat Beam System</h3>
-                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Standard Residential</p>
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 mb-1">
+                          Most Economical • Spans ≤ 4.0m
+                        </span>
+                        <h3 className="font-black text-slate-950 text-lg">Flat Beam System</h3>
+                        <p className="text-xs text-slate-500 font-bold mt-0.5">KES 545 / m • KES 90 Blocks</p>
                       </div>
                       {settings.beamType !== 'tbeam' && (
-                        <span className="bg-primary text-white text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider">ACTIVE</span>
+                        <span className="bg-emerald-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">ACTIVE</span>
                       )}
                     </div>
-                    <div className="space-y-1.5 text-xs text-slate-600">
-                      <p className="text-[11px] text-slate-500 italic leading-relaxed">Best for regular spans and cost-efficient residential floor systems.</p>
-                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">Best for residential homes and bungalows. Lightweight crane-free installation.</p>
                   </div>
 
                   {/* T-Beam Option */}
                   <div 
                     onClick={() => setSettings(prev => ({ ...prev, beamType: 'tbeam' }))}
-                    className={`cursor-pointer rounded-xl p-5 border-2 transition-all duration-300 relative select-none ${
+                    className={`cursor-pointer rounded-2xl p-5 border-2 transition-all duration-300 relative select-none ${
                       settings.beamType === 'tbeam' 
-                        ? 'border-primary bg-sky-50/10 shadow-sm ring-1 ring-primary/10' 
-                        : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-xs'
+                        ? 'border-amber-500 bg-gradient-to-br from-amber-50/60 to-white shadow-md ring-2 ring-amber-500/20 scale-[1.01]' 
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
+                    <div className="flex justify-between items-start mb-2.5">
                       <div>
-                        <h3 className="font-bold text-slate-900">T-Beam System</h3>
-                        <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider mt-0.5">Heavy Duty Span</p>
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-900 mb-1">
+                          Zero Formwork • Spans up to 6.5m+
+                        </span>
+                        <h3 className="font-black text-slate-950 text-lg">T-Beam System</h3>
+                        <p className="text-xs text-amber-700 font-bold mt-0.5">KES 1,200 / m • KES 100 Blocks</p>
                       </div>
                       {settings.beamType === 'tbeam' && (
-                        <span className="bg-primary text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full tracking-wider">ACTIVE</span>
+                        <span className="bg-amber-500 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">ACTIVE</span>
                       )}
                     </div>
-                    <div className="space-y-1.5 text-xs text-slate-600">
-                      <p className="text-[11px] text-slate-500 italic leading-relaxed">Ideal for heavy loads, commercial spans, and industrial floor systems.</p>
-                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">Inverted T profile. Self-supporting with NO timber shuttering required.</p>
                   </div>
                 </div>
               </CardContent>

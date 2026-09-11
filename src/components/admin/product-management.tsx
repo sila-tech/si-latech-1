@@ -397,6 +397,8 @@ export function ProductManagement() {
               <SelectItem value="all" className="text-xs">All Categories</SelectItem>
               <SelectItem value="beams" className="text-xs">Precast Beams</SelectItem>
               <SelectItem value="blocks" className="text-xs">Infill Blocks</SelectItem>
+              <SelectItem value="cabros" className="text-xs">Cabro Paving Blocks</SelectItem>
+              <SelectItem value="wall-panels" className="text-xs">Wall Panels</SelectItem>
               <SelectItem value="packages" className="text-xs">Full Packages</SelectItem>
               <SelectItem value="accessories" className="text-xs">BRC &amp; Accessories</SelectItem>
             </SelectContent>
@@ -678,6 +680,8 @@ export function ProductManagement() {
                   <SelectContent className="bg-white">
                     <SelectItem value="beams" className="text-xs">Precast Beams</SelectItem>
                     <SelectItem value="blocks" className="text-xs">Infill Blocks</SelectItem>
+                    <SelectItem value="cabros" className="text-xs">Cabro Paving Blocks</SelectItem>
+                    <SelectItem value="wall-panels" className="text-xs">Precast Wall Panels</SelectItem>
                     <SelectItem value="packages" className="text-xs">Full Packages</SelectItem>
                     <SelectItem value="accessories" className="text-xs">BRC &amp; Accessories</SelectItem>
                   </SelectContent>

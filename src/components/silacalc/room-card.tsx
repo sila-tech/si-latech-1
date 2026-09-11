@@ -157,6 +157,25 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
             </span>
           </div>
         </div>
+
+        {hasDimensions && roomCalcs && (
+          <div className="mt-4 pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
+                📐 {((room.length || 0) * (room.width || 0)).toFixed(2)} m²
+              </span>
+              <span className="inline-flex items-center gap-1 font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                📏 {roomCalcs.invoiceBeamCount || 0} Beams ({((roomCalcs.invoiceTotalBeamLength || roomCalcs.actualTotalBeamLength || 0)).toFixed(1)}m)
+              </span>
+              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                🧱 {roomCalcs.totalBlocks || 0} Blocks
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-semibold italic">
+              Bearing span: {(room.length || 0) <= (room.width || 0) ? `${(room.length || 0).toFixed(1)}m` : `${(room.width || 0).toFixed(1)}m`}
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

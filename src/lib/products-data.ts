@@ -10,7 +10,7 @@ export interface ProductSpec {
 export interface ProductItem {
   id: string;
   name: string;
-  category: 'beams' | 'blocks' | 'packages' | 'accessories';
+  category: 'beams' | 'blocks' | 'cabros' | 'wall-panels' | 'packages' | 'accessories';
   badge: string;
   badgeColor?: string;
   price: string;
@@ -146,6 +146,46 @@ export const DEFAULT_PRODUCTS: ProductItem[] = [
       { label: 'Steel Props', value: 'Telescopic adjustable 2.0m - 3.8m' },
       { label: 'Timber Support', value: '3×2 treated structural battens' },
       { label: 'Availability', value: 'In stock at Ruiru factory yard' },
+    ],
+  },
+  {
+    id: 'heavy-duty-cabros',
+    name: 'Heavy Duty Concrete Cabro Paving Blocks',
+    category: 'cabros',
+    badge: 'Industrial & Driveway',
+    badgeColor: 'bg-teal-600 text-white font-bold',
+    price: 'Factory Direct',
+    unit: 'per square meter (m²)',
+    image: '',
+    description: 'High-density hydraulic-pressed concrete paving blocks engineered for high compressive strength. Perfect for residential driveways, commercial parking, walkways, and industrial access roads.',
+    highlight: 'Hydraulic compressed for ultra-high load capacity and zero cracking',
+    order: 7,
+    specs: [
+      { label: 'Thickness', value: '60mm (Light/Medium) & 80mm (Heavy Duty)' },
+      { label: 'Strength Grade', value: '35MPa – 50MPa Hydraulic Pressed' },
+      { label: 'Patterns', value: 'Trihex, Rectangular, Double-T, Interlocking' },
+      { label: 'Colors', value: 'Grey, Red, Charcoal, Yellow' },
+      { label: 'Supply', value: 'Manufactured to order with site delivery' },
+    ],
+  },
+  {
+    id: 'precast-wall-panels',
+    name: 'Precast Concrete Wall Panels',
+    category: 'wall-panels',
+    badge: 'Rapid Construction',
+    badgeColor: 'bg-cyan-600 text-white font-bold',
+    price: 'Factory Direct',
+    unit: 'custom engineered / m²',
+    image: '',
+    description: 'Precision precast boundary and structural wall panels for rapid installation. Reduces walling labour and completion time by up to 70% with smooth, plumb, ready-to-finish surfaces.',
+    highlight: 'Fast erection, superior sound dampening & fire-rated durability',
+    order: 8,
+    specs: [
+      { label: 'Thickness', value: '100mm – 150mm Structural Solid / Ribbed' },
+      { label: 'Installation', value: 'Tongue-and-groove alignment slots' },
+      { label: 'Finish', value: 'Fair-faced smooth concrete ready for paint/skim' },
+      { label: 'Speed', value: 'Up to 3x faster than quarry stone walling' },
+      { label: 'Customization', value: 'Manufactured to architectural heights' },
     ],
   },
 ];

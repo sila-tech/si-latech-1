@@ -24,9 +24,9 @@ export function HeroSection() {
         <div className="max-w-3xl mx-auto text-center space-y-6">
           
           {/* Executive Tag */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/25 px-4 py-1.5 text-xs font-bold text-amber-400 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span>Factory Direct • Ruiru Industrial Hub</span>
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-4 py-1.5 text-xs font-bold text-emerald-400 backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Save up to 40% with our innovative beams &amp; blocks</span>
           </div>
 
           {/* Luxury Punchy Headline */}
@@ -36,7 +36,7 @@ export function HeroSection() {
 
           {/* Concise Subtitle */}
           <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-            Order prestressed concrete beams, EcoSlabs &amp; hollow infill blocks directly from the manufacturer, or calculate exact materials and download your quote in seconds.
+            Order prestressed concrete beams, EcoSlabs, hollow infill blocks, Cabros &amp; Wall Panels directly from our Ruiru factory yard, or calculate exact materials in seconds.
           </p>
 
           {/* The Two Primary Action Pillars */}

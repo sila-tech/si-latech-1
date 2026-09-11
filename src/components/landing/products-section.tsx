@@ -97,7 +97,9 @@ export function ProductsSection() {
             { id: 'all', label: 'All Materials' },
             { id: 'beams', label: 'Precast Beams' },
             { id: 'blocks', label: 'Infill Blocks' },
-            { id: 'packages', label: 'Full Packages' },
+            { id: 'cabros', label: 'Cabros' },
+            { id: 'wall-panels', label: 'Wall Panels' },
+            { id: 'packages', label: 'Turnkey Packages' },
             { id: 'accessories', label: 'Accessories' },
           ].map((cat) => (
             <button

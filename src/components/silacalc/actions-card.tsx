@@ -1729,32 +1729,34 @@ export function ActionsCard() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl text-slate-900">Project Actions</CardTitle>
-          <CardDescription>
-            Generate documents, analyze plans, or manage your project.
+      <Card className="rounded-2xl border-slate-200 shadow-sm overflow-hidden bg-white">
+        <CardHeader className="bg-slate-50/50 p-5 border-b border-slate-100">
+          <CardTitle className="font-headline text-xl font-black text-slate-900 flex items-center gap-2">
+            <span>⚡ Project Actions &amp; Exports</span>
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500">
+            Generate official PDF documents, download verified material schedules, or save to your cloud account.
           </CardDescription>
           {/* Cloud storage context */}
           <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 font-medium">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-            Save &amp; Load use your <strong className="text-primary">Firebase cloud account</strong> — accessible from any device
+            Save &amp; Load use your <strong className="text-slate-700">Firebase cloud account</strong> — accessible on site or office
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Button variant="outline" className="w-full bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold" onClick={handleCreateNew}>
-            <FilePlus className="mr-2 h-4 w-4" /> New Project
+        <CardContent className="p-5 grid grid-cols-2 md:grid-cols-3 gap-3.5">
+          <Button variant="outline" className="w-full h-11 rounded-xl bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100 font-bold text-xs" onClick={handleCreateNew}>
+            <FilePlus className="mr-1.5 h-4 w-4 text-slate-600" /> New Project
           </Button>
 
           <LoadProjectDialog />
 
-          <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold" onClick={handleSaveClick}>
-            <Save className="mr-2 h-4 w-4" />
+          <Button className="w-full h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs" onClick={handleSaveClick}>
+            <Save className="mr-1.5 h-4 w-4 text-amber-400" />
             {loadedProjectId ? 'Save / Edit Details' : 'Save Project'}
           </Button>
           
-          <Button id="real-invoice-btn" className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold shadow-md" onClick={() => handleDocumentDownload('invoice')}>
-            <Download className="mr-2 h-4 w-4" /> Download Quote
+          <Button id="real-invoice-btn" className="w-full h-11 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-md text-xs transition-all hover:scale-[1.02]" onClick={() => handleDocumentDownload('invoice')}>
+            <Download className="mr-1.5 h-4 w-4" /> Download Quote
           </Button>
 
 
