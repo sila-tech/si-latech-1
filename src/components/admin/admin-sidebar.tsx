@@ -23,6 +23,7 @@ import {
     PlusCircle,
     Clock,
     HandCoins,
+    Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -34,6 +35,7 @@ export type AdminSection =
     | 'finances'
     | 'investments'
     | 'portfolio'
+    | 'products'
     | 'partners'
     | 'team';
 
@@ -54,6 +56,7 @@ const NAV_ITEMS: NavItem[] = [
     { id: 'finances',    label: 'Finances',    icon: DollarSign,      activeBg: 'bg-emerald-600', activeText: 'text-white font-bold', iconColor: 'text-white' },
     { id: 'investments', label: 'Investments', icon: TrendingUp,      activeBg: 'bg-amber-500',   activeText: 'text-slate-950 font-bold',   iconColor: 'text-slate-950' },
     { id: 'portfolio',   label: 'Portfolio',   icon: ImageIcon,       activeBg: 'bg-pink-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'products',    label: 'Products',    icon: Package,         activeBg: 'bg-amber-600',   activeText: 'text-white font-bold',    iconColor: 'text-white' },
     { id: 'partners',    label: 'Partners',    icon: Building2,       activeBg: 'bg-teal-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
     { id: 'team',        label: 'Team',        icon: Users,           activeBg: 'bg-indigo-600',  activeText: 'text-white font-bold',  iconColor: 'text-white', superAdminOnly: true },
 ];

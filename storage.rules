@@ -4,5 +4,8 @@ service firebase.storage {
     match /portfolio/{allPaths=**} {
       allow read, write: if true;
     }
+    match /products/{allPaths=**} {
+      allow read, write: if true;
+    }
   }
 }

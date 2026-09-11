@@ -47,6 +47,7 @@ import { StaffManagement } from '@/components/admin/staff-management';
 import { FinanceManagement } from '@/components/admin/finance-management';
 import { InvestorManagement } from '@/components/admin/investor-management';
 import { PortfolioManagement } from '@/components/admin/portfolio-management';
+import { ProductManagement } from '@/components/admin/product-management';
 import { PartnerManagement } from '@/components/admin/partner-management';
 import { AdminSidebar, type AdminSection } from '@/components/admin/admin-sidebar';
 import { AdminProjectEditorModal } from '@/components/admin/admin-project-editor-modal';
@@ -746,6 +747,7 @@ export default function AdminDashboardPage() {
             case 'finances': return <FinanceManagement isSuperAdmin={isSuperAdmin} activeSubTab={financeSubTab} onSubTabChange={setFinanceSubTab} />;
             case 'investments': return <InvestorManagement />;
             case 'portfolio': return <PortfolioManagement />;
+            case 'products': return <ProductManagement />;
             case 'partners': return <PartnerManagement />;
             case 'team': return isSuperAdmin ? <StaffManagement /> : null;
             default: return null;

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Box, 
@@ -12,152 +11,37 @@ import {
   Sparkles,
   Truck,
   Wrench,
-  ExternalLink
+  ExternalLink,
+  Package
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { ProductItem, DEFAULT_PRODUCTS } from '@/lib/products-data';
 
-export interface ProductItem {
-  id: string;
-  name: string;
-  category: 'beams' | 'blocks' | 'packages' | 'accessories';
-  badge: string;
-  badgeColor: string;
-  price: string;
-  unit: string;
-  image: string;
-  description: string;
-  specs: { label: string; value: string }[];
-  highlight: string;
-  beamType?: 'tbeam' | 'flat';
-}
-
-const products: ProductItem[] = [
-  {
-    id: 't-beam',
-    name: 'Prestressed Concrete T-Beam',
-    category: 'beams',
-    badge: 'Heavy Duty • NO Formwork Needed',
-    badgeColor: 'bg-amber-500 text-slate-950 font-bold',
-    price: 'KES 1,200',
-    unit: 'per linear meter (KES 2,800 – 3,500 / m² slab)',
-    image: '/beam-block-system.png',
-    description: 'High-strength inverted T-section precast beams engineered with high-tensile prestressed steel tendons. Completely self-supporting with NO formwork or timber shuttering needed.',
-    highlight: 'NO formwork needed • Spans up to 6.5m+ with zero deflection',
-    beamType: 'tbeam',
-    specs: [
-      { label: 'Formwork', value: 'NO Formwork Needed (Self-Supporting)' },
-      { label: 'Completed Slab Cost', value: 'KES 2,800 – 3,500 / m²' },
-      { label: 'Profile', value: 'Inverted T-Beam (150mm depth)' },
-      { label: 'Concrete Grade', value: 'C50/60 High Strength' },
-      { label: 'Compatible Blocks', value: 'T-Beam Hollow Blocks (KES 100)' },
-    ],
-  },
-  {
-    id: 'flat-beam',
-    name: 'Prestressed Concrete Flat Beam',
-    category: 'beams',
-    badge: 'Residential Best-Seller',
-    badgeColor: 'bg-blue-600 text-white font-bold',
-    price: 'KES 545',
-    unit: 'per linear meter',
-    image: '/beam-block-real.jpg',
-    description: 'Ultra cost-effective, compact precast flat beams tailored for residential homes, bungalows, and multi-unit developments with spans up to 4.0 meters. Lightweight for easy manual handling.',
-    highlight: 'Lightweight & crane-free manual installation on site',
-    beamType: 'flat',
-    specs: [
-      { label: 'Profile', value: 'Ribbed Flat Beam (120mm depth)' },
-      { label: 'Concrete Grade', value: 'C45/50 High Strength' },
-      { label: 'Reinforcement', value: 'Prestressed High-Tensile Wire' },
-      { label: 'Recommended Spans', value: 'Safe for Spans ≤ 4.0m' },
-      { label: 'Compatible Blocks', value: 'Flat Beam Hollow Blocks (KES 90)' },
-    ],
-  },
-  {
-    id: 't-block',
-    name: 'T-Beam Hollow Infill Block',
-    category: 'blocks',
-    badge: 'Precision Interlock',
-    badgeColor: 'bg-emerald-600 text-white font-bold',
-    price: 'KES 100',
-    unit: 'per piece',
-    image: '/beam-block-finished.jpg',
-    description: 'Lightweight hollow concrete blocks specifically rebated to fit securely onto the lower flanges of SI-LATECH T-Beams, delivering exceptional acoustic and thermal insulation.',
-    highlight: 'Reduces overall slab dead load by over 45% compared to solid concrete',
-    beamType: 'tbeam',
-    specs: [
-      { label: 'Dimensions', value: '400mm (L) × 200mm (W) × 150mm (H)' },
-      { label: 'Design Weight', value: 'Approx. 12 - 14 kg / piece' },
-      { label: 'Cavity Structure', value: 'Double hollow chamber' },
-      { label: 'Acoustic Rating', value: 'Superior floor-to-floor sound dampening' },
-      { label: 'Compatible Beam', value: 'T-Beam (KES 1,200/m)' },
-    ],
-  },
-  {
-    id: 'flat-block',
-    name: 'Flat Beam Hollow Infill Block',
-    category: 'blocks',
-    badge: 'Most Economical',
-    badgeColor: 'bg-amber-600 text-white font-bold',
-    price: 'KES 90',
-    unit: 'per piece',
-    image: '/beam-block-real.jpg',
-    description: 'Specially engineered infill blocks with shallow seating shoulders designed to nest alongside our 545/m Flat Beams, producing a level, flush soffit ceiling ready for direct plaster.',
-    highlight: 'Lowest cost per m² for residential building slabs in Kenya',
-    beamType: 'flat',
-    specs: [
-      { label: 'Dimensions', value: '400mm (L) × 200mm (W) × 120mm (H)' },
-      { label: 'Design Weight', value: 'Approx. 10 - 12 kg / piece' },
-      { label: 'Ceiling Finish', value: 'Flush soffit for direct plaster skim' },
-      { label: 'Thermal Comfort', value: 'Hollow insulation traps cool air' },
-      { label: 'Compatible Beam', value: 'Flat Beam (KES 545/m)' },
-    ],
-  },
-  {
-    id: 'full-slab-package',
-    name: 'Complete Slab Materials Package',
-    category: 'packages',
-    badge: 'All-in-One Site Supply',
-    badgeColor: 'bg-purple-600 text-white font-bold',
-    price: 'Custom Quote',
-    unit: 'turnkey delivered to site',
-    image: '/beam-block-finished.jpg',
-    description: 'Complete material package bundled and delivered together: Precast Beams cut to architectural spans, Hollow Infill Blocks, BRC Mesh A142, Cement bags, Sand & Ballast aggregate.',
-    highlight: 'Save up to 30% overall compared to conventional cast-in-situ slabs',
-    specs: [
-      { label: 'Included Components', value: 'Beams + Blocks + BRC + Concrete Materials' },
-      { label: 'Cut to Length', value: 'Factory cut to your exact plan dimensions' },
-      { label: 'Delivery', value: 'Offloaded directly at your construction site' },
-      { label: 'Technical Support', value: 'Free layout drawings & installation guide' },
-    ],
-  },
-  {
-    id: 'brc-mesh-props',
-    name: 'BRC Mesh & Construction Accessories',
-    category: 'accessories',
-    badge: 'Site Accessories',
-    badgeColor: 'bg-slate-700 text-white font-bold',
-    price: 'Wholesale Rates',
-    unit: 'available on order',
-    image: '/beam-block-system.png',
-    description: 'High-tensile welded BRC A142 wire fabric for structural slab screeds, telescopic adjustable steel props, and formwork timber battens for temporary propping during casting.',
-    highlight: 'High-strength A142 mesh ensures crack-free structural topping concrete',
-    specs: [
-      { label: 'BRC Fabric', value: 'A142 Standard (6mm wire @ 200mm mesh)' },
-      { label: 'Steel Props', value: 'Telescopic adjustable 2.0m - 3.8m' },
-      { label: 'Timber Support', value: '3×2 treated structural battens' },
-      { label: 'Availability', value: 'In stock at Ruiru factory yard' },
-    ],
-  },
-];
+export { type ProductItem };
 
 export function ProductsSection() {
   const [activeCategory, setActiveCategory] = useState<'all' | 'beams' | 'blocks' | 'packages' | 'accessories'>('all');
   const { updateSettings } = useCalculator();
+  const firestore = useFirestore();
+
+  // Subscribe to live products from Firestore
+  const productsQuery = useMemoFirebase(
+    () => query(collection(firestore, 'products'), orderBy('order', 'asc')),
+    [firestore]
+  );
+  const { data: dbProducts } = useCollection<ProductItem>(productsQuery);
+
+  // Fallback to DEFAULT_PRODUCTS if Firestore is empty or loading
+  const productsList: ProductItem[] = (dbProducts && dbProducts.length > 0) 
+    ? dbProducts 
+    : DEFAULT_PRODUCTS;
 
   const filteredProducts = activeCategory === 'all' 
-    ? products 
-    : products.filter(p => p.category === activeCategory);
+    ? productsList 
+    : productsList.filter(p => p.category === activeCategory);
 
   const handleSelectProductForCalc = (beamType?: 'tbeam' | 'flat') => {
     if (beamType) {
@@ -240,21 +124,31 @@ export function ProductsSection() {
               className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-amber-500/50 transition-all duration-300 flex flex-col overflow-hidden group"
             >
               {/* Product Visual Header */}
-              <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
-                />
+              <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden flex items-center justify-center">
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                    onError={(e) => {
+                      (e.target as any).src = '/beam-block-system.png';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
+                    <Package className="h-10 w-10" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
                 
                 {/* Badge */}
-                <div className="absolute top-3 left-3">
-                  <span className={`text-[11px] px-3 py-1 rounded-full shadow-sm ${product.badgeColor}`}>
-                    {product.badge}
-                  </span>
-                </div>
+                {product.badge && (
+                  <div className="absolute top-3 left-3">
+                    <span className={`text-[11px] px-3 py-1 rounded-full shadow-sm ${product.badgeColor || 'bg-amber-500 text-slate-950 font-bold'}`}>
+                      {product.badge}
+                    </span>
+                  </div>
+                )}
 
                 {/* Price Display */}
                 <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
@@ -275,26 +169,32 @@ export function ProductsSection() {
                   <h3 className="text-lg font-black text-slate-900 group-hover:text-amber-600 transition-colors">
                     {product.name}
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    {product.description}
-                  </p>
+                  {product.description && (
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {product.description}
+                    </p>
+                  )}
 
                   {/* Highlight pill */}
-                  <div className="bg-amber-50/80 border border-amber-200/70 p-2.5 rounded-xl flex items-start gap-2 text-xs text-amber-900 font-medium">
-                    <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                    <span>{product.highlight}</span>
-                  </div>
+                  {product.highlight && (
+                    <div className="bg-amber-50/80 border border-amber-200/70 p-2.5 rounded-xl flex items-start gap-2 text-xs text-amber-900 font-medium">
+                      <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>{product.highlight}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Quick Specs Table */}
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5 text-xs">
-                  {product.specs.slice(0, 3).map((spec, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-slate-600">
-                      <span className="font-medium text-slate-500">{spec.label}:</span>
-                      <span className="font-bold text-slate-900 text-right">{spec.value}</span>
-                    </div>
-                  ))}
-                </div>
+                {product.specs && product.specs.length > 0 && (
+                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1.5 text-xs">
+                    {product.specs.slice(0, 3).map((spec, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-slate-600">
+                        <span className="font-medium text-slate-500">{spec.label}:</span>
+                        <span className="font-bold text-slate-900 text-right">{spec.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Action CTAs */}
                 <div className="pt-2 grid grid-cols-2 gap-2">

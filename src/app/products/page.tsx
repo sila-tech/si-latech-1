@@ -27,9 +27,27 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { ProductItem, DEFAULT_PRODUCTS } from '@/lib/products-data';
 
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState('all');
+  const firestore = useFirestore();
+
+  const productsQuery = useMemoFirebase(
+    () => query(collection(firestore, 'products'), orderBy('order', 'asc')),
+    [firestore]
+  );
+  const { data: dbProducts } = useCollection<ProductItem>(productsQuery);
+
+  const productsList: ProductItem[] = (dbProducts && dbProducts.length > 0)
+    ? dbProducts
+    : DEFAULT_PRODUCTS;
+
+  const filteredProducts = activeTab === 'all'
+    ? productsList
+    : productsList.filter(p => p.category === activeTab);
 
   const getWhatsAppOrderUrl = (productName: string, price: string) => {
     const text = `Hello SI-LATECH, I am viewing your product catalog and would like to order: ${productName} (${price}). Please provide delivery timeline and a formal quotation.`;
@@ -433,6 +451,144 @@ export default function ProductsPage() {
                     </a>
                   </Button>
                 </div>
+              </div>
+            </div>
+
+            {/* Dynamic Storefront Catalog Grid (Updated in Real-time by Admins) */}
+            <div className="space-y-8 pt-6 border-t border-slate-200">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-800">
+                    <Box className="h-3.5 w-3.5 text-amber-600" />
+                    <span>Live Factory Inventory &amp; Items</span>
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
+                    Complete Material Catalog ({filteredProducts.length} Items)
+                  </h3>
+                  <p className="text-slate-600 text-xs sm:text-sm max-w-2xl">
+                    Browse all precast beams, hollow blocks, wire fabric, and slab packages manufactured and supplied directly by SI-LATECH.
+                  </p>
+                </div>
+
+                {/* Category tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {[
+                    { id: 'all', label: 'All Items' },
+                    { id: 'beams', label: 'Beams' },
+                    { id: 'blocks', label: 'Blocks' },
+                    { id: 'packages', label: 'Packages' },
+                    { id: 'accessories', label: 'Accessories' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                        activeTab === tab.id
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map((product) => (
+                  <div 
+                    key={product.id}
+                    className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group"
+                  >
+                    <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden flex items-center justify-center">
+                      {product.image ? (
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            (e.target as any).src = '/beam-block-system.png';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
+                          <Box className="h-8 w-8" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                      
+                      {product.badge && (
+                        <div className="absolute top-3 left-3">
+                          <span className={`text-[10px] px-2.5 py-0.5 rounded-full shadow-xs ${product.badgeColor || 'bg-amber-500 text-slate-950 font-bold'}`}>
+                            {product.badge}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-300 block">Factory Rate</span>
+                          <span className="text-xl font-black text-white">{product.price}</span>
+                          <span className="text-[10px] text-slate-300 ml-1">{product.unit}</span>
+                        </div>
+                        <Badge variant="outline" className="border-white/30 text-white text-[10px] uppercase font-bold bg-white/10 backdrop-blur-xs">
+                          {product.category}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-black text-slate-900 group-hover:text-amber-600 transition-colors">
+                          {product.name}
+                        </h4>
+                        {product.description && (
+                          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                            {product.description}
+                          </p>
+                        )}
+                        {product.highlight && (
+                          <div className="bg-amber-50 border border-amber-200/60 p-2 rounded-lg text-[11px] text-amber-900 flex items-start gap-1.5 font-medium">
+                            <Sparkles className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                            <span>{product.highlight}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {product.specs && product.specs.length > 0 && (
+                        <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 space-y-1 text-xs">
+                          {product.specs.slice(0, 2).map((s, idx) => (
+                            <div key={idx} className="flex justify-between text-slate-600 text-[11px]">
+                              <span className="text-slate-500">{s.label}:</span>
+                              <span className="font-bold text-slate-900">{s.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="pt-2 grid grid-cols-2 gap-2">
+                        <Button asChild size="sm" className="w-full bg-[#25D366] hover:bg-[#1fbb57] text-white font-bold rounded-xl text-xs py-4">
+                          <a 
+                            href={getWhatsAppOrderUrl(product.name, product.price)}
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-1"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            Order WA
+                          </a>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="w-full border-slate-300 font-bold rounded-xl text-xs py-4">
+                          <Link href="/#calculator" className="flex items-center justify-center gap-1">
+                            <Calculator className="h-3.5 w-3.5 text-amber-600" />
+                            Calculate
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
