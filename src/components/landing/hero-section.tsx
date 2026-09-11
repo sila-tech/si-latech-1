@@ -42,7 +42,6 @@ const HERO_SLIDES = [
 
 export function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
@@ -52,17 +51,17 @@ export function HeroSection() {
     setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
   }, []);
 
+  // Continuous auto-rotation every 4 seconds
   useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(nextSlide, 6000);
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [isPaused, nextSlide]);
+  }, [currentSlide]);
 
   return (
     <section 
       className="relative overflow-hidden bg-[#070b14] text-white py-16 md:py-24 border-b border-slate-800"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
     >
       {/* Animated Hero Background Slideshow - High Clarity & Visibility */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -72,17 +71,18 @@ export function HeroSection() {
             <div
               key={slide.id}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                isActive ? 'opacity-100' : 'opacity-0'
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
             >
               <Image
                 src={slide.src}
                 alt={slide.title}
                 fill
-                priority={idx === 0}
-                style={{ transitionDuration: '7000ms' }}
+                priority
+                sizes="100vw"
+                style={{ transitionDuration: '4500ms' }}
                 className={`object-cover object-center transition-transform ease-out ${
-                  isActive ? 'scale-105' : 'scale-100'
+                  isActive ? 'scale-108' : 'scale-100'
                 }`}
               />
             </div>
@@ -90,9 +90,9 @@ export function HeroSection() {
         })}
 
         {/* Ultra-light translucent wash to ensure photos are completely visible and vibrant */}
-        <div className="absolute inset-0 bg-slate-950/25 pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#070b14]/75 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#070b14]/90 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-slate-950/25 z-10 pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#070b14]/75 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#070b14]/90 to-transparent z-10 pointer-events-none" />
       </div>
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -185,19 +185,27 @@ export function HeroSection() {
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <div className="flex items-center gap-1.5 px-1.5">
+              <div className="flex items-center gap-2 px-1.5">
                 {HERO_SLIDES.map((_, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => setCurrentSlide(i)}
                     aria-label={`Go to slide ${i + 1}`}
-                    className={`transition-all duration-300 rounded-full ${
-                      i === currentSlide
-                        ? 'w-6 h-1.5 bg-amber-400 shadow-sm shadow-amber-400/50'
-                        : 'w-1.5 h-1.5 bg-slate-700 hover:bg-slate-500'
-                    }`}
-                  />
+                    className="relative h-1.5 w-7 sm:w-9 rounded-full bg-slate-700/80 overflow-hidden transition-all"
+                  >
+                    {i === currentSlide ? (
+                      <span 
+                        key={currentSlide}
+                        className="absolute inset-y-0 left-0 bg-amber-400 rounded-full" 
+                        style={{
+                          animation: 'heroTimer 4000ms linear forwards'
+                        }}
+                      />
+                    ) : (
+                      <span className="block h-full w-full bg-slate-700/80 hover:bg-slate-500" />
+                    )}
+                  </button>
                 ))}
               </div>
 
@@ -214,6 +222,13 @@ export function HeroSection() {
 
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes heroTimer {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+      `}</style>
     </section>
   );
 }
