@@ -589,6 +589,18 @@ export function calcBRC(totalArea: number, opts: Partial<CalculationDefaults> = 
 
 export function calcTimberAndProps(room: Room, opts: Partial<CalculationDefaults> = {}): TimberAndPropsCalculation {
   const C = { ...DEFAULTS, ...opts };
+  // Precast T-Beams are fully self-supporting: NO formwork, timber shuttering, or props needed!
+  if (C.beamType === 'tbeam') {
+    return {
+      pieces3x2: 0,
+      lengthEach3x2: 0,
+      total3x2m: 0,
+      total3x2ft: 0,
+      perimeter: 2 * (room.length + room.width),
+      total6x1m: 0,
+      total6x1ft: 0,
+    };
+  }
   const shorter = Math.min(room.length, room.width);
   const longer = Math.max(room.length, room.width);
   const pieces3x2 = C.timber3x2Spacing > 0 ? ceil(shorter / C.timber3x2Spacing) + 1 : 0;
@@ -780,8 +792,10 @@ export function calculateProjectTotals(
   }, initialTotals);
 
   aggregated.totalProfitBeamLength = aggregated.totalInvoiceBeamLength - aggregated.totalActualBeamLength;
-  
-  if (settings.propSpacing > 0) {
+
+  if (settings.beamType === 'tbeam') {
+    aggregated.timber.totalProps = 0;
+  } else if (settings.propSpacing > 0) {
     aggregated.timber.totalProps = Math.ceil(aggregated.timber.total3x2m / settings.propSpacing);
   }
 

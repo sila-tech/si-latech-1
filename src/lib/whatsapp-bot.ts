@@ -33,7 +33,7 @@ export async function processWhatsAppMessage(from: string, text: string) {
   }
 
   if (extraction.action === 'FAQ') {
-    await sendWhatsAppMessage(from, `You asked about: ${extraction.faqTopic}. Currently, our high-quality hollow blocks are 90 KES each (100 KES for T-Beam), and our precast beams are 545 KES per linear meter (1,200 KES for T-Beam). Let me know if you want an instant quote!`);
+    await sendWhatsAppMessage(from, `You asked about: ${extraction.faqTopic}. Our precast beams are 545 KES/m for Flat Beams (~2,000 KES/m² slab) and 1,200 KES/m for T-Beams (2,800 to 3,500 KES/m² slab with NO formwork needed vs 4,000 to 4,800 KES/m² for traditional slabs). Hollow blocks are 90 KES (Flat) and 100 KES (T-Beam). Let me know if you want an instant quote!`);
     return;
   }
 

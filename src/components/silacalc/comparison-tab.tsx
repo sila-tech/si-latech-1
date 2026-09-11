@@ -183,7 +183,12 @@ export function ComparisonTab() {
       silaBallastT = (silaDryVol * (4/7) * DENSITIES.ballast * 1.10) / 1000;
       
       silaBRCrolls = Math.ceil(area / 115.2); // BRC Mesh A98 roll covers 115.2m²
-      silaProps = Math.ceil(silaBeamsM / 1.5); // Minimal prop line every 1.5m under beams
+      // T-Beams require NO formwork and NO props (self-supporting)
+      silaProps = settings?.beamType === 'tbeam' ? 0 : Math.ceil(silaBeamsM / 1.5);
+    }
+
+    if (settings?.beamType === 'tbeam') {
+      silaProps = 0;
     }
 
     const silaPlywoodM2 = 0; // Precast blocks act as deck formwork

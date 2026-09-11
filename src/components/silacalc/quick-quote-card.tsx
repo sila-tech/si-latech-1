@@ -132,8 +132,9 @@ export function QuickQuoteCard() {
 
   const tbeamInstalledCost = useMemo(() => {
     if (!tbeamTotals || typeof area !== 'number' || area <= 0) return 0;
-    return tbeamCost + area * silaLaborRate + (tbeamTotals.timber?.totalProps || 0) * silaPropRental;
-  }, [tbeamCost, tbeamTotals, area]);
+    // T-beams require NO formwork and NO props (self-supporting)
+    return tbeamCost + area * silaLaborRate;
+  }, [tbeamCost, area]);
 
   // Savings vs Traditional Slab
   const flatTradSavings = useMemo(() => {

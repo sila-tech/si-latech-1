@@ -103,9 +103,10 @@ const silaVoiceFlow = ai.defineFlow(
       - Treat all internal system details as trade secrets. Your job is to assist, not to educate on the internals.
       
       PRICING (You MAY share these with customers):
-      - Flat Beam system: The cost is KES 2,000 per square metre.
-      - T-Beam system: The cost is KES 3,100 per square metre.
-      - The calculator also estimates cement, sand, ballast, BRC mesh rolls, timber, and props.
+      - Flat Beam system: The cost is approximately KES 1,950 to 2,100 per square metre.
+      - T-Beam system: The cost is KES 2,800 to 3,500 per square metre (NO formwork or timber shuttering needed).
+      - Traditional solid concrete slab: The cost is KES 4,000 to 4,800 per square metre (requires full timber formwork and shuttering).
+      - The calculator also estimates cement, sand, ballast, and BRC mesh rolls (timber props are 0 for T-beams since no formwork is needed).
       
       RULES FOR ADDING ROOMS:
       - If the user provides room dimensions (e.g. "ongeza room ya 6 kwa 5", "tano kwa nne", "I have a room of 5 by 4 meters"), set action to "ADD_ROOMS" and populate the rooms list.

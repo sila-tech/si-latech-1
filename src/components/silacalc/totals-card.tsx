@@ -329,7 +329,13 @@ export function TotalsCard() {
                   <span className="text-slate-600 flex items-center gap-2 font-medium">
                     <TrendingUp size={16} className="text-slate-600" /> Support Props Required
                   </span>
-                  <strong className="text-slate-900 font-bold">{timber?.totalProps || 0} pcs</strong>
+                  <strong className="text-slate-900 font-bold">
+                    {settings.beamType === 'tbeam' ? (
+                      <span className="text-emerald-600 font-bold">0 pcs (No formwork needed)</span>
+                    ) : (
+                      `${timber?.totalProps || 0} pcs`
+                    )}
+                  </strong>
                 </div>
                 {costEstimationEnabled && (
                   <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-slate-100/60 animate-in fade-in duration-200">

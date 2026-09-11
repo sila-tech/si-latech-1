@@ -242,6 +242,7 @@ export default function ProductsPage() {
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Beam Price</span>
                       <span className="text-3xl font-black text-slate-900">KES 1,200</span>
                       <span className="text-xs text-slate-600 ml-1.5 font-medium">/ linear meter</span>
+                      <span className="text-xs text-emerald-600 font-bold block mt-0.5">KES 2,800 – 3,500 / m² slab</span>
                     </div>
                     <div className="border-l border-slate-200 pl-4">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Compatible Block</span>
@@ -288,8 +289,12 @@ export default function ProductsPage() {
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">System Advantages</h4>
                     <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
                       <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span><strong>NO Formwork Needed:</strong> Fully self-supporting prestressed T-beams eliminate timber formwork, shuttering, and propping entirely.</span>
+                      </li>
+                      <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-amber-600 shrink-0" />
-                        <span><strong>Expansive Column-Free Spaces:</strong> Accommodates large open living rooms, commercial offices &amp; retail floors.</span>
+                        <span><strong>Expansive Column-Free Spaces:</strong> Accommodates large open living rooms, commercial offices &amp; retail floors up to 6.5m+ clear spans.</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-amber-600 shrink-0" />
@@ -297,7 +302,7 @@ export default function ProductsPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-amber-600 shrink-0" />
-                        <span><strong>Interlocking Block Flanges:</strong> T-beam profile securely grips the hollow infill blocks for enhanced diaphragm action.</span>
+                        <span><strong>Interlocking Block Flanges:</strong> T-beam profile securely grips the hollow infill blocks for enhanced structural diaphragm action.</span>
                       </li>
                     </ul>
                   </div>
@@ -474,8 +479,8 @@ export default function ProductsPage() {
                     <tr>
                       <td className="py-3 px-4 font-semibold text-slate-900">Estimated Slab Cost</td>
                       <td className="py-3 px-4 font-bold text-emerald-600">~ KES 1,950 - 2,100 / m²</td>
-                      <td className="py-3 px-4 font-bold text-slate-800">~ KES 2,400 - 2,800 / m²</td>
-                      <td className="py-3 px-4 text-rose-600 font-medium">~ KES 3,200 - 3,800 / m²</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">KES 2,800 – 3,500 / m²</td>
+                      <td className="py-3 px-4 text-rose-600 font-bold">KES 4,000 – 4,800 / m²</td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-slate-900">Dead Load Weight</td>
@@ -484,10 +489,10 @@ export default function ProductsPage() {
                       <td className="py-3 px-4 text-slate-700 font-semibold">~ 360 kg/m² (Heavy)</td>
                     </tr>
                     <tr>
-                      <td className="py-3 px-4 font-semibold text-slate-900">Timber &amp; Props Needed</td>
-                      <td className="py-3 px-4 font-semibold text-emerald-600">Minimal (props @ 0.6m)</td>
-                      <td className="py-3 px-4 font-semibold text-emerald-600">Minimal (props @ 0.6m)</td>
-                      <td className="py-3 px-4 text-rose-600">Extensive 100% timber shuttering</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">Formwork &amp; Timber Needed</td>
+                      <td className="py-3 px-4 text-slate-700 font-medium">Minimal propping (props @ 0.6m)</td>
+                      <td className="py-3 px-4 font-bold text-emerald-600">NO FORMWORK NEEDED (Self-Supporting)</td>
+                      <td className="py-3 px-4 text-rose-600 font-semibold">Full 100% Timber Shuttering &amp; Props</td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-slate-900">Construction Speed</td>
