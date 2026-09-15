@@ -163,21 +163,34 @@ Return structured output according to the schema. Always match the target projec
 
       // Keyword-based offline fallback so the user is never blocked even if AI API has a network hiccup
       const lower = input.userMessage.toLowerCase();
-      const matchedProj = input.projects && input.projects.length > 0 ? input.projects[0] : undefined;
+      const allProjects = input.projects || [];
+      
+      // Match project by name or fuzzy token match (e.g. "makueni 2")
+      const matchedProj = allProjects.find(p => {
+        const nameLower = (p.name || '').toLowerCase();
+        const clientLower = (p.clientName || '').toLowerCase();
+        return (
+          (nameLower && lower.includes(nameLower)) ||
+          (clientLower && lower.includes(clientLower)) ||
+          nameLower.split(/\s+/).some(word => word.length > 3 && lower.includes(word))
+        );
+      }) || (allProjects.length > 0 ? allProjects[0] : undefined);
+
+      const singleBeamsSpecified = lower.includes('dont double') || lower.includes("don't double") || lower.includes('single') || lower.includes('no double');
 
       if (lower.includes('t beam') || lower.includes('tbeam') || lower.includes('quote')) {
         return {
           reply: matchedProj 
-            ? `I have identified project "${matchedProj.name}". I am preparing your T-beam quotation with single beams enforced as requested.`
+            ? `I have matched project "${matchedProj.name}". I am converting it to T-beams${singleBeamsSpecified ? ' with single beams enforced' : ''} and preparing the quote download.`
             : "Please select or mention which project you would like to generate a T-beam quote for.",
           action: matchedProj ? {
             type: 'CONVERT_TO_TBEAM_AND_QUOTE' as const,
             projectId: matchedProj.id,
             projectName: matchedProj.name,
             beamType: 'tbeam' as const,
-            singleBeamsOnly: true,
+            singleBeamsOnly: singleBeamsSpecified,
             triggerQuoteDownload: true,
-            explanation: 'Single T-beam quotation prepared directly.',
+            explanation: `T-Beam quotation with ${singleBeamsSpecified ? 'single beams only' : 'standard arrangement'} for ${matchedProj.name}.`,
           } : undefined
         };
       }

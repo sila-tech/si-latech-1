@@ -107,17 +107,21 @@ export function AdminOperationsAiModal({
         ? `${pendingFinances.length} pending requests totaling KSh ${pendingFinances.reduce((acc: number, f: any) => acc + (f.amount || 0), 0).toLocaleString()}`
         : 'All facilitation requests are currently cleared.';
 
-      const result = await operationsAiAssistant({
+      const rawResult = await operationsAiAssistant({
         userMessage: promptText,
         projects: compactProjects,
         financesSummary,
       });
 
+      const result = rawResult || {
+        reply: "I am ready to help manage project statuses, rectify dimension errors, convert flat beams to T-beams, and download custom quotations. How can I assist?",
+      };
+
       let statusFeedback = '';
       let actionSucceeded = true;
 
       // EXECUTE STRUCTURED ACTIONS IN FIRESTORE / CLIENT
-      if (result.action && result.action.type !== 'NONE') {
+      if (result && result.action && result.action.type !== 'NONE') {
         const action = result.action;
         const targetProj = projects.find(p => p.id === action.projectId);
 
@@ -229,8 +233,8 @@ export function AdminOperationsAiModal({
         ...prev,
         {
           role: 'assistant',
-          content: result.reply,
-          action: result.action,
+          content: result?.reply || "Done.",
+          action: result?.action,
           timestamp: new Date(),
           statusText: statusFeedback,
           success: actionSucceeded,
