@@ -18,6 +18,7 @@ import type {
 } from '@/lib/calculator';
 import {
   DEFAULTS,
+  NEW_PROJECT_DEFAULTS,
   calcRoomBlocksAndBeams,
   calcConcrete,
   calcBRC,
@@ -206,7 +207,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       width: 4,
     },
   ]);
-  const [settings, setSettings] = useState<CalculationDefaults>(DEFAULTS);
+  const [settings, setSettings] = useState<CalculationDefaults>(NEW_PROJECT_DEFAULTS);
   const [lintelLength, setLintelLength] = useState<number>(0);
   const [buildingBlocks, setBuildingBlocks] = useState<BuildingBlock[]>([]);
   const [planData, setPlanData] = useState<PlanData | null>(null);
@@ -305,7 +306,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCalculator = useCallback(() => {
     setRooms([]);
-    setSettings(DEFAULTS);
+    setSettings(NEW_PROJECT_DEFAULTS);
     setLintelLength(0);
     setBuildingBlocks([]);
     setPlanData(null);

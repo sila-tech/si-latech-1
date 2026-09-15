@@ -42,7 +42,7 @@ import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { analyzePlan } from '@/ai/flows/analyze-plan-flow';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
-import { DEFAULTS, calcRoomBlocksAndBeams, calculateProjectTotals } from '@/lib/calculator';
+import { DEFAULTS, NEW_PROJECT_DEFAULTS, calcRoomBlocksAndBeams, calculateProjectTotals } from '@/lib/calculator';
 import { generateQuotePdf, generatePromaxPdf } from '@/lib/pdf-utils';
 import type { ProjectData, PlanData, PlanRoomData } from '@/firebase/data-manager';
 import { logBlueprintActiveLearning } from '@/firebase/blueprint-learning';
@@ -181,10 +181,19 @@ export function AdminProjectEditorModal({
   }, [project, open]);
 
   // Recalculate Totals
-  const activeSettings: CalculationDefaults = useMemo(() => ({
-    ...DEFAULTS,
-    beamType,
-  }), [beamType]);
+  const activeSettings: CalculationDefaults = useMemo(() => {
+    if (project) {
+      return {
+        ...DEFAULTS,
+        ...(project.settings || {}),
+        beamType,
+      };
+    }
+    return {
+      ...NEW_PROJECT_DEFAULTS,
+      beamType,
+    };
+  }, [beamType, project]);
 
   const calculatedTotals = useMemo(() => {
     return calculateProjectTotals(rooms, activeSettings, 0, false);
@@ -613,6 +622,9 @@ export function AdminProjectEditorModal({
                       >
                         Flat Beam (KSh {pricingRates?.beamFlatRate || 545}/m)
                       </Button>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-[11px]">
+                        {activeSettings.profitMode === 'percentage' ? `${activeSettings.profitMarginPercentage ?? 15}% Margin (Extra Metres)` : 'Legacy (+2 Beams/Rm)'}
+                      </span>
                     </div>
                   </div>
                 </CardContent>

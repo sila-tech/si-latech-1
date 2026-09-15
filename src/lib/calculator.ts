@@ -76,6 +76,8 @@ export interface CalculationDefaults {
   partnerCompanyId?: string;
   singleBeamsOnly?: boolean;
   forceSingleBeams?: boolean;
+  profitMode?: 'legacy' | 'percentage';
+  profitMarginPercentage?: number;
 }
 
 export interface RoomCalculation {
@@ -106,6 +108,8 @@ export interface RoomCalculation {
   partnerProfitValue?: number;
   siLatechProfitBeamLength?: number;
   siLatechProfitValue?: number;
+  profitMode?: 'legacy' | 'percentage';
+  profitMarginPercentage?: number;
   layout: {
     gapAtEnd: number;
     needsExtraBeam: boolean;
@@ -252,6 +256,14 @@ export const DEFAULTS: CalculationDefaults = {
   beamTbeamRate: 1200,
   singleBeamsOnly: false,
   forceSingleBeams: false,
+  profitMode: 'legacy',
+  profitMarginPercentage: 15,
+};
+
+export const NEW_PROJECT_DEFAULTS: CalculationDefaults = {
+  ...DEFAULTS,
+  profitMode: 'percentage',
+  profitMarginPercentage: 15,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -418,6 +430,13 @@ export function calcRoomBlocksAndBeams(
     // METRE SQUARE MODE: Multiply Area by 2.4
     invoiceTotalBeamLength = area * 2.4;
     invoiceBeamCount = shorter > 0 ? ceil(invoiceTotalBeamLength / shorter) : 0;
+  } else if (C.profitMode === 'percentage') {
+    // PERCENTAGE MARGIN MODE (just as in partner mode):
+    // Adds extra linear metres equal to the target profit percentage (default 15%) of actual beams
+    const marginPct = C.profitMarginPercentage ?? 15;
+    const profitMetres = actualTotalBeamLength * (marginPct / 100);
+    invoiceTotalBeamLength = actualTotalBeamLength + profitMetres;
+    invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : effectiveBeamCount;
   } else if (isBalcony) {
     // BALCONY / VERANDAH MODE: Add 1 profit beam
     const profitBeamsPerBalcony = 1;
@@ -453,6 +472,15 @@ export function calcRoomBlocksAndBeams(
     blockCommission = 0;
     beamProfitValue = partnerProfitValue;
     totalRoomProfit = partnerProfitValue;
+  } else if (C.profitMode === 'percentage') {
+    profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // 15% extra metres
+    grossExtraMetresValue = profitBeamLength * beamPrice;
+    extraMetresVat = grossExtraMetresValue * 0.16;
+    netExtraMetresProfit = grossExtraMetresValue * 0.84;
+    actualMetresProfit = 0;
+    blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 5));
+    beamProfitValue = grossExtraMetresValue;
+    totalRoomProfit = beamProfitValue + blockCommission;
   } else {
     profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // Extra metres
     grossExtraMetresValue = profitBeamLength * beamPrice;
@@ -494,6 +522,8 @@ export function calcRoomBlocksAndBeams(
     partnerProfitValue,
     siLatechProfitBeamLength,
     siLatechProfitValue,
+    profitMode: C.profitMode,
+    profitMarginPercentage: C.profitMarginPercentage ?? 15,
     layout: {
       gapAtEnd: startWithBlock
         ? Math.max(0, spanLength - (0.40 + (effectiveBeamGroupCount - 1) * unitSpan + (beamWidth * beamMultiplier)))
@@ -727,6 +757,8 @@ export function calculateProjectTotals(
     totalSiLatechProfitValue: 0,
     isPartnerMode: !!settings.isPartnerMode,
     partnerProfitPercentage: settings.partnerProfitPercentage ?? 15,
+    profitMode: settings.profitMode || 'legacy',
+    profitMarginPercentage: settings.profitMarginPercentage ?? 15,
     totalConcreteVolume: 0,
     totalCementBags: 0,
     totalSandTonnes: 0,
