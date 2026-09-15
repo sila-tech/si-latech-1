@@ -51,6 +51,7 @@ import { ProductManagement } from '@/components/admin/product-management';
 import { PartnerManagement } from '@/components/admin/partner-management';
 import { AdminSidebar, type AdminSection } from '@/components/admin/admin-sidebar';
 import { AdminProjectEditorModal } from '@/components/admin/admin-project-editor-modal';
+import { AdminOperationsAiModal } from '@/components/admin/admin-operations-ai-modal';
 import { useToast } from '@/hooks/use-toast';
 import {
     DropdownMenu,
@@ -72,6 +73,7 @@ export default function AdminDashboardPage() {
 
     const [isAdminEditorOpen, setIsAdminEditorOpen] = useState(false);
     const [adminEditorProject, setAdminEditorProject] = useState<any>(null);
+    const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
     const [deletingProject, setDeletingProject] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -166,6 +168,12 @@ export default function AdminDashboardPage() {
         [firestore]
     );
     const { data: invoices, isLoading: invoicesLoading } = useCollection<any>(invoicesQuery);
+
+    const financesQuery = useMemoFirebase(
+        () => query(collection(firestore, 'finances'), orderBy('createdAt', 'desc')),
+        [firestore]
+    );
+    const { data: finances } = useCollection<any>(financesQuery);
 
     const getProjectName = (proj: any) => {
         const raw = proj?.name?.trim();
@@ -436,12 +444,20 @@ export default function AdminDashboardPage() {
                     <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">Projects</h1>
                     <p className="text-slate-500 text-sm mt-1">Manage and edit all client construction project records.</p>
                 </div>
-                <Button
-                    onClick={() => { setAdminEditorProject(null); setIsAdminEditorOpen(true); }}
-                    className="bg-[#095388] hover:bg-[#07426c] text-white font-bold text-xs h-10 px-4 rounded-xl gap-2 shadow-sm shrink-0"
-                >
-                    <Plus size={15} /> New Project &amp; Quote
-                </Button>
+                <div className="flex items-center gap-2.5 shrink-0">
+                    <Button
+                        onClick={() => setIsAiModalOpen(true)}
+                        className="bg-gradient-to-r from-sky-600 to-amber-500 hover:from-sky-700 hover:to-amber-600 text-white font-bold text-xs h-10 px-4 rounded-xl gap-2 shadow-sm transition-all"
+                    >
+                        <Sparkles size={15} /> SILA AI Assistant
+                    </Button>
+                    <Button
+                        onClick={() => { setAdminEditorProject(null); setIsAdminEditorOpen(true); }}
+                        className="bg-[#095388] hover:bg-[#07426c] text-white font-bold text-xs h-10 px-4 rounded-xl gap-2 shadow-sm"
+                    >
+                        <Plus size={15} /> New Project &amp; Quote
+                    </Button>
+                </div>
             </div>
 
             {/* Search & Filters */}
@@ -626,6 +642,23 @@ export default function AdminDashboardPage() {
                                                                     onClick={() => handleDownloadPromax(proj)}
                                                                 >
                                                                     <Download size={13} className="mr-2 text-slate-500" /> Promax Order
+                                                                </DropdownMenuItem>
+                                                                {status === 'pending' && (
+                                                                    <DropdownMenuItem
+                                                                        className="text-xs cursor-pointer hover:bg-purple-50 text-purple-700 font-semibold"
+                                                                        onClick={async () => {
+                                                                            await updateDoc(doc(firestore, 'projects', proj.id), { status: 'expected', updatedAt: serverTimestamp() });
+                                                                            toast({ title: 'Status Updated', description: `Project "${name}" moved to Expected.` });
+                                                                        }}
+                                                                    >
+                                                                        <Check size={13} className="mr-2 text-purple-600" /> Move to Expected
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                <DropdownMenuItem
+                                                                    className="text-xs cursor-pointer hover:bg-sky-50 text-sky-700 font-semibold"
+                                                                    onClick={() => setIsAiModalOpen(true)}
+                                                                >
+                                                                    <Sparkles size={13} className="mr-2 text-sky-600" /> Ask SILA AI
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
                                                                 <DropdownMenuItem
@@ -1089,6 +1122,15 @@ export default function AdminDashboardPage() {
                 onOpenChange={setIsAdminEditorOpen}
                 project={adminEditorProject}
                 staffList={staffList || []}
+                pricingRates={pricingRates}
+            />
+
+            {/* SILA Operations & Finance AI Assistant Modal */}
+            <AdminOperationsAiModal
+                isOpen={isAiModalOpen}
+                onOpenChange={setIsAiModalOpen}
+                projects={projects || []}
+                finances={finances || []}
                 pricingRates={pricingRates}
             />
         </>

@@ -74,6 +74,8 @@ export interface CalculationDefaults {
   isPartnerMode?: boolean;
   partnerProfitPercentage?: number;
   partnerCompanyId?: string;
+  singleBeamsOnly?: boolean;
+  forceSingleBeams?: boolean;
 }
 
 export interface RoomCalculation {
@@ -248,6 +250,8 @@ export const DEFAULTS: CalculationDefaults = {
   beamType: 'flat',
   beamFlatRate: 545,
   beamTbeamRate: 1200,
+  singleBeamsOnly: false,
+  forceSingleBeams: false,
 };
 
 const ceil = (v: number) => Math.ceil(v);
@@ -292,7 +296,9 @@ export function calcRoomBlocksAndBeams(
   const isAreaMode = roomName.toLowerCase().includes('project area');
 
   if (C.beamType === 'tbeam' && !isAreaMode) {
-    if (spanLengthForBeams <= 4.2) {
+    if (C.singleBeamsOnly || C.forceSingleBeams) {
+      beamMultiplier = 1;
+    } else if (spanLengthForBeams <= 4.2) {
       beamMultiplier = 1;
     } else if (spanLengthForBeams <= 5.2) {
       beamMultiplier = 2;

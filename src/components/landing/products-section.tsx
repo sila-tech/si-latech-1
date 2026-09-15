@@ -21,7 +21,7 @@ export { type ProductItem };
 
 export function ProductsSection() {
   const [activeCategory, setActiveCategory] = useState<'all' | 'beams' | 'blocks' | 'packages' | 'accessories'>('all');
-  const { updateSettings } = useCalculator();
+  const { setSettings } = useCalculator();
   const firestore = useFirestore();
 
   // Subscribe to live products from Firestore
@@ -42,11 +42,11 @@ export function ProductsSection() {
 
   const handleSelectProductForCalc = (beamType?: 'tbeam' | 'flat') => {
     if (beamType) {
-      updateSettings({ beamType });
-    }
-    const el = document.getElementById('calculator');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      setSettings(prev => ({ ...prev, beamType }));
+      const calculatorEl = document.getElementById('calculator');
+      if (calculatorEl) {
+        calculatorEl.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 

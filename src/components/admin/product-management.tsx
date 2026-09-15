@@ -73,7 +73,7 @@ export function ProductManagement() {
 
   // Form Fields
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<'beams' | 'blocks' | 'packages' | 'accessories'>('beams');
+  const [category, setCategory] = useState<ProductItem['category']>('beams');
   const [price, setPrice] = useState('');
   const [unit, setUnit] = useState('');
   const [badge, setBadge] = useState('');

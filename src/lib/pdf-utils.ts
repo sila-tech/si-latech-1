@@ -475,6 +475,28 @@ export const generatePromaxPdf = (data: {
     doc.text('SECTION 2: ROOM-BY-ROOM BEAM & BLOCK ALLOCATION BREAKDOWN', 14, currentY);
 
     const roomColumn = ['ROOM / SLAB AREA', 'ROOM SPAN', 'BEAM CUT LENGTH', 'BEAM QTY', 'TOTAL BEAM LM', 'HOLLOW BLOCKS'];
+    const totalBlocksCount = Math.ceil(totals?.totalBlocks || calcBilledBlocks(grandTotalBlocksPcs) || 0);
+    const addedAllowanceBlocks = Math.max(0, totalBlocksCount - grandTotalBlocksPcs);
+
+    if (addedAllowanceBlocks > 0) {
+        roomBreakdownRows.push([
+            'Site Breakage & Handling Allowance (Delivered Reserve)',
+            '—',
+            '—',
+            '—',
+            '—',
+            `+${addedAllowanceBlocks} pcs`
+        ]);
+    }
+
+    roomBreakdownRows.push([
+        { content: 'TOTAL BLOCKS TO LOAD & DELIVER ON TRUCK', styles: { fontStyle: 'bold' } },
+        { content: 'Full Delivered Count', styles: { fontStyle: 'bold' } },
+        { content: '—', styles: { halign: 'center' } },
+        { content: `${grandTotalBeamsPcs} pcs`, styles: { fontStyle: 'bold', halign: 'center' } },
+        { content: `${grandTotalBeamMeters.toFixed(2)} m`, styles: { fontStyle: 'bold', halign: 'right' } },
+        { content: `${totalBlocksCount} pcs`, styles: { fontStyle: 'bold', halign: 'right' } }
+    ]);
 
     autoTable(doc, {
         head: [roomColumn],
@@ -501,12 +523,13 @@ export const generatePromaxPdf = (data: {
     doc.text('SECTION 3: INFILL BLOCK & MATERIAL SUMMARY', 14, currentY);
 
     const blockColumn = ['MATERIAL DESCRIPTION', 'SPECIFICATION', 'TOTAL QTY REQUIRED', 'UNIT'];
-    const totalBlocksCount = Math.ceil(totals?.totalBlocks || calcBilledBlocks(grandTotalBlocksPcs) || 0);
 
     const blockRows = [
         [
             'Concrete Hollow Blocks (4x8x16)',
-            'Standard Structural Precast Infill Block',
+            addedAllowanceBlocks > 0 
+                ? `Standard Structural Infill Block (includes +${addedAllowanceBlocks} pcs breakage & site handling reserve)`
+                : 'Standard Structural Precast Infill Block',
             totalBlocksCount.toLocaleString(),
             'pcs'
         ]
@@ -539,6 +562,10 @@ export const generatePromaxPdf = (data: {
     doc.text('• Verify beam clear spans on site before loading dispatch trucks.', 14, finalY);
     finalY += 5;
     doc.text('• Dispatch trucks must be loaded per room allocation breakdown for ease of site offloading.', 14, finalY);
+    finalY += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(180, 20, 20);
+    doc.text(`• CRITICAL DISPATCH INSTRUCTION: All added blocks (+${addedAllowanceBlocks} pcs site handling/breakage reserve) MUST be loaded onto the dispatch truck and delivered to the client site. Total delivery count: ${totalBlocksCount.toLocaleString()} blocks.`, 14, finalY, { maxWidth: 180 });
 
     doc.save(`PROMAX-Order-${reportNumber}.pdf`);
     return true;
