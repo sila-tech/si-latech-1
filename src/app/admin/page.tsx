@@ -777,7 +777,7 @@ export default function AdminDashboardPage() {
             case 'overview': return renderOverview();
             case 'projects': return renderProjects();
             case 'quotes': return renderQuotes();
-            case 'finances': return <FinanceManagement isSuperAdmin={isSuperAdmin} activeSubTab={financeSubTab} onSubTabChange={setFinanceSubTab} />;
+            case 'finances': return <FinanceManagement isSuperAdmin={isSuperAdmin} activeSubTab={financeSubTab} onSubTabChange={setFinanceSubTab} onOpenAiAssistant={() => setIsAiModalOpen(true)} />;
             case 'investments': return <InvestorManagement />;
             case 'portfolio': return <PortfolioManagement />;
             case 'products': return <ProductManagement />;
@@ -836,12 +836,25 @@ export default function AdminDashboardPage() {
                 adminName={adminName}
                 onLogout={handleLogout}
                 onManageRates={() => setIsPricingModalOpen(true)}
+                onOpenAiAssistant={() => setIsAiModalOpen(true)}
             />
 
             {/* Main Content Area */}
-            <main className="flex-1 h-screen overflow-y-auto bg-slate-50/60 p-4 sm:p-6 lg:p-10 pt-18 lg:pt-10">
+            <main className="flex-1 h-screen overflow-y-auto bg-slate-50/60 p-4 sm:p-6 lg:p-10 pt-18 lg:pt-10 relative">
                 <div className="max-w-6xl mx-auto pb-12">
                     {renderSection()}
+                </div>
+
+                {/* Persistent Floating AI Action Button for Admins & Finance */}
+                <div className="fixed bottom-6 right-6 z-50">
+                    <Button
+                        onClick={() => setIsAiModalOpen(true)}
+                        className="h-12 sm:h-13 px-4 sm:px-5 rounded-full bg-gradient-to-r from-sky-600 via-indigo-600 to-amber-500 hover:from-sky-700 hover:to-amber-600 text-white font-black text-xs shadow-2xl shadow-sky-600/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 border-2 border-white/20"
+                    >
+                        <Sparkles className="w-4 h-4 text-amber-300 animate-spin" style={{ animationDuration: '4s' }} />
+                        <span className="tracking-tight text-xs font-black">Ask SILA AI</span>
+                        <Badge className="bg-slate-950/60 text-amber-300 border border-amber-400/30 text-[9px] px-1.5 py-0">OPS &amp; FINANCE</Badge>
+                    </Button>
                 </div>
             </main>
 

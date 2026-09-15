@@ -28,7 +28,8 @@ import {
     UserCheck,
     Users,
     Trash,
-    AlertCircle
+    AlertCircle,
+    Sparkles,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -42,12 +43,14 @@ export interface FinanceManagementProps {
     isSuperAdmin?: boolean;
     activeSubTab?: string;
     onSubTabChange?: (tab: string) => void;
+    onOpenAiAssistant?: () => void;
 }
 
 export function FinanceManagement({ 
     isSuperAdmin = true,
     activeSubTab = 'overview',
-    onSubTabChange
+    onSubTabChange,
+    onOpenAiAssistant,
 }: FinanceManagementProps) {
     const [subTab, setSubTab] = useState(activeSubTab);
     const [amount, setAmount] = useState('');
@@ -462,6 +465,16 @@ export function FinanceManagement({
                     <h2 className="text-2xl font-black font-headline text-slate-900 tracking-tight">Finances &amp; Ledger</h2>
                     <p className="text-xs text-slate-500 mt-0.5">Cashflow analytics, bank statement, staff loan tracking &amp; approvals.</p>
                 </div>
+
+                {onOpenAiAssistant && (
+                    <Button
+                        onClick={onOpenAiAssistant}
+                        className="bg-gradient-to-r from-sky-600 via-indigo-600 to-amber-500 hover:from-sky-700 hover:to-amber-600 text-white font-black text-xs h-9 px-4 rounded-xl gap-2 shadow-md shadow-sky-600/20 hover:scale-105 transition-all shrink-0"
+                    >
+                        <Sparkles size={14} className="text-amber-300 animate-pulse" />
+                        <span>SILA AI Operations &amp; Finance</span>
+                    </Button>
+                )}
 
                 <div className="flex items-center gap-2 flex-wrap">
                     {/* Mobile Dropdown Select */}

@@ -24,6 +24,8 @@ import {
     Clock,
     HandCoins,
     Package,
+    Sparkles,
+    Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -84,6 +86,7 @@ interface AdminSidebarProps {
     adminName: string;
     onLogout: () => void;
     onManageRates: () => void;
+    onOpenAiAssistant?: () => void;
 }
 
 export function AdminSidebar({
@@ -95,6 +98,7 @@ export function AdminSidebar({
     adminName,
     onLogout,
     onManageRates,
+    onOpenAiAssistant,
 }: AdminSidebarProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [financesDropdownOpen, setFinancesDropdownOpen] = useState(true);
@@ -133,6 +137,21 @@ export function AdminSidebar({
 
             {/* Navigation items */}
             <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+                {/* Dedicated SILA AI Assistant Button */}
+                <div className="mb-3 px-0.5">
+                    <button
+                        onClick={() => {
+                            if (onOpenAiAssistant) onOpenAiAssistant();
+                            setMobileOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-black transition-all bg-gradient-to-r from-sky-500 via-indigo-500 to-amber-500 hover:from-sky-600 hover:to-amber-600 text-white shadow-lg shadow-sky-600/30 group hover:scale-[1.02] border border-white/20"
+                    >
+                        <Sparkles className="h-4 w-4 text-amber-300 animate-pulse shrink-0" />
+                        <span className="flex-1 text-left tracking-tight">SILA AI Assistant</span>
+                        <span className="text-[9px] font-bold bg-slate-950/40 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/30 uppercase tracking-wider">AI</span>
+                    </button>
+                </div>
+
                 <p className="text-[10px] font-bold text-sky-300/60 uppercase tracking-widest px-3 mb-2">Management</p>
                 {visibleItems.map((item) => {
                     const Icon = item.icon;
