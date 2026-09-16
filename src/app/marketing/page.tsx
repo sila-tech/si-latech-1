@@ -308,33 +308,38 @@ export default function MarketingDashboardPage() {
   const totalMedia = (projects || []).reduce((acc, p) => acc + (p.media?.length || 0), 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       {/* Marketing Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-30 shadow-xs">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 h-18 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-600 to-amber-500 flex items-center justify-center shadow-md">
-              <Camera className="w-5 h-5 text-white" />
-            </div>
+            <Link href="/" className="w-10 h-10 rounded-xl overflow-hidden shrink-0 flex items-center justify-center bg-white border border-slate-200 p-1 shadow-xs">
+              <img src="/logo.png" alt="SI-LATECH Logo" className="h-full w-full object-contain" />
+            </Link>
             <div>
-              <span className="font-black text-white text-base tracking-tight">SI-LATECH</span>
-              <span className="ml-2 text-[10px] font-bold uppercase tracking-widest text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-md border border-pink-500/20">
-                Marketing Portal
+              <div className="flex items-center gap-2">
+                <span className="font-black text-slate-950 text-lg tracking-tight leading-none">SI-LATECH</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#095388] bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                  Marketing Portal
+                </span>
+              </div>
+              <span className="text-[10px] font-semibold text-slate-500 block mt-0.5">
+                Signed in as <span className="font-bold text-slate-700">{username}</span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button asChild variant="outline" size="sm" className="border-slate-700 bg-slate-800/50 hover:bg-slate-800 text-slate-300 text-xs h-9 rounded-xl gap-1.5">
+          <div className="flex items-center gap-2.5">
+            <Button asChild variant="outline" size="sm" className="border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs h-9 rounded-xl gap-1.5 shadow-xs">
               <Link href="/portfolio" target="_blank">
-                <ExternalLink className="w-3.5 h-3.5" /> View Live Showcase
+                <ExternalLink className="w-3.5 h-3.5 text-[#095388]" /> View Public Portfolio
               </Link>
             </Button>
             <Button
               onClick={handleLogout}
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs h-9 rounded-xl gap-1.5"
+              className="text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs h-9 rounded-xl gap-1.5"
             >
               <LogOut className="w-3.5 h-3.5" /> Log Out
             </Button>
@@ -344,19 +349,19 @@ export default function MarketingDashboardPage() {
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Title Bar & Stats */}
+        {/* Title Bar & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-headline">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight font-headline">
               Project Media &amp; Showcase Hub
             </h1>
-            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
               Upload, organize, and manage photos of ongoing and completed precast slab construction sites.
             </p>
           </div>
           <Button
             onClick={handleOpenNewDialog}
-            className="bg-gradient-to-r from-pink-600 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-lg gap-2 shrink-0 transition-all hover:scale-105"
+            className="bg-[#095388] hover:bg-[#073f67] text-white font-bold text-xs h-10 px-5 rounded-xl shadow-md gap-2 shrink-0 transition-all hover:scale-[1.02]"
           >
             <Plus className="w-4 h-4" /> Add Project Showcase
           </Button>
@@ -364,49 +369,49 @@ export default function MarketingDashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-slate-900/60 border-slate-800 text-white">
+          <Card className="bg-white border-slate-200/80 shadow-xs">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Projects</p>
-                <p className="text-2xl font-black text-white mt-1">{projects?.length || 0}</p>
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Projects</p>
+                <p className="text-2xl font-black text-slate-900 mt-1">{projects?.length || 0}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 text-[#095388] flex items-center justify-center border border-sky-100">
                 <Layers className="w-5 h-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/60 border-slate-800 text-white">
+          <Card className="bg-white border-slate-200/80 shadow-xs">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Ongoing Sites</p>
-                <p className="text-2xl font-black text-amber-400 mt-1">{totalOngoing}</p>
+                <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Ongoing Sites</p>
+                <p className="text-2xl font-black text-amber-600 mt-1">{totalOngoing}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200/60">
                 <Clock className="w-5 h-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/60 border-slate-800 text-white">
+          <Card className="bg-white border-slate-200/80 shadow-xs">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Completed Sites</p>
-                <p className="text-2xl font-black text-emerald-400 mt-1">{totalCompleted}</p>
+                <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Completed Sites</p>
+                <p className="text-2xl font-black text-emerald-600 mt-1">{totalCompleted}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/60 border-slate-800 text-white">
+          <Card className="bg-white border-slate-200/80 shadow-xs">
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-pink-400 uppercase tracking-wider">Photos &amp; Videos</p>
-                <p className="text-2xl font-black text-pink-400 mt-1">{totalMedia}</p>
+                <p className="text-[11px] font-bold text-[#095388] uppercase tracking-wider">Photos &amp; Videos</p>
+                <p className="text-2xl font-black text-[#095388] mt-1">{totalMedia}</p>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-sky-50 text-[#095388] flex items-center justify-center border border-sky-200/60">
                 <Camera className="w-5 h-5" />
               </div>
             </CardContent>
@@ -414,16 +419,16 @@ export default function MarketingDashboardPage() {
         </div>
 
         {/* Filters Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 p-3 rounded-2xl">
-          <div className="flex flex-wrap gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200/80 p-3 rounded-2xl shadow-xs">
+          <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
             {(['all', 'ongoing', 'completed'] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all capitalize ${
                   statusFilter === s
-                    ? 'bg-pink-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-white text-[#095388] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {s === 'all' ? `All (${projects?.length || 0})` : `${s} (${(projects || []).filter(p => p.status === s).length})`}
@@ -432,12 +437,12 @@ export default function MarketingDashboardPage() {
           </div>
 
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by title or location..."
-              className="bg-slate-950 border-slate-800 text-white text-xs h-9 pl-9 rounded-xl placeholder:text-slate-500"
+              className="bg-slate-50 border-slate-200 text-slate-900 text-xs h-9 pl-9 rounded-xl placeholder:text-slate-400 focus-visible:ring-[#095388]"
             />
           </div>
         </div>
@@ -445,15 +450,15 @@ export default function MarketingDashboardPage() {
         {/* Project Showcase Cards Grid */}
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
-            <p className="text-xs text-slate-400">Loading portfolio projects...</p>
+            <Loader2 className="w-8 h-8 animate-spin text-[#095388]" />
+            <p className="text-xs font-semibold text-slate-500">Loading portfolio projects...</p>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <Card className="bg-slate-900/40 border-slate-800 text-center py-16">
+          <Card className="bg-white border border-dashed border-slate-300 text-center py-16 rounded-2xl">
             <CardContent className="space-y-3">
-              <Camera className="w-12 h-12 text-slate-600 mx-auto" />
-              <p className="text-slate-400 text-sm">No showcase projects found.</p>
-              <Button onClick={handleOpenNewDialog} className="bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-xl">
+              <Camera className="w-12 h-12 text-slate-300 mx-auto" />
+              <p className="text-slate-600 text-sm font-medium">No showcase projects found.</p>
+              <Button onClick={handleOpenNewDialog} className="bg-[#095388] hover:bg-[#073f67] text-white text-xs font-bold rounded-xl">
                 <Plus className="w-3.5 h-3.5 mr-1" /> Add First Project
               </Button>
             </CardContent>
@@ -464,10 +469,10 @@ export default function MarketingDashboardPage() {
               const coverMedia = project.media && project.media.length > 0 ? project.media[0] : null;
 
               return (
-                <Card key={project.id} className="bg-slate-900/80 border-slate-800 text-white overflow-hidden rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all group">
+                <Card key={project.id} className="bg-white border-slate-200/80 shadow-xs text-slate-900 overflow-hidden rounded-2xl flex flex-col justify-between hover:shadow-md transition-all group">
                   <div>
                     {/* Media Cover */}
-                    <div className="relative h-48 bg-slate-950 overflow-hidden">
+                    <div className="relative h-48 bg-slate-100 overflow-hidden border-b border-slate-100">
                       {coverMedia ? (
                         coverMedia.type === 'image' ? (
                           <img
@@ -476,64 +481,64 @@ export default function MarketingDashboardPage() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                            <Film className="w-10 h-10 text-pink-400" />
+                          <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
+                            <Film className="w-10 h-10 text-sky-400" />
                           </div>
                         )
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-600 gap-1">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1 bg-slate-100">
                           <ImageIcon className="w-8 h-8" />
-                          <span className="text-[11px]">No photo uploaded</span>
+                          <span className="text-[11px] font-medium">No photo uploaded</span>
                         </div>
                       )}
 
                       <div className="absolute top-3 left-3">
-                        <Badge className={`text-[10px] font-black uppercase border-0 ${
+                        <Badge className={`text-[10px] font-black uppercase shadow-xs ${
                           project.status === 'ongoing' 
-                            ? 'bg-amber-500 text-slate-950' 
-                            : 'bg-emerald-600 text-white'
+                            ? 'bg-amber-500 text-slate-950 hover:bg-amber-500' 
+                            : 'bg-emerald-600 text-white hover:bg-emerald-600'
                         }`}>
                           {project.status === 'ongoing' ? 'Ongoing Site' : 'Completed Project'}
                         </Badge>
                       </div>
 
-                      <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-[10px] font-bold text-slate-300 flex items-center gap-1.5">
-                        <Camera className="w-3 h-3 text-pink-400" />
+                      <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5">
+                        <Camera className="w-3 h-3 text-amber-400" />
                         <span>{project.media?.length || 0} media</span>
                       </div>
                     </div>
 
                     <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-base font-bold text-white line-clamp-1">
+                      <CardTitle className="text-base font-bold text-slate-900 line-clamp-1">
                         {project.title}
                       </CardTitle>
-                      <CardDescription className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                      <CardDescription className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#095388] shrink-0" />
                         <span className="truncate">{project.location}</span>
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent className="p-4 pt-1">
-                      <p className="text-xs text-slate-400 line-clamp-2">
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
                         {project.description || 'No description provided.'}
                       </p>
                     </CardContent>
                   </div>
 
-                  <div className="p-3 bg-slate-950/60 border-t border-slate-800 flex gap-2">
+                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
                     <Button
                       onClick={() => handleOpenEditDialog(project)}
                       variant="outline"
                       size="sm"
-                      className="flex-1 bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700 text-xs font-semibold h-8 rounded-xl gap-1"
+                      className="flex-1 bg-white hover:bg-slate-100 text-slate-800 border-slate-200 text-xs font-semibold h-8 rounded-xl gap-1 shadow-xs"
                     >
-                      <Edit2 className="w-3.5 h-3.5 text-sky-400" /> Manage Photos
+                      <Edit2 className="w-3.5 h-3.5 text-[#095388]" /> Manage Photos
                     </Button>
                     <Button
                       onClick={() => handleDeleteProject(project.id, project.title)}
                       variant="ghost"
                       size="sm"
-                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0 rounded-xl"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0 rounded-xl"
                       title="Delete project"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -548,43 +553,45 @@ export default function MarketingDashboardPage() {
 
       {/* Add / Edit Project Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl bg-slate-900 text-white border-slate-800 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-              <Camera className="w-5 h-5 text-pink-400" />
+        <DialogContent className="max-w-2xl bg-white text-slate-900 border-slate-200 max-h-[90vh] overflow-y-auto rounded-2xl shadow-xl">
+          <DialogHeader className="border-b border-slate-100 pb-3">
+            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-sky-50 text-[#095388] flex items-center justify-center">
+                <Camera className="w-4 h-4" />
+              </div>
               {editingProject ? 'Edit Showcase Project & Photos' : 'Add New Project to Showcase'}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-300">Project Title *</Label>
+                <Label className="text-xs font-semibold text-slate-700">Project Title *</Label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., 5-Bedroom Luxury Slab - Runda"
-                  className="bg-slate-950 border-slate-800 text-white text-xs h-9 rounded-xl"
+                  className="bg-white border-slate-200 text-slate-900 text-xs h-9 rounded-xl focus-visible:ring-[#095388]"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-300">Site Location *</Label>
+                <Label className="text-xs font-semibold text-slate-700">Site Location *</Label>
                 <Input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="e.g., Runda, Nairobi"
-                  className="bg-slate-950 border-slate-800 text-white text-xs h-9 rounded-xl"
+                  className="bg-white border-slate-200 text-slate-900 text-xs h-9 rounded-xl focus-visible:ring-[#095388]"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-300">Project Stage / Status</Label>
+              <Label className="text-xs font-semibold text-slate-700">Project Stage / Status</Label>
               <Select value={status} onValueChange={(val: any) => setStatus(val)}>
-                <SelectTrigger className="bg-slate-950 border-slate-800 text-white text-xs h-9 rounded-xl">
+                <SelectTrigger className="bg-white border-slate-200 text-slate-900 text-xs h-9 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-white text-xs">
+                <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
                   <SelectItem value="ongoing">Ongoing Construction Site</SelectItem>
                   <SelectItem value="completed">Completed Precast Slab Project</SelectItem>
                 </SelectContent>
@@ -592,26 +599,26 @@ export default function MarketingDashboardPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-300">Description</Label>
+              <Label className="text-xs font-semibold text-slate-700">Description</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Highlight beam types used, spans, delivery logistics, or customer feedback..."
-                className="bg-slate-950 border-slate-800 text-white text-xs rounded-xl min-h-[70px]"
+                className="bg-white border-slate-200 text-slate-900 text-xs rounded-xl min-h-[70px] focus-visible:ring-[#095388]"
               />
             </div>
 
             {/* Photo & Video Upload Section */}
-            <div className="space-y-3 pt-2 border-t border-slate-800">
-              <Label className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="space-y-3 pt-3 border-t border-slate-100">
+              <Label className="text-xs font-bold text-[#095388] uppercase tracking-wider flex items-center gap-1.5">
                 <Camera className="w-4 h-4" /> Upload Project Photos &amp; Media
               </Label>
 
               {/* Direct File Upload */}
-              <div className="border border-dashed border-slate-700 bg-slate-950/60 rounded-2xl p-4 text-center space-y-2">
+              <div className="border border-dashed border-slate-300 bg-slate-50/60 rounded-2xl p-4 text-center space-y-2">
                 <Upload className="w-6 h-6 text-slate-400 mx-auto" />
-                <p className="text-xs text-slate-300 font-semibold">Upload photos directly from your phone or computer</p>
-                <p className="text-[10px] text-slate-500">Supports PNG, JPG, WEBP, and MP4 video</p>
+                <p className="text-xs text-slate-700 font-semibold">Upload photos directly from your phone or computer</p>
+                <p className="text-[10px] text-slate-400">Supports PNG, JPG, WEBP, and MP4 video</p>
 
                 <div className="pt-1">
                   <input
@@ -629,7 +636,7 @@ export default function MarketingDashboardPage() {
                     size="sm"
                     disabled={isUploading}
                     onClick={() => document.getElementById('marketing-file-upload')?.click()}
-                    className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-white text-xs h-8 rounded-xl"
+                    className="border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs h-8 rounded-xl shadow-xs"
                   >
                     {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Upload className="w-3.5 h-3.5 mr-1" />}
                     {isUploading ? `Uploading... ${uploadProgress}%` : 'Choose Photos / Videos'}
@@ -638,7 +645,7 @@ export default function MarketingDashboardPage() {
 
                 {isUploading && (
                   <div className="w-full max-w-xs mx-auto pt-2">
-                    <Progress value={uploadProgress} className="h-1.5 bg-slate-800" />
+                    <Progress value={uploadProgress} className="h-1.5 bg-slate-200" />
                   </div>
                 )}
               </div>
@@ -649,14 +656,14 @@ export default function MarketingDashboardPage() {
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
                   placeholder="Or paste an image/video URL link..."
-                  className="bg-slate-950 border-slate-800 text-white text-xs h-9 rounded-xl flex-1"
+                  className="bg-white border-slate-200 text-slate-900 text-xs h-9 rounded-xl flex-1 focus-visible:ring-[#095388]"
                 />
                 <Button
                   type="button"
                   onClick={handleAddMediaUrl}
                   disabled={!urlInput.trim()}
                   variant="outline"
-                  className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-white text-xs h-9 rounded-xl px-3"
+                  className="border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs h-9 rounded-xl px-3"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </Button>
@@ -665,15 +672,15 @@ export default function MarketingDashboardPage() {
               {/* Media Preview Gallery */}
               {media.length > 0 && (
                 <div className="space-y-1.5 pt-2">
-                  <span className="text-[11px] font-semibold text-slate-400">Attached Photos ({media.length}):</span>
+                  <span className="text-[11px] font-semibold text-slate-500">Attached Photos ({media.length}):</span>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-48 overflow-y-auto p-1">
                     {media.map((item, idx) => (
-                      <div key={idx} className="relative aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-800 group">
+                      <div key={idx} className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group">
                         {item.type === 'image' ? (
                           <img src={item.url} alt="Media" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                            <Film className="w-5 h-5 text-pink-400" />
+                          <div className="w-full h-full flex items-center justify-center bg-slate-900 text-white">
+                            <Film className="w-5 h-5 text-sky-400" />
                           </div>
                         )}
                         <button
@@ -691,12 +698,12 @@ export default function MarketingDashboardPage() {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-800 pt-3 flex gap-2">
+          <DialogFooter className="border-t border-slate-100 pt-3 flex gap-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-white text-xs rounded-xl"
+              className="text-slate-500 hover:text-slate-900 text-xs rounded-xl"
             >
               Cancel
             </Button>
@@ -704,7 +711,7 @@ export default function MarketingDashboardPage() {
               type="button"
               onClick={handleSaveProject}
               disabled={isSaving || isUploading}
-              className="bg-gradient-to-r from-pink-600 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white font-bold text-xs rounded-xl h-9 px-4"
+              className="bg-[#095388] hover:bg-[#073f67] text-white font-bold text-xs rounded-xl h-9 px-4 shadow-sm"
             >
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
               {editingProject ? 'Save Changes' : 'Publish Project'}
