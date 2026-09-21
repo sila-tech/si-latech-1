@@ -326,25 +326,32 @@ export function FinanceBudgetGoals({ isSuperAdmin = true }: FinanceBudgetGoalsPr
             </button>
           </div>
 
-          {isSuperAdmin && (
-            <Button
-              onClick={handleOpenEdit}
-              className="bg-[#095388] hover:bg-[#073f67] text-white font-bold text-xs h-9 px-3.5 rounded-xl gap-1.5 shadow-xs"
-            >
-              <SlidersHorizontal size={14} /> Set Targets
-            </Button>
-          )}
+          {/* Set Targets & Budgets Button */}
+          <Button
+            onClick={handleOpenEdit}
+            className="bg-[#095388] hover:bg-[#073f67] text-white font-bold text-xs h-9 px-4 rounded-xl gap-1.5 shadow-sm transition-all hover:scale-[1.02]"
+          >
+            <SlidersHorizontal size={14} /> Set Targets &amp; Budgets
+          </Button>
         </div>
       </div>
 
       {/* SECTION 1: MONTHLY BUDGET METRICS */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-emerald-600" />
             <h4 className="text-sm font-black uppercase tracking-wider text-slate-800">
               Monthly Department Budgets
             </h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenEdit}
+              className="text-xs text-[#095388] hover:bg-sky-50 h-7 px-2 font-bold gap-1 rounded-lg"
+            >
+              <SlidersHorizontal size={12} /> Edit Budgets
+            </Button>
           </div>
           <span className="text-xs text-slate-500 font-semibold">
             Overall Utilized: <span className="font-black text-slate-900">{budgetStats.total.pct}%</span> (KSh {budgetStats.total.spent.toLocaleString()} / KSh {budgetStats.total.budget.toLocaleString()})
@@ -518,12 +525,20 @@ export function FinanceBudgetGoals({ isSuperAdmin = true }: FinanceBudgetGoalsPr
 
       {/* SECTION 2: PERFORMANCE GOALS & CONVERSION TRACKER */}
       <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-purple-600" />
             <h4 className="text-sm font-black uppercase tracking-wider text-slate-800">
               Sales Targets &amp; Conversion Rates
             </h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenEdit}
+              className="text-xs text-purple-700 hover:bg-purple-50 h-7 px-2 font-bold gap-1 rounded-lg"
+            >
+              <SlidersHorizontal size={12} /> Set Goals
+            </Button>
           </div>
           <span className="text-xs text-slate-500 font-semibold">
             Track deal conversion from quotation through to running project
