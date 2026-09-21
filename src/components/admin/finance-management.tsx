@@ -30,6 +30,7 @@ import {
     Trash,
     AlertCircle,
     Sparkles,
+    Target,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -38,6 +39,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { FinanceAiSmartFiller, FinanceAiAuditModal } from './finance-ai-helper';
+import { FinanceBudgetGoals } from './finance-budget-goals';
 
 export interface FinanceManagementProps {
     isSuperAdmin?: boolean;
@@ -485,6 +487,7 @@ export function FinanceManagement({
                             </SelectTrigger>
                             <SelectContent className="bg-white">
                                 <SelectItem value="overview" className="text-xs font-medium">📈 Overview &amp; Graph</SelectItem>
+                                <SelectItem value="budget_goals" className="text-xs font-medium">🎯 Budget &amp; Goals</SelectItem>
                                 <SelectItem value="bank" className="text-xs font-medium">🏦 Mini Bank (Ledger)</SelectItem>
                                 <SelectItem value="manual_record" className="text-xs font-medium">📝 Manual Record Form</SelectItem>
                                 <SelectItem value="pending_requests" className="text-xs font-medium">⏳ Pending Requests ({totals.pendingCount})</SelectItem>
@@ -504,6 +507,16 @@ export function FinanceManagement({
                             }`}
                         >
                             <BarChart2 size={14} /> Overview &amp; Graph
+                        </button>
+                        <button
+                            onClick={() => handleTabChange('budget_goals')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                subTab === 'budget_goals'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                            }`}
+                        >
+                            <Target size={14} /> Budget &amp; Goals
                         </button>
                         <button
                             onClick={() => handleTabChange('bank')}
@@ -613,6 +626,30 @@ export function FinanceManagement({
             {/* TAB CONTENT 1: OVERVIEW & INCOME VS EXPENSES GRAPH */}
             {subTab === 'overview' && (
                 <div className="space-y-6 animate-in fade-in duration-200">
+                    {/* Quick Budget & Conversion Banner */}
+                    <div className="bg-gradient-to-r from-sky-50 via-indigo-50/40 to-amber-50/50 border border-sky-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-white text-[#095388] flex items-center justify-center shadow-xs border border-sky-100 shrink-0">
+                                <Target size={20} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                    Monthly Budget &amp; Quote Conversion Tracking
+                                    <span className="bg-sky-600 text-white text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full">Active</span>
+                                </h4>
+                                <p className="text-xs text-slate-600 mt-0.5">
+                                    Monitor marketing ads budget, salary limits, and quotation conversion goals in real-time.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            onClick={() => handleTabChange('budget_goals')}
+                            className="bg-[#095388] hover:bg-[#073f67] text-white font-bold text-xs h-9 px-4 rounded-xl gap-1.5 shadow-xs shrink-0"
+                        >
+                            Open Budget &amp; Goals <ArrowUpRight size={14} />
+                        </Button>
+                    </div>
+
                     <Card className="border border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
                         <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -730,6 +767,11 @@ export function FinanceManagement({
                         </CardContent>
                     </Card>
                 </div>
+            )}
+
+            {/* TAB CONTENT: BUDGET & GOALS */}
+            {subTab === 'budget_goals' && (
+                <FinanceBudgetGoals isSuperAdmin={isSuperAdmin} />
             )}
 
             {/* TAB CONTENT 2: MINI BANK (LEDGER) */}
@@ -874,6 +916,7 @@ export function FinanceManagement({
                                             </SelectTrigger>
                                             <SelectContent className="bg-white">
                                                 <SelectItem value="income">🟢 Income (Money Received)</SelectItem>
+                                                <SelectItem value="salary">💼 Salary / Wages Payment</SelectItem>
                                                 <SelectItem value="staff_loan">🟣 Staff Loan / Salary Advance</SelectItem>
                                                 <SelectItem value="loan_repayment">🔹 Staff Loan Repayment</SelectItem>
                                                 <SelectItem value="facilitation_request">🟡 Facilitation Request</SelectItem>

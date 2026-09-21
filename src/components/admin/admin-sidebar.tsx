@@ -26,6 +26,7 @@ import {
     Package,
     Sparkles,
     Bot,
+    Target,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -72,6 +73,7 @@ export interface FinanceSubTabItem {
 export const FINANCE_SUB_TABS: FinanceSubTabItem[] = [
     { id: 'overview',         label: 'Overview & Graph', icon: BarChart2 },
     { id: 'bank',             label: 'Mini Bank (Ledger)', icon: Landmark },
+    { id: 'budget_goals',     label: 'Budget & Goals', icon: Target },
     { id: 'manual_record',    label: 'Manual Record',   icon: PlusCircle },
     { id: 'pending_requests', label: 'Pending Requests', icon: Clock },
     { id: 'staff_loans',      label: 'Staff Loans',     icon: HandCoins },
