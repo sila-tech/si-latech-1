@@ -36,7 +36,129 @@ export function RoomLayoutVisualizer({ calc, roomName, showInternal = false }: R
   const clearBeamLength = isBalcony ? longer : shorter;
   const physicalBeamLength = calc.individualBeamLength || (clearBeamLength > 0 ? clearBeamLength + 0.20 : 0);
   const spanLength = isBalcony ? shorter : longer;
-  
+
+  // Dedicated visualizer for Trapezium / Tapering Slabs
+  if (calc.trapezium && calc.beamSchedule) {
+    const { startSpan, endSpan, runLength, slantEdge } = calc.trapezium;
+    const maxDim = Math.max(startSpan, endSpan, runLength);
+    const tScale = 220 / (maxDim || 1);
+    const svgW = runLength * tScale;
+    const svgH = startSpan * tScale;
+    const startH = startSpan * tScale;
+    const endH = endSpan * tScale;
+
+    const p1 = `20,20`;
+    const p2 = `${20 + svgW},20`;
+    const p3 = `${20 + svgW},${20 + endH}`;
+    const p4 = `20,${20 + startH}`;
+
+    return (
+      <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-200 print-room-card print:bg-white print:border-slate-300 print:p-8 print:shadow-none print:break-inside-avoid print:page-break-inside-avoid">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-slate-900">{roomName}</h4>
+              <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Trapezium Balcony</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              {startSpan.toFixed(2)}m → {endSpan.toFixed(2)}m across {runLength.toFixed(2)}m run
+              {slantEdge ? ` (Slant ${slantEdge.toFixed(2)}m)` : ''}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-primary uppercase">
+              {calc.actualBeamCount} Tapering Beams
+            </p>
+            <p className="text-xs font-bold text-[#f59e0b] uppercase">{calc.totalBlocks} Blocks</p>
+          </div>
+        </div>
+
+        <div className="relative bg-white border border-slate-200 rounded-lg overflow-hidden shadow-inner flex items-center justify-center p-8 print:border-slate-300" style={{ height: '320px' }}>
+          <svg
+            viewBox={`0 0 ${svgW + 60} ${svgH + 60}`}
+            className="max-w-full max-h-full drop-shadow-md"
+          >
+            {/* Trapezium Boundary Walls */}
+            <polygon
+              points={`${p1} ${p2} ${p3} ${p4}`}
+              fill="#f8fafc"
+              stroke="#334155"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+
+            {/* Individual Beams */}
+            {calc.beamSchedule.map((b) => {
+              const xPos = 20 + b.position * tScale;
+              const bLen = b.clearSpan * tScale;
+              return (
+                <g key={b.beamNumber}>
+                  <line
+                    x1={xPos}
+                    y1={20}
+                    x2={xPos}
+                    y2={20 + bLen}
+                    stroke="#475569"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                  />
+                  <text
+                    x={xPos}
+                    y={20 + bLen + 12}
+                    fontSize="9"
+                    fontWeight="bold"
+                    fill="#095388"
+                    textAnchor="middle"
+                  >
+                    {b.clearSpan.toFixed(2)}m
+                  </text>
+                  <text
+                    x={xPos}
+                    y={14}
+                    fontSize="7"
+                    fontWeight="semibold"
+                    fill="#64748b"
+                    textAnchor="middle"
+                  >
+                    B{b.beamNumber}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Dimension Labels */}
+            <text x={20 + svgW / 2} y={10} fontSize="8" fontWeight="bold" fill="#64748b" textAnchor="middle">
+              Run: {runLength.toFixed(2)}m (550mm c/c)
+            </text>
+            <text x={8} y={20 + startH / 2} fontSize="8" fontWeight="bold" fill="#64748b" textAnchor="middle" transform={`rotate(-90, 8, ${20 + startH / 2})`}>
+              Start: {startSpan.toFixed(2)}m
+            </text>
+            <text x={20 + svgW + 12} y={20 + endH / 2} fontSize="8" fontWeight="bold" fill="#64748b" textAnchor="middle" transform={`rotate(90, ${20 + svgW + 12}, ${20 + endH / 2})`}>
+              End: {endSpan.toFixed(2)}m
+            </text>
+          </svg>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 print:grid print:grid-cols-2 print:gap-4 print:mt-4">
+          <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm print:border-slate-200">
+            <p className="text-[10px] font-bold text-slate-400 uppercase print:text-slate-500">Trapezium Assembly</p>
+            <p className="text-xs text-slate-600 mt-1 print:text-slate-800">
+              Beams reduce linearly from {startSpan.toFixed(2)}m to {endSpan.toFixed(2)}m. Edge blocks along the slanted side must be angle-cut on site.
+            </p>
+          </div>
+          <div className="p-3 bg-white rounded-xl border border-slate-100 shadow-sm print:border-slate-200">
+            <p className="text-[10px] font-bold text-slate-400 uppercase print:text-slate-500">Slab Specs</p>
+            <p className="text-xs text-slate-600 mt-1 print:text-slate-800 font-medium">
+              Area: {(calc.area || ((startSpan + endSpan) / 2) * runLength).toFixed(2)} m²
+              <br />
+              Beams: {calc.actualBeamCount} pcs ({calc.actualTotalBeamLength.toFixed(1)}m total)
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-200 print-room-card print:bg-white print:border-slate-300 print:p-8 print:shadow-none print:break-inside-avoid print:page-break-inside-avoid">
       <div className="flex justify-between items-center">

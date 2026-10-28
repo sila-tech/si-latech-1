@@ -15,6 +15,13 @@ export interface PlanRoomData {
   name: string;
   length: number;
   width: number;
+  shape?: 'rectangular' | 'trapezium';
+  trapezium?: {
+    startSpan: number;
+    endSpan: number;
+    runLength: number;
+    slantEdge?: number;
+  };
   blockName?: string;
   apartmentName?: string;
   sequenceInApartment?: number;
@@ -50,6 +57,13 @@ export interface ProjectData {
   totals?: Record<string, any>;
   status?: 'pending' | 'expected' | 'running' | 'finished' | 'purchased';
   assignedTo?: string;
+  salesRep?: string;
+  salesRepName?: string;
+  leadStatus?: 'measurement_booked' | 'measured' | 'quoted' | 'negotiation' | 'won' | 'lost';
+  conversionStatus?: 'pending' | 'in_progress' | 'converted' | 'lost';
+  bookedAt?: any;
+  measurementDate?: string | null;
+  conversations?: any[];
   discountType?: 'none' | 'percent' | 'amount';
   discountValue?: number;
   paymentMethods?: string[];

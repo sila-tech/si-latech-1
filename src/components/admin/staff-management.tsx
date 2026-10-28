@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, Trash2, Loader2, ShieldCheck, UserCog } from 'lucide-react';
+import { UserPlus, Trash2, Loader2, ShieldCheck, UserCog, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function StaffManagement() {
@@ -100,6 +100,7 @@ export function StaffManagement() {
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="staff">Field Staff</SelectItem>
+                                        <SelectItem value="sales">Sales Representative</SelectItem>
                                         <SelectItem value="admin">Administrator</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -137,11 +138,11 @@ export function StaffManagement() {
                                         staff?.map(s => (
                                             <TableRow key={s.id}>
                                                 <TableCell className="font-bold flex items-center gap-2">
-                                                    {s.role === 'admin' ? <UserCog size={14} className="text-primary" /> : <ShieldCheck size={14} className="text-slate-500" />} {s.name}
+                                                    {s.role === 'admin' ? <UserCog size={14} className="text-primary" /> : s.role === 'sales' ? <TrendingUp size={14} className="text-emerald-600" /> : <ShieldCheck size={14} className="text-slate-500" />} {s.name}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={s.role === 'admin' ? 'bg-primary/10 text-primary border-primary/20' : 'bg-slate-100 text-slate-600'}>
-                                                        {s.role === 'admin' ? 'Admin' : 'Staff'}
+                                                    <Badge variant="outline" className={s.role === 'admin' ? 'bg-primary/10 text-primary border-primary/20' : s.role === 'sales' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold' : 'bg-slate-100 text-slate-600'}>
+                                                        {s.role === 'admin' ? 'Admin' : s.role === 'sales' ? 'Sales Rep' : 'Field Staff'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>{s.username}</TableCell>

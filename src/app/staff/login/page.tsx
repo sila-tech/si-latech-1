@@ -22,6 +22,8 @@ export default function StaffLoginPage() {
     const firestore = useFirestore();
 
     useEffect(() => {
+        const storedSales = sessionStorage.getItem('sila-sales-auth');
+        if (storedSales) { router.push('/sales'); return; }
         const storedUser = sessionStorage.getItem(STAFF_SESSION_KEY);
         if (storedUser) {
             router.push('/staff');
@@ -51,6 +53,9 @@ export default function StaffLoginPage() {
                 if (sessionData.role === 'admin') {
                     sessionStorage.setItem('sila-admin-auth', JSON.stringify(sessionData));
                     router.push('/admin');
+                } else if (sessionData.role === 'sales') {
+                    sessionStorage.setItem('sila-sales-auth', JSON.stringify(sessionData));
+                    router.push('/sales');
                 } else {
                     sessionStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(sessionData));
                     router.push('/staff');

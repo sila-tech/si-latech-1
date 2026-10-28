@@ -133,6 +133,22 @@ service cloud.firestore {
     match /partnerProjects/{document=**} {
       allow read, write: if true;
     }
+
+    // Sales targets collection
+    match /sales_targets/{targetId} {
+      allow read, write: if true;
+    }
+    match /sales_targets/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Sales activities & conversations collection
+    match /sales_activities/{activityId} {
+      allow read, write: if true;
+    }
+    match /sales_activities/{document=**} {
+      allow read, write: if true;
+    }
     
     // Deny all other access
     match /{document=**} {

@@ -24,6 +24,7 @@ import {
     MapPin,
     Image as ImageIcon,
     UserCheck,
+    User,
     Edit,
     Trash2,
     Eye,
@@ -608,6 +609,12 @@ export default function AdminDashboardPage() {
                                                                         : 'Date N/A'}
                                                                 </span>
                                                             </div>
+                                                            {proj.salesRep && (
+                                                                <div className={`flex items-center gap-2 text-xs font-semibold ${isAmber ? 'text-slate-950 font-bold' : 'text-white font-bold'}`}>
+                                                                    <User size={13} className="shrink-0 opacity-80" />
+                                                                    <span>Rep: {proj.salesRepName || proj.salesRep}</span>
+                                                                </div>
+                                                            )}
                                                         </CardContent>
                                                     </div>
 

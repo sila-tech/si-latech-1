@@ -27,6 +27,7 @@ import {
     Sparkles,
     Bot,
     Target,
+    Megaphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -38,8 +39,10 @@ export type AdminSection =
     | 'finances'
     | 'investments'
     | 'portfolio'
+    | 'marketing_ai'
     | 'products'
     | 'partners'
+    | 'sales'
     | 'team';
 
 interface NavItem {
@@ -53,15 +56,17 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { id: 'overview',    label: 'Overview',    icon: LayoutDashboard, activeBg: 'bg-sky-600',     activeText: 'text-white font-bold',     iconColor: 'text-white' },
-    { id: 'projects',    label: 'Projects',    icon: FolderKanban,    activeBg: 'bg-blue-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
-    { id: 'quotes',      label: 'Quotes',      icon: FileText,        activeBg: 'bg-purple-600',  activeText: 'text-white font-bold',  iconColor: 'text-white' },
-    { id: 'finances',    label: 'Finances',    icon: DollarSign,      activeBg: 'bg-emerald-600', activeText: 'text-white font-bold', iconColor: 'text-white' },
-    { id: 'investments', label: 'Investments', icon: TrendingUp,      activeBg: 'bg-amber-500',   activeText: 'text-slate-950 font-bold',   iconColor: 'text-slate-950' },
-    { id: 'portfolio',   label: 'Portfolio',   icon: ImageIcon,       activeBg: 'bg-pink-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
-    { id: 'products',    label: 'Products',    icon: Package,         activeBg: 'bg-amber-600',   activeText: 'text-white font-bold',    iconColor: 'text-white' },
-    { id: 'partners',    label: 'Partners',    icon: Building2,       activeBg: 'bg-teal-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
-    { id: 'team',        label: 'Team',        icon: Users,           activeBg: 'bg-indigo-600',  activeText: 'text-white font-bold',  iconColor: 'text-white', superAdminOnly: true },
+    { id: 'overview',     label: 'Overview',     icon: LayoutDashboard, activeBg: 'bg-sky-600',     activeText: 'text-white font-bold',     iconColor: 'text-white' },
+    { id: 'projects',     label: 'Projects',     icon: FolderKanban,    activeBg: 'bg-blue-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'quotes',       label: 'Quotes',       icon: FileText,        activeBg: 'bg-purple-600',  activeText: 'text-white font-bold',  iconColor: 'text-white' },
+    { id: 'finances',     label: 'Finances',     icon: DollarSign,      activeBg: 'bg-emerald-600', activeText: 'text-white font-bold', iconColor: 'text-white' },
+    { id: 'investments',  label: 'Investments',  icon: TrendingUp,      activeBg: 'bg-amber-500',   activeText: 'text-slate-950 font-bold',   iconColor: 'text-slate-950' },
+    { id: 'portfolio',    label: 'Portfolio',    icon: ImageIcon,       activeBg: 'bg-pink-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'marketing_ai', label: 'Marketing AI', icon: Megaphone,       activeBg: 'bg-rose-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'products',     label: 'Products',     icon: Package,         activeBg: 'bg-amber-600',   activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'partners',     label: 'Partners',     icon: Building2,       activeBg: 'bg-teal-600',    activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'sales',        label: 'Sales & Reps', icon: Target,         activeBg: 'bg-emerald-600', activeText: 'text-white font-bold',    iconColor: 'text-white' },
+    { id: 'team',         label: 'Team',         icon: Users,           activeBg: 'bg-indigo-600',  activeText: 'text-white font-bold',  iconColor: 'text-white', superAdminOnly: true },
 ];
 
 export interface FinanceSubTabItem {

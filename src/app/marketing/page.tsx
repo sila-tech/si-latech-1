@@ -61,9 +61,12 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
-  Search
+  Search,
+  Megaphone
 } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { MarketingAiManagement } from '@/components/admin/marketing-ai-management';
 
 interface MediaItem {
   type: 'image' | 'video';
@@ -89,6 +92,7 @@ export default function MarketingDashboardPage() {
 
   const [authChecked, setAuthChecked] = useState(false);
   const [username, setUsername] = useState('Marketing Team');
+  const [activeMainTab, setActiveMainTab] = useState<'portfolio' | 'ai_studio'>('portfolio');
 
   // Verify authentication
   useEffect(() => {
@@ -329,6 +333,33 @@ export default function MarketingDashboardPage() {
             </div>
           </div>
 
+          {/* Navigation Tabs */}
+          <div className="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('portfolio')}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                activeMainTab === 'portfolio' ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <ImageIcon className="w-3.5 h-3.5 text-pink-600" />
+              <span>Portfolio Media</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('ai_studio')}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all",
+                activeMainTab === 'ai_studio' ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <Megaphone className="w-3.5 h-3.5 text-rose-600" />
+              <span>Marketing AI Studio</span>
+              <span className="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded font-black uppercase">AI</span>
+            </button>
+          </div>
+
           <div className="flex items-center gap-2.5">
             <Button asChild variant="outline" size="sm" className="border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs h-9 rounded-xl gap-1.5 shadow-xs">
               <Link href="/portfolio" target="_blank">
@@ -347,12 +378,42 @@ export default function MarketingDashboardPage() {
         </div>
       </header>
 
+      {/* Mobile Tab Switcher */}
+      <div className="md:hidden px-4 pt-3 pb-2 bg-white border-b border-slate-200 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('portfolio')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all",
+            activeMainTab === 'portfolio' ? "bg-slate-100 text-slate-900 border border-slate-200" : "text-slate-500"
+          )}
+        >
+          <ImageIcon className="w-3.5 h-3.5 text-pink-600" />
+          <span>Portfolio</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('ai_studio')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all",
+            activeMainTab === 'ai_studio' ? "bg-slate-100 text-slate-900 border border-slate-200" : "text-slate-500"
+          )}
+        >
+          <Megaphone className="w-3.5 h-3.5 text-rose-600" />
+          <span>Marketing AI</span>
+        </button>
+      </div>
+
       {/* Main Content */}
       <main className="flex-1 container mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Title Bar & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight font-headline">
+        {activeMainTab === 'ai_studio' ? (
+          <MarketingAiManagement />
+        ) : (
+          <>
+            {/* Title Bar & Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight font-headline">
               Project Media &amp; Showcase Hub
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
@@ -548,6 +609,8 @@ export default function MarketingDashboardPage() {
               );
             })}
           </div>
+        )}
+        </>
         )}
       </main>
 

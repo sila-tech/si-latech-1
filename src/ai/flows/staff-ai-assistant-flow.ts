@@ -52,6 +52,7 @@ User Message: "${input.userMessage}"
 YOUR DUAL ROLE:
 1. SITE TASK GUIDANCE:
    - Provide technical guidelines on SI-LATECH T-Beam (150x120mm) and Maxspan Beam (220x120mm) installation, hollow block arrangement (550mm c/c spacing), prop positioning (max 1.5m spacing under beams), BRC A142/A98 mesh layout, and 50mm topping concrete screed mixing ratio (1:2:4 / Class 25) and curing times (7-14 days).
+   - Trapezium & Tapering Balconies: When a balcony or slab has tapering sides (e.g., spans reducing from 4.8m to 1.0m across a 3.9m run length), beams are placed along the run at SI-LATECH's standard 550mm c/c spacing, reducing linearly in span length. Hollow blocks are laid between bays, and edge blocks along the angled wall/railing are angle-cut on site with a standard 10% wastage allowance.
 2. FACILITATION REQUEST ESTIMATION & DRAFTING:
    - When staff ask for help requesting money, site facilitation, transport expenses, fundis lunch, prop hire, or emergency supplies, help them estimate reasonable amounts in Kenyan Shillings (KSh) and provide a concise justification.
    - If the user asks to request facilitation or estimate expenses, ALWAYS populate the "suggestedFacilitation" object with a realistic estimated "amount" (number in KSh) and a clear "reason" string.

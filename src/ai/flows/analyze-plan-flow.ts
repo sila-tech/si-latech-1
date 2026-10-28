@@ -28,6 +28,13 @@ const AnalyzePlanInputSchema = z.object({
 });
 export type AnalyzePlanInput = z.infer<typeof AnalyzePlanInputSchema>;
 
+const TrapeziumSchema = z.object({
+  startSpan: z.number().describe('Wider parallel span dimension in METRES (e.g. 4.8). If in mm, divide by 1000.'),
+  endSpan: z.number().describe('Narrower parallel span dimension in METRES (e.g. 1.0). If in mm, divide by 1000.'),
+  runLength: z.number().describe('Perpendicular run length / distance across which beams are laid in METRES (e.g. 3.9). If in mm, divide by 1000.'),
+  slantEdge: z.number().optional().describe('Slanted perimeter or railing edge length in METRES (e.g. 5.1). If in mm, divide by 1000.'),
+});
+
 const RoomSchema = z.object({
   name: z.string().describe(
     'The full descriptive name of the room. Rules: (1) Balconies/verandahs MUST include "Balcony" or "Verandah". (2) Staircases/voids MUST include "(Opening)". (3) Use human-readable names like "Master Bedroom", "Lounge", "Kitchen". (4) For multi-unit plans: "Ground Floor: Unit A - Lounge".'
@@ -37,6 +44,12 @@ const RoomSchema = z.object({
   ),
   width: z.number().describe(
     'The SHORTER clear span dimension in METRES (e.g. 3.6). Must be > 0 and <= length. If in mm, divide by 1000.'
+  ),
+  shape: z.enum(['rectangular', 'trapezium']).optional().describe(
+    'Shape of the room. Default is "rectangular". Set to "trapezium" if the room has tapering or non-parallel sides (common in balconies and verandahs).'
+  ),
+  trapezium: TrapeziumSchema.optional().describe(
+    'Trapezoid dimensions when shape is "trapezium".'
   ),
   blockName: z.string().optional().describe(
     'The building block/wing (e.g. "Block 1", "Block A").'
@@ -83,6 +96,13 @@ export interface AnalyzePlanResult {
     name: string; 
     length: number; 
     width: number; 
+    shape?: 'rectangular' | 'trapezium';
+    trapezium?: {
+      startSpan: number;
+      endSpan: number;
+      runLength: number;
+      slantEdge?: number;
+    };
     blockName?: string; 
     apartmentName?: string; 
     sequenceInApartment?: number; 
@@ -107,6 +127,26 @@ function reconcileAndValidateRooms(output: AnalyzePlanOutput, calibrationScale?:
     let length = Number(room.length) || 3.0;
     let width = Number(room.width) || 2.5;
 
+    // Handle Trapezium dimensions
+    let shape = room.shape || (room.trapezium ? 'trapezium' : 'rectangular');
+    let trapezium = room.trapezium ? { ...room.trapezium } : undefined;
+
+    if (trapezium) {
+      shape = 'trapezium';
+      if (trapezium.startSpan > 25) trapezium.startSpan = trapezium.startSpan / 1000;
+      if (trapezium.endSpan > 25) trapezium.endSpan = trapezium.endSpan / 1000;
+      if (trapezium.runLength > 25) trapezium.runLength = trapezium.runLength / 1000;
+      if (trapezium.slantEdge && trapezium.slantEdge > 25) trapezium.slantEdge = trapezium.slantEdge / 1000;
+
+      trapezium.startSpan = Math.round(trapezium.startSpan * 100) / 100;
+      trapezium.endSpan = Math.round(trapezium.endSpan * 100) / 100;
+      trapezium.runLength = Math.round(trapezium.runLength * 100) / 100;
+      if (trapezium.slantEdge) trapezium.slantEdge = Math.round(trapezium.slantEdge * 100) / 100;
+
+      length = Math.max(trapezium.startSpan, trapezium.endSpan);
+      width = trapezium.runLength;
+    }
+
     // 1. Automatic Millimetre / Centimetre Rectification
     if (length > 25) length = length / 1000;
     if (width > 25) width = width / 1000;
@@ -115,8 +155,8 @@ function reconcileAndValidateRooms(output: AnalyzePlanOutput, calibrationScale?:
     length = Math.max(0.5, Math.round(length * 100) / 100);
     width = Math.max(0.5, Math.round(width * 100) / 100);
 
-    // Ensure length >= width
-    if (width > length) {
+    // Ensure length >= width for rectangular rooms
+    if (shape === 'rectangular' && width > length) {
       const temp = length;
       length = width;
       width = temp;
@@ -163,6 +203,8 @@ function reconcileAndValidateRooms(output: AnalyzePlanOutput, calibrationScale?:
       ...room,
       length,
       width,
+      shape,
+      trapezium,
       confidence: Math.round(confidence * 100) / 100,
       aspectRatioWarning,
     };
@@ -243,6 +285,15 @@ STAGE 2: BEAM-AND-BLOCK SLAB STRUCTURAL RULES
 • BALCONIES & VERANDAHS (including cantilevers/porches):
   Beams span across the LONGER dimension (parallel to building face).
   ⚠ CRITICAL: The room name MUST contain "Balcony" or "Verandah" (or "Baraza") to trigger proper beam direction logic.
+• TRAPEZOIDAL / TAPERING BALCONIES & SLABS:
+  When a balcony or verandah has tapering or non-parallel sides (trapezium shape):
+  - Mark shape: "trapezium"
+  - Populate trapezium:
+    - startSpan: Span in metres at the wider parallel end where Beam 1 sits (e.g., 4.8).
+    - endSpan: Span in metres at the narrower parallel end where the last beam sits (e.g., 1.0).
+    - runLength: The perpendicular distance in metres across which beams are laid at SI-LATECH's 550mm c/c spacing (e.g., 3.9).
+    - slantEdge: Length in metres of the angled exterior / railing edge if noted on plan (e.g., 5.1).
+  - Set length to startSpan and width to runLength for standard compatibility.
 • VOIDS / OPENINGS (Stairwells, Lift Shafts, Light Wells, Courtyards, Ducts):
   Must include "(Opening)" in the name (e.g., "Staircase (Opening)", "Lift (Opening)").
 • SUNKEN SLABS:
@@ -285,6 +336,29 @@ Output JSON:
     { "name": "Bedsitter 3 - Room", "length": 3.6, "width": 3.0, "blockName": "Block 1", "apartmentName": "Unit 3", "sequenceInApartment": 1, "boundingBox": [100, 550, 400, 800], "confidence": 0.95 },
     { "name": "Bedsitter 3 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 3", "sequenceInApartment": 2, "boundingBox": [400, 550, 550, 700], "confidence": 0.91 },
     { "name": "Common Verandah", "length": 9.0, "width": 1.5, "blockName": "Block 1", "boundingBox": [550, 50, 700, 800], "confidence": 0.94 }
+  ]
+}
+
+EXAMPLE C — Maisonette with Tapering Trapezium Balcony:
+Output JSON:
+{
+  "detectedScale": "1:100",
+  "detectedUnits": "mm",
+  "drawingType": "Architectural Floor Plan",
+  "summary": "First floor plan with Master Suite and a tapering Trapezoid Balcony.",
+  "rooms": [
+    { 
+      "name": "Master Balcony", 
+      "length": 4.8, 
+      "width": 3.9, 
+      "shape": "trapezium",
+      "trapezium": { "startSpan": 4.8, "endSpan": 1.0, "runLength": 3.9, "slantEdge": 5.1 },
+      "blockName": "Block 1", 
+      "apartmentName": "First Floor", 
+      "sequenceInApartment": 1, 
+      "boundingBox": [100, 650, 350, 950], 
+      "confidence": 0.95 
+    }
   ]
 }
 
