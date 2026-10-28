@@ -3,11 +3,38 @@
  * @fileoverview Core calculation logic for the SI-LATECH Beam and Block Slab system.
  */
 
+export type RoomShape = 'rectangular' | 'trapezium';
+
+export interface TrapeziumData {
+  startSpan: number; // e.g. 4.8m (wider parallel end)
+  endSpan: number;   // e.g. 1.0m (narrower parallel end)
+  runLength: number; // e.g. 3.9m (perpendicular distance along which beams are laid)
+  slantEdge?: number; // e.g. 5.1m (slanted exterior or railing edge)
+}
+
+export interface BeamScheduleItem {
+  beamNumber: number;
+  position: number;      // e.g. 0.00, 0.55, 1.10...
+  clearSpan: number;     // e.g. 4.80, 4.26...
+  bearingLength: number; // clearSpan + 0.20m (100mm bearing each end)
+  mfgLength: number;     // rounded up to nearest 0.10m for precast manufacturing
+}
+
+export interface BayBlockItem {
+  bayNumber: number;
+  betweenBeams: string;  // e.g. "Beam 1 & 2"
+  bayWidth: number;      // e.g. 0.55m
+  averageSpan: number;   // e.g. 4.53m
+  blocks: number;        // e.g. 23
+}
+
 export interface Room {
   id: string;
   name: string;
   length: number;
   width: number;
+  shape?: RoomShape;
+  trapezium?: TrapeziumData;
   // Optional: links room to a block/apartment grouping for shared-wall deduction
   blockId?: string;
   apartmentId?: string;
@@ -128,6 +155,12 @@ export interface RoomCalculation {
   physicalEndGap: number;
   remainingVoidSpaceMm: number;
   structuralWarning?: string;
+  // Trapezium / Non-rectangular support
+  shape?: RoomShape;
+  trapezium?: TrapeziumData;
+  beamSchedule?: BeamScheduleItem[];
+  bayBreakdown?: BayBlockItem[];
+  area?: number;
 }
 
 export interface ConcreteCalculation {
@@ -236,7 +269,7 @@ export const DEFAULTS: CalculationDefaults = {
   cementBagWeight: 50, 
   wheelbarrowVolume: 0.065, 
   wheelbarrowsPerTonne: 6,
-  profitBeamsPerRoom: 2,
+  profitBeamsPerRoom: 0,
   blockCommissionRate: 5, 
   lintelHeight: 0.40,
   lintelWidth: 0.20,
@@ -256,7 +289,7 @@ export const DEFAULTS: CalculationDefaults = {
   beamTbeamRate: 1200,
   singleBeamsOnly: false,
   forceSingleBeams: false,
-  profitMode: 'legacy',
+  profitMode: 'percentage',
   profitMarginPercentage: 15,
 };
 
@@ -279,19 +312,204 @@ export function calcBilledBlocks(baseBlocks: number): number {
     return roundedBase + extraAllowance;
 }
 
+/**
+ * Calculates precast beam cutting schedules and block counts for non-rectangular / trapezium slabs.
+ * Follows SI-LATECH's 550mm c/c standard spacing along the run length.
+ */
+export function calcTrapeziumSchedule(
+  trap: TrapeziumData,
+  unitSpan: number = 0.55,
+  blockWidth: number = 0.20,
+  bearingEachEnd: number = 0.10
+): {
+  beams: BeamScheduleItem[];
+  bays: BayBlockItem[];
+  actualTotalBeamLength: number;
+  totalBlocks: number;
+  area: number;
+  averageSpan: number;
+  effectiveBeamCount: number;
+} {
+  const { startSpan, endSpan, runLength } = trap;
+  const beams: BeamScheduleItem[] = [];
+  const bays: BayBlockItem[] = [];
+
+  if (runLength <= 0 || (startSpan <= 0 && endSpan <= 0)) {
+    return {
+      beams: [],
+      bays: [],
+      actualTotalBeamLength: 0,
+      totalBlocks: 0,
+      area: 0,
+      averageSpan: 0,
+      effectiveBeamCount: 0,
+    };
+  }
+
+  // Beam positions along the run length:
+  // Starts at x = 0 (wider parallel side) and steps at standard unitSpan (0.55m).
+  // If the last regular beam position is close to the end wall (< 0.09m gap), it sits at the wall.
+  // Otherwise, place regular beams and add the final closure beam at the end wall.
+  const positions: number[] = [];
+  let currX = 0;
+  while (currX < runLength - 0.09) {
+    positions.push(Math.round(currX * 1000) / 1000);
+    currX += unitSpan;
+  }
+  positions.push(Math.round(runLength * 1000) / 1000);
+
+  let totalActualBeamLength = 0;
+  let totalBlocks = 0;
+
+  for (let i = 0; i < positions.length; i++) {
+    const x = positions[i];
+    const spanFraction = runLength > 0 ? x / runLength : 0;
+    const clearSpan = Math.max(0.5, startSpan - (startSpan - endSpan) * spanFraction);
+    const bearingLength = clearSpan + (2 * bearingEachEnd);
+    const mfgLength = Math.ceil(bearingLength * 10) / 10;
+
+    beams.push({
+      beamNumber: i + 1,
+      position: x,
+      clearSpan: Math.round(clearSpan * 100) / 100,
+      bearingLength: Math.round(bearingLength * 100) / 100,
+      mfgLength,
+    });
+    totalActualBeamLength += bearingLength;
+  }
+
+  for (let i = 0; i < beams.length - 1; i++) {
+    const b1 = beams[i];
+    const b2 = beams[i + 1];
+    const bayWidth = Math.round((b2.position - b1.position) * 1000) / 1000;
+    const avgSpan = (b1.clearSpan + b2.clearSpan) / 2;
+    // Standard SI-LATECH block width: 0.20m along span = 5 blocks per linear metre
+    const blocksInBay = blockWidth > 0 ? avgSpan / blockWidth : avgSpan * 5;
+    totalBlocks += blocksInBay;
+
+    bays.push({
+      bayNumber: i + 1,
+      betweenBeams: `Beam ${b1.beamNumber} & ${b2.beamNumber}`,
+      bayWidth,
+      averageSpan: Math.round(avgSpan * 100) / 100,
+      blocks: Math.round(blocksInBay),
+    });
+  }
+
+  const area = ((startSpan + endSpan) / 2) * runLength;
+  const averageSpan = (startSpan + endSpan) / 2;
+
+  return {
+    beams,
+    bays,
+    actualTotalBeamLength: Math.round(totalActualBeamLength * 100) / 100,
+    totalBlocks: Math.ceil(totalBlocks),
+    area: Math.round(area * 100) / 100,
+    averageSpan: Math.round(averageSpan * 100) / 100,
+    effectiveBeamCount: beams.length,
+  };
+}
+
 export function calcRoomBlocksAndBeams(
   lengthMeters: number,
   widthMeters: number,
   opts: Partial<CalculationDefaults> = {},
   beamPricePerMeter: number = 545,
   roomName: string = '',
-  optimizeExcess: boolean = true
+  optimizeExcess: boolean = true,
+  trapeziumData?: TrapeziumData
 ): RoomCalculation {
   const C = { ...DEFAULTS, ...opts };
-  const area = lengthMeters * widthMeters;
   const defaultPrice = C.beamType === 'tbeam' ? (C.beamTbeamRate || 1200) : (C.beamFlatRate || 545);
-  const beamPrice = (beamPricePerMeter && beamPricePerMeter !== 500 && beamPricePerMeter !== 520 && beamPricePerMeter !== 545) ? beamPricePerMeter : defaultPrice;
+  const beamPrice = (typeof beamPricePerMeter === 'number' && beamPricePerMeter > 0) ? beamPricePerMeter : defaultPrice;
 
+  // --- TRAPEZIUM ROOM HANDLING ---
+  const activeTrapezium = trapeziumData && trapeziumData.runLength > 0 && (trapeziumData.startSpan > 0 || trapeziumData.endSpan > 0)
+    ? trapeziumData
+    : undefined;
+
+  if (activeTrapezium) {
+    const clearGap = C.beamSpacing || 0.40;
+    const beamWidth = C.beamSectionW || 0.15;
+    const unitSpan = clearGap + beamWidth; // 0.55m
+
+    const trapResult = calcTrapeziumSchedule(activeTrapezium, unitSpan, C.blockWidth || 0.20, 0.10);
+    const effectiveBeamCount = trapResult.effectiveBeamCount;
+    const actualTotalBeamLength = trapResult.actualTotalBeamLength;
+    const actualTotalBlocks = trapResult.totalBlocks;
+    const individualBeamLength = Math.round((trapResult.averageSpan + 0.20) * 100) / 100;
+    const blocksPerBeamRow = Math.round(individualBeamLength * 4);
+    const calcArea = trapResult.area;
+
+    // Strict percentage margin calculation
+    const marginPct = C.profitMarginPercentage ?? 15;
+    let invoiceBeamCount = effectiveBeamCount;
+    let invoiceTotalBeamLength = actualTotalBeamLength;
+
+    if (C.isPartnerMode) {
+      const partnerMarginPct = C.partnerProfitPercentage !== undefined ? C.partnerProfitPercentage : marginPct;
+      const partnerProfitMetres = actualTotalBeamLength * (partnerMarginPct / 100);
+      invoiceTotalBeamLength = actualTotalBeamLength + partnerProfitMetres;
+      invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : effectiveBeamCount;
+    } else {
+      const profitMetres = actualTotalBeamLength * (marginPct / 100);
+      invoiceTotalBeamLength = actualTotalBeamLength + profitMetres;
+      invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : effectiveBeamCount;
+    }
+    const profitBeams = Math.max(0, invoiceBeamCount - effectiveBeamCount);
+
+    const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
+    const beamProfitValue = profitBeamLength * beamPrice;
+    const blockCommission = actualTotalBlocks * C.blockCommissionRate;
+    const totalRoomProfit = beamProfitValue + blockCommission;
+
+    return {
+      length: lengthMeters || Math.max(activeTrapezium.startSpan, activeTrapezium.endSpan),
+      width: widthMeters || activeTrapezium.runLength,
+      shorter: Math.min(activeTrapezium.runLength, (activeTrapezium.startSpan + activeTrapezium.endSpan) / 2),
+      longer: Math.max(activeTrapezium.runLength, (activeTrapezium.startSpan + activeTrapezium.endSpan) / 2),
+      actualBeamCount: effectiveBeamCount,
+      profitBeams,
+      invoiceBeamCount,
+      beamSpaces: Math.max(0, effectiveBeamCount - 1),
+      blocksPerBeamRow,
+      totalBlocks: actualTotalBlocks,
+      individualBeamLength,
+      actualTotalBeamLength,
+      invoiceTotalBeamLength: Math.round(invoiceTotalBeamLength * 100) / 100,
+      profitBeamLength: Math.round(profitBeamLength * 100) / 100,
+      beamProfitValue,
+      actualMetresProfit: profitBeamLength,
+      grossExtraMetresValue: beamProfitValue,
+      extraMetresVat: beamProfitValue * 0.16,
+      netExtraMetresProfit: beamProfitValue * 0.84,
+      blockCommission,
+      totalRoomProfit,
+      area: calcArea,
+      shape: 'trapezium',
+      trapezium: activeTrapezium,
+      beamSchedule: trapResult.beams,
+      bayBreakdown: trapResult.bays,
+      layout: {
+        gapAtEnd: 0,
+        needsExtraBeam: false,
+        needsHalfBlock: false,
+        beamSpacing: clearGap,
+        beamWidth,
+        unitSpan,
+        beamCount: effectiveBeamCount,
+        blocksPerRow: blocksPerBeamRow,
+        startWithBlock: false,
+      },
+      physicalBeamCount: effectiveBeamCount,
+      excessBeamCount: 0,
+      excessBlockCount: 0,
+      physicalEndGap: 0,
+      remainingVoidSpaceMm: 0,
+    };
+  }
+
+  const area = lengthMeters * widthMeters;
   const shorter = Math.min(lengthMeters, widthMeters);
   const longer = Math.max(lengthMeters, widthMeters);
 
@@ -409,88 +627,47 @@ export function calcRoomBlocksAndBeams(
   let siLatechProfitValue = 0;
 
   // Detect if this is a "Partner Mode", "Quick Quote" (Meter Square) or a manual "Room"
+  const marginPct = C.profitMarginPercentage ?? 15;
+
   if (C.isPartnerMode) {
     // PARTNER MODE:
-    // 1. SI-LATECH Base Cut: 1 automatic profit beam per room
-    const siLatechProfitBeams = 1;
-    const partnerBaseBeamCount = effectiveBeamCount + siLatechProfitBeams;
-    partnerBaseBeamLength = partnerBaseBeamCount * individualBeamLength;
-
-    // 2. Partner Margin (Percentage-based, defaults to 15%)
-    const partnerMarginPct = C.partnerProfitPercentage !== undefined ? C.partnerProfitPercentage : 15;
-    partnerProfitMetres = partnerBaseBeamLength * (partnerMarginPct / 100);
+    const partnerMarginPct = C.partnerProfitPercentage !== undefined ? C.partnerProfitPercentage : marginPct;
+    partnerProfitMetres = actualTotalBeamLength * (partnerMarginPct / 100);
     partnerProfitValue = partnerProfitMetres * beamPrice;
 
-    siLatechProfitBeamLength = 1 * individualBeamLength;
+    siLatechProfitBeamLength = actualTotalBeamLength * (marginPct / 100);
     siLatechProfitValue = siLatechProfitBeamLength * beamPrice;
 
-    invoiceTotalBeamLength = partnerBaseBeamLength + partnerProfitMetres;
-    invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : partnerBaseBeamCount;
+    invoiceTotalBeamLength = actualTotalBeamLength + partnerProfitMetres;
+    invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : effectiveBeamCount;
   } else if (isAreaMode) {
-    // METRE SQUARE MODE: Multiply Area by 2.4
-    invoiceTotalBeamLength = area * 2.4;
+    // METRE SQUARE MODE (CALIBRATED WITH DYNAMIC PROFIT MARGIN):
+    // Base physical beam density: ~1.95 m/m² (1 / 0.55m pitch plus 0.20m wall bearings)
+    // Plus the dynamic profit margin percentage:
+    const baseBeamsPerSqm = 1.95;
+    invoiceTotalBeamLength = area * baseBeamsPerSqm * (1 + marginPct / 100);
     invoiceBeamCount = shorter > 0 ? ceil(invoiceTotalBeamLength / shorter) : 0;
-  } else if (C.profitMode === 'percentage') {
-    // PERCENTAGE MARGIN MODE (just as in partner mode):
-    // Adds extra linear metres equal to the target profit percentage (default 15%) of actual beams
-    const marginPct = C.profitMarginPercentage ?? 15;
+  } else {
+    // STANDARD ROOM MODE (STRICT PERCENTAGE MARGIN):
+    // Pure percentage on top of actual beam metres:
     const profitMetres = actualTotalBeamLength * (marginPct / 100);
     invoiceTotalBeamLength = actualTotalBeamLength + profitMetres;
     invoiceBeamCount = individualBeamLength > 0 ? Math.ceil(invoiceTotalBeamLength / individualBeamLength) : effectiveBeamCount;
-  } else if (isBalcony) {
-    // BALCONY / VERANDAH MODE: Add 1 profit beam
-    const profitBeamsPerBalcony = 1;
-    invoiceBeamCount = effectiveBeamCount + profitBeamsPerBalcony;
-    invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
-  } else {
-    // ROOM MODE: Actual Beams + Profit Beams
-    const profitBeamsPerRoom = C.profitBeamsPerRoom ?? 2;
-    invoiceBeamCount = effectiveBeamCount + profitBeamsPerRoom;
-    invoiceTotalBeamLength = invoiceBeamCount * individualBeamLength;
   }
 
-  // Blocks: geometric count — every space between supports × blocks per space
-  const totalBlocks = actualTotalBlocks;
+  // Blocks: in area mode use calibrated 7.5 blocks/m²; in room mode use physical rows * blocksPerRow
+  const totalBlocks = isAreaMode ? Math.round(area * 7.5) : actualTotalBlocks;
 
-  // --- 3. PROFIT CALCULATION ---
+  // --- 3. PROFIT CALCULATION (STRICT PERCENTAGE MARGIN) ---
   const isTBeam = C.beamType === 'tbeam';
-  let profitBeamLength = 0;
-  let grossExtraMetresValue = 0;
-  let extraMetresVat = 0;
-  let netExtraMetresProfit = 0;
-  let actualMetresProfit = 0;
-  let blockCommission = 0;
-  let beamProfitValue = 0;
-  let totalRoomProfit = 0;
-
-  if (C.isPartnerMode) {
-    profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
-    grossExtraMetresValue = profitBeamLength * beamPrice;
-    extraMetresVat = grossExtraMetresValue * 0.16;
-    netExtraMetresProfit = grossExtraMetresValue * 0.84;
-    actualMetresProfit = 0;
-    blockCommission = 0;
-    beamProfitValue = partnerProfitValue;
-    totalRoomProfit = partnerProfitValue;
-  } else if (C.profitMode === 'percentage') {
-    profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // 15% extra metres
-    grossExtraMetresValue = profitBeamLength * beamPrice;
-    extraMetresVat = grossExtraMetresValue * 0.16;
-    netExtraMetresProfit = grossExtraMetresValue * 0.84;
-    actualMetresProfit = 0;
-    blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 5));
-    beamProfitValue = grossExtraMetresValue;
-    totalRoomProfit = beamProfitValue + blockCommission;
-  } else {
-    profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength; // Extra metres
-    grossExtraMetresValue = profitBeamLength * beamPrice;
-    extraMetresVat = grossExtraMetresValue * 0.16; // 16% VAT deducted on extra metres
-    netExtraMetresProfit = grossExtraMetresValue * 0.84;
-    actualMetresProfit = actualTotalBeamLength * (isTBeam ? 100 : 20);
-    blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 0));
-    beamProfitValue = actualMetresProfit + netExtraMetresProfit;
-    totalRoomProfit = actualMetresProfit + blockCommission + netExtraMetresProfit;
-  }
+  const profitBeamLength = invoiceTotalBeamLength - actualTotalBeamLength;
+  const grossExtraMetresValue = profitBeamLength * beamPrice;
+  const extraMetresVat = grossExtraMetresValue * 0.16;
+  const netExtraMetresProfit = grossExtraMetresValue * 0.84;
+  const actualMetresProfit = 0;
+  const blockCommission = totalBlocks * (isTBeam ? 5 : (C.blockCommissionRate ?? 5));
+  const beamProfitValue = C.isPartnerMode ? partnerProfitValue : grossExtraMetresValue;
+  const totalRoomProfit = C.isPartnerMode ? partnerProfitValue : (beamProfitValue + blockCommission);
   
   const startWithBlock = optimizeExcess && physicalEndGap >= 0.40;
 
@@ -555,7 +732,7 @@ export function calcConcrete(
   opts: Partial<CalculationDefaults> = {}
 ): ConcreteCalculation {
   const C = { ...DEFAULTS, ...opts };
-  const area = roomCalc.length * roomCalc.width;
+  const area = roomCalc.area ?? (roomCalc.length * roomCalc.width);
 
   const beamRibVolume = roomCalc.actualTotalBeamLength * C.beamSectionW * C.beamSectionH;
   const toppingVolume = area * C.toppingThickness;
@@ -625,6 +802,10 @@ export function calcBRC(totalArea: number, opts: Partial<CalculationDefaults> = 
 
 export function calcTimberAndProps(room: Room, opts: Partial<CalculationDefaults> = {}): TimberAndPropsCalculation {
   const C = { ...DEFAULTS, ...opts };
+  const roomPerimeter = room.trapezium
+    ? (room.trapezium.startSpan + room.trapezium.endSpan + room.trapezium.runLength + (room.trapezium.slantEdge || Math.sqrt(Math.pow(room.trapezium.runLength, 2) + Math.pow(Math.abs(room.trapezium.startSpan - room.trapezium.endSpan), 2))))
+    : 2 * (room.length + room.width);
+
   // Precast T-Beams are fully self-supporting: NO formwork, timber shuttering, or props needed!
   if (C.beamType === 'tbeam') {
     return {
@@ -632,7 +813,7 @@ export function calcTimberAndProps(room: Room, opts: Partial<CalculationDefaults
       lengthEach3x2: 0,
       total3x2m: 0,
       total3x2ft: 0,
-      perimeter: 2 * (room.length + room.width),
+      perimeter: Math.round(roomPerimeter * 100) / 100,
       total6x1m: 0,
       total6x1ft: 0,
     };
@@ -641,8 +822,8 @@ export function calcTimberAndProps(room: Room, opts: Partial<CalculationDefaults
   const longer = Math.max(room.length, room.width);
   const pieces3x2 = C.timber3x2Spacing > 0 ? ceil(shorter / C.timber3x2Spacing) + 1 : 0;
   const total3x2m = pieces3x2 * longer;
-  const total6x1m = 2 * (room.length + room.width) * C.timber6x1PerimeterMultiplier;
-  return { pieces3x2, lengthEach3x2: longer, total3x2m, total3x2ft: total3x2m * METERS_TO_FEET, perimeter: 2 * (room.length + room.width), total6x1m, total6x1ft: total6x1m * METERS_TO_FEET };
+  const total6x1m = roomPerimeter * C.timber6x1PerimeterMultiplier;
+  return { pieces3x2, lengthEach3x2: longer, total3x2m, total3x2ft: total3x2m * METERS_TO_FEET, perimeter: Math.round(roomPerimeter * 100) / 100, total6x1m, total6x1ft: total6x1m * METERS_TO_FEET };
 }
 
 const calcUnitWeight = (diameter: number) => 0.006165 * Math.pow(diameter, 2);
@@ -672,8 +853,10 @@ export function getAggregatedRoomBreakdown(rooms: Room[], settings: CalculationD
   const roomGroups = new Map<string, { rooms: Room[], calcs: RoomCalculation }>();
   const beamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1200) : (settings.beamFlatRate || 545);
   rooms.forEach(room => {
-      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, beamPrice, room.name, optimizeExcess);
-      const sizeKey = `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
+      const calcs = calcRoomBlocksAndBeams(room.length, room.width, settings, beamPrice, room.name, optimizeExcess, room.trapezium);
+      const sizeKey = room.trapezium
+        ? `trap_${room.trapezium.startSpan}x${room.trapezium.endSpan}_run${room.trapezium.runLength}`
+        : `${calcs.shorter.toFixed(2)}x${calcs.longer.toFixed(2)}`;
       if (!roomGroups.has(sizeKey)) roomGroups.set(sizeKey, { rooms: [], calcs });
       roomGroups.get(sizeKey)!.rooms.push(room);
   });
@@ -757,7 +940,7 @@ export function calculateProjectTotals(
     totalSiLatechProfitValue: 0,
     isPartnerMode: !!settings.isPartnerMode,
     partnerProfitPercentage: settings.partnerProfitPercentage ?? 15,
-    profitMode: settings.profitMode || 'legacy',
+    profitMode: 'percentage',
     profitMarginPercentage: settings.profitMarginPercentage ?? 15,
     totalConcreteVolume: 0,
     totalCementBags: 0,
@@ -777,7 +960,7 @@ export function calculateProjectTotals(
 
   const projectBeamPrice = settings.beamType === 'tbeam' ? (settings.beamTbeamRate || 1200) : (settings.beamFlatRate || 545);
   const perRoomCalculations = rooms.map((r) => {
-    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, projectBeamPrice, r.name, optimizeExcess);
+    const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, projectBeamPrice, r.name, optimizeExcess, r.trapezium);
     const concreteCalcs = calcConcrete(roomCalcs, settings);
     const brcCalcs = calcBRC(concreteCalcs.area, settings);
     const timberCalcs = calcTimberAndProps(r, settings);
@@ -785,7 +968,10 @@ export function calculateProjectTotals(
   });
 
   const rawLintelLength = lintelLength > 0 ? lintelLength : rooms.reduce((sum, room) => {
-      return sum + 2 * (room.length + room.width);
+      const perim = room.trapezium
+        ? (room.trapezium.startSpan + room.trapezium.endSpan + room.trapezium.runLength + (room.trapezium.slantEdge || Math.sqrt(Math.pow(room.trapezium.runLength, 2) + Math.pow(Math.abs(room.trapezium.startSpan - room.trapezium.endSpan), 2))))
+        : 2 * (room.length + room.width);
+      return sum + perim;
   }, 0);
 
   // Deduct shared/party walls when building blocks are defined

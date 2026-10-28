@@ -69,8 +69,8 @@ export const generateQuotePdf = (data: {
     };
 
     const isTBeam = safeTotals.beamType === 'tbeam';
-    const BEAM_PRICE_PER_METER = totals.beamPrice !== undefined ? totals.beamPrice : (isTBeam ? 950 : 500);
-    const BLOCK_PRICE = totals.blockPrice !== undefined ? totals.blockPrice : (isTBeam ? 95 : 80);
+    const BEAM_PRICE_PER_METER = totals.beamPrice !== undefined ? totals.beamPrice : (isTBeam ? 1200 : 545);
+    const BLOCK_PRICE = totals.blockPrice !== undefined ? totals.blockPrice : (isTBeam ? 100 : 90);
 
     const totalArea = safeTotals.totalArea || (perRoomCalculations || []).reduce((acc: number, r: any) => acc + ((r.length || 0) * (r.width || 0)), 0);
     const brcRollsNeeded = safeTotals.brc?.rollsNeeded !== undefined ? safeTotals.brc.rollsNeeded : Math.ceil(totalArea / 115.2);
@@ -681,11 +681,16 @@ export const generateMaterialSchedulePdf = (data: {
     const tableColumn = ['ROOM / AREA', 'SPAN (M)', 'BEAMS (INVOICE)', 'ACTUAL BEAMS', 'BLOCKS (PCS)'];
     const tableRows: any[] = [];
 
+    const isTBeam = settings.beamType === 'tbeam';
+    const activeBeamPrice = isTBeam ? (settings.beamTbeamRate || 1200) : (settings.beamFlatRate || 545);
     rooms.forEach((r: any) => {
-        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, 950, r.name);
+        const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, activeBeamPrice, r.name, true, r.trapezium);
+        const spanText = r.trapezium
+            ? `${r.trapezium.startSpan}m → ${r.trapezium.endSpan}m (run ${r.trapezium.runLength}m)`
+            : `${r.length} x ${r.width}`;
         tableRows.push([
             r.name,
-            `${r.length} x ${r.width}`,
+            spanText,
             roomCalcs.invoiceBeamCount,
             roomCalcs.actualBeamCount,
             roomCalcs.totalBlocks

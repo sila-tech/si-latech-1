@@ -108,6 +108,8 @@ export function AdminProjectEditorModal({
   const [contactPerson, setContactPerson] = useState('');
   const [status, setStatus] = useState<string>('pending');
   const [assignedTo, setAssignedTo] = useState<string>('unassigned');
+  const [salesRep, setSalesRep] = useState<string>('unassigned');
+  const [leadStatus, setLeadStatus] = useState<string>('measurement_booked');
 
   // Calculator Rooms State
   const [rooms, setRooms] = useState<Room[]>([
@@ -144,6 +146,8 @@ export function AdminProjectEditorModal({
       setContactPerson(project.contactPerson || '');
       setStatus(project.status || 'pending');
       setAssignedTo(project.assignedTo || 'unassigned');
+      setSalesRep((project as any).salesRep || 'unassigned');
+      setLeadStatus((project as any).leadStatus || 'measurement_booked');
       setRooms(project.rooms && project.rooms.length > 0 ? project.rooms : [{ id: '1', name: 'Room 1', length: 4.0, width: 3.5 }]);
       setBeamType(project.settings?.beamType || 'tbeam');
       
@@ -166,6 +170,8 @@ export function AdminProjectEditorModal({
       setContactPerson('');
       setStatus('pending');
       setAssignedTo('unassigned');
+      setSalesRep('unassigned');
+      setLeadStatus('measurement_booked');
       setRooms([{ id: '1', name: 'Room 1', length: 4.0, width: 3.5 }]);
       setBeamType('tbeam');
       setCustomBeamRate('');
@@ -315,6 +321,10 @@ export function AdminProjectEditorModal({
         contactPerson: contactPerson.trim(),
         status: status as any,
         assignedTo: assignedTo === 'unassigned' ? '' : assignedTo,
+        salesRep: salesRep === 'unassigned' ? '' : salesRep,
+        salesRepName: salesRep === 'unassigned' ? '' : (staffList.find((s: any) => s.username === salesRep)?.name || salesRep),
+        leadStatus: leadStatus as any,
+        conversionStatus: (leadStatus === 'won' ? 'converted' : leadStatus === 'lost' ? 'lost' : 'in_progress') as any,
         rooms,
         settings: activeSettings,
         lintelLength: 0,
@@ -623,7 +633,7 @@ export function AdminProjectEditorModal({
                         Flat Beam (KSh {pricingRates?.beamFlatRate || 545}/m)
                       </Button>
                       <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-[11px]">
-                        {activeSettings.profitMode === 'percentage' ? `${activeSettings.profitMarginPercentage ?? 15}% Margin (Extra Metres)` : 'Legacy (+2 Beams/Rm)'}
+                        {`${activeSettings.profitMarginPercentage ?? 15}% Margin`}
                       </span>
                     </div>
                   </div>
@@ -861,6 +871,36 @@ export function AdminProjectEditorModal({
                         {staffList.map((s: any) => (
                           <SelectItem key={s.id} value={s.username}>{s.name} (@{s.username})</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-700 font-semibold">Sales Representative</Label>
+                    <Select value={salesRep} onValueChange={setSalesRep}>
+                      <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs">
+                        <SelectValue placeholder="Assign Sales Rep" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
+                        <SelectItem value="unassigned" className="text-slate-400 italic">No Sales Rep</SelectItem>
+                        {staffList.map((s: any) => (
+                          <SelectItem key={s.id} value={s.username}>{s.name} (@{s.username})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-700 font-semibold">Sales Pipeline Stage</Label>
+                    <Select value={leadStatus} onValueChange={setLeadStatus}>
+                      <SelectTrigger className="h-9 bg-slate-50 border-slate-200 text-slate-900 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
+                        <SelectItem value="measurement_booked">Measurement Booked</SelectItem>
+                        <SelectItem value="measured">Site Measured</SelectItem>
+                        <SelectItem value="quoted">Quoted</SelectItem>
+                        <SelectItem value="negotiation">In Negotiation</SelectItem>
+                        <SelectItem value="won">Closed Won</SelectItem>
+                        <SelectItem value="lost">Closed Lost</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

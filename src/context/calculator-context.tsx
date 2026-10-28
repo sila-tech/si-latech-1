@@ -63,6 +63,10 @@ export interface ProjectData {
   updatedAt?: Timestamp;
   status?: string;
   assignedTo?: string;
+  salesRep?: string;
+  salesRepName?: string;
+  leadStatus?: string;
+  conversionStatus?: string;
 }
 
 export type ProjectDetails = {
@@ -120,7 +124,7 @@ interface CalculatorContextType {
   rooms: Room[];
   setRooms: (rooms: Room[]) => void;
   addRoom: () => void;
-  updateRoom: (id: string, key: 'name' | 'length' | 'width', value: string | number) => void;
+  updateRoom: (id: string, keyOrUpdates: 'name' | 'length' | 'width' | 'shape' | 'trapezium' | Partial<Room>, value?: any) => void;
   deleteRoom: (id: string) => void;
   settings: CalculationDefaults;
   setSettings: React.Dispatch<React.SetStateAction<CalculationDefaults>>;
@@ -169,6 +173,7 @@ interface CalculatorContextType {
     ballastRate: number;
     brcRate: number;
     propRate: number;
+    profitMarginPercentage: number;
   };
   setPricingRates: React.Dispatch<React.SetStateAction<{
     beamFlatRate: number;
@@ -180,6 +185,7 @@ interface CalculatorContextType {
     ballastRate: number;
     brcRate: number;
     propRate: number;
+    profitMarginPercentage: number;
   }>>;
   updatePricingRates: (newRates: Partial<{
     beamFlatRate: number;
@@ -191,6 +197,7 @@ interface CalculatorContextType {
     ballastRate: number;
     brcRate: number;
     propRate: number;
+    profitMarginPercentage: number;
   }>) => Promise<void>;
 }
 
@@ -230,6 +237,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     ballastRate: 3200,
     brcRate: 25000,
     propRate: 500,
+    profitMarginPercentage: 15,
   });
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -245,6 +253,13 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
           ...prev,
           ...data
         }));
+        if (data.profitMarginPercentage !== undefined) {
+          const margin = Number(data.profitMarginPercentage);
+          setSettings(prev => ({
+            ...prev,
+            profitMarginPercentage: margin
+          }));
+        }
       }
     }, (error) => {
       console.warn("Pricing listener error:", error);
@@ -255,6 +270,12 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
 
   const updatePricingRates = useCallback(async (newRates: any) => {
     setPricingRates(prev => ({ ...prev, ...newRates }));
+    if (newRates.profitMarginPercentage !== undefined) {
+      setSettings(prev => ({
+        ...prev,
+        profitMarginPercentage: Number(newRates.profitMarginPercentage)
+      }));
+    }
     if (firestore) {
       try {
         const pricingRef = doc(firestore, 'settings', 'pricing');
@@ -540,11 +561,15 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     ]);
   };
 
-  const updateRoom = (id: string, key: 'name' | 'length' | 'width', value: string | number) => {
+  const updateRoom = (id: string, keyOrUpdates: 'name' | 'length' | 'width' | 'shape' | 'trapezium' | Partial<Room>, value?: any) => {
     setRooms(
-      rooms.map((room) =>
-        room.id === id ? { ...room, [key]: value } : room
-      )
+      rooms.map((room) => {
+        if (room.id !== id) return room;
+        if (typeof keyOrUpdates === 'object') {
+          return { ...room, ...keyOrUpdates };
+        }
+        return { ...room, [keyOrUpdates]: value };
+      })
     );
   };
 
@@ -564,7 +589,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const perRoomCalculations: PerRoomCalculation[] = useMemo(() => {
     const BEAM_PRICE_PER_METER = settings.beamType === 'tbeam' ? (pricingRates.beamTbeamRate || 1200) : (pricingRates.beamFlatRate || 545); 
     return rooms.map((r) => {
-      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name);
+      const roomCalcs = calcRoomBlocksAndBeams(r.length, r.width, settings, BEAM_PRICE_PER_METER, r.name, true, r.trapezium);
       const concreteCalcs = calcConcrete(roomCalcs, settings);
       const brcCalcs = calcBRC(concreteCalcs.area, settings);
       const timberCalcs = calcTimberAndProps(r, settings);

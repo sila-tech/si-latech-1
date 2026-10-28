@@ -27,8 +27,13 @@ export async function generateQuotePdfDetails(clientInfo: any, rooms: any[]): Pr
   const invoiceNumber = clientInfo?.invoiceNumber || clientInfo?.quoteReference || `SILA-${String(Date.now()).slice(-6)}`;
   
   const isTBeam = clientInfo?.beamType === 'tbeam';
-  const BLOCK_PRICE = isTBeam ? 100 : 90;
-  const BEAM_PRICE_PER_METER = isTBeam ? 1200 : 545;
+  const customBeamPrice = typeof clientInfo?.beamPrice === 'number' && clientInfo.beamPrice > 0
+    ? clientInfo.beamPrice
+    : (typeof clientInfo?.beamPricePerMeter === 'number' && clientInfo.beamPricePerMeter > 0 ? clientInfo.beamPricePerMeter : undefined);
+  const customBlockPrice = typeof clientInfo?.blockPrice === 'number' && clientInfo.blockPrice > 0 ? clientInfo.blockPrice : undefined;
+
+  const BLOCK_PRICE = customBlockPrice ?? (isTBeam ? (clientInfo?.blockTbeamRate || 100) : (clientInfo?.blockFlatRate || 90));
+  const BEAM_PRICE_PER_METER = customBeamPrice ?? (isTBeam ? (clientInfo?.beamTbeamRate || 1200) : (clientInfo?.beamFlatRate || 545));
 
   const defaultsWithBeamType = { ...DEFAULTS, beamType: clientInfo?.beamType || 'flat' };
   const totals = calculateProjectTotals(rooms, defaultsWithBeamType);

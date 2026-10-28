@@ -425,6 +425,16 @@ export function TotalsCard() {
                 </div>
                 <span className="text-[10px] font-black text-emerald-100 uppercase tracking-widest block">Estimated Grand Total Cost</span>
                 <span className="text-3xl font-black text-white block mt-0.5 tracking-tight">KSh {grandTotal.toLocaleString()}</span>
+                {totalArea > 0 && (
+                  <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-center gap-3 text-xs">
+                    <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded-md">
+                      KSh {Math.round(grandTotal / totalArea).toLocaleString()} / m²
+                    </span>
+                    <span className="text-emerald-100 font-medium">
+                      Profit Margin: {settings.profitMarginPercentage ?? 15}%
+                    </span>
+                  </div>
+                )}
                 <span className="text-[10px] text-emerald-100 mt-1 block">Subject to final architectural plan checks &amp; site offloading</span>
               </div>
             </>

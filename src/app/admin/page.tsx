@@ -49,6 +49,8 @@ import { InvestorManagement } from '@/components/admin/investor-management';
 import { PortfolioManagement } from '@/components/admin/portfolio-management';
 import { ProductManagement } from '@/components/admin/product-management';
 import { PartnerManagement } from '@/components/admin/partner-management';
+import { MarketingAiManagement } from '@/components/admin/marketing-ai-management';
+import { SalesManagement } from '@/components/admin/sales-management';
 import { AdminSidebar, type AdminSection } from '@/components/admin/admin-sidebar';
 import { AdminProjectEditorModal } from '@/components/admin/admin-project-editor-modal';
 import { AdminOperationsAiModal } from '@/components/admin/admin-operations-ai-modal';
@@ -97,11 +99,12 @@ export default function AdminDashboardPage() {
         ballastRate: 3200,
         brcRate: 25000,
         propRate: 500,
+        profitMarginPercentage: 15,
     });
 
     useEffect(() => {
         if (pricingRates) {
-            setTempRates({ ...pricingRates });
+            setTempRates({ ...pricingRates, profitMarginPercentage: pricingRates.profitMarginPercentage ?? 15 });
         }
     }, [pricingRates]);
 
@@ -116,6 +119,9 @@ export default function AdminDashboardPage() {
             ballastRate: Number(tempRates.ballastRate) || 3200,
             brcRate: Number(tempRates.brcRate) || 25000,
             propRate: Number(tempRates.propRate) || 500,
+            profitMarginPercentage: Number(tempRates.profitMarginPercentage) !== undefined && !isNaN(Number(tempRates.profitMarginPercentage))
+                ? Number(tempRates.profitMarginPercentage)
+                : 15,
         });
         setIsPricingModalOpen(false);
     };
@@ -780,8 +786,10 @@ export default function AdminDashboardPage() {
             case 'finances': return <FinanceManagement isSuperAdmin={isSuperAdmin} activeSubTab={financeSubTab} onSubTabChange={setFinanceSubTab} onOpenAiAssistant={() => setIsAiModalOpen(true)} />;
             case 'investments': return <InvestorManagement />;
             case 'portfolio': return <PortfolioManagement />;
+            case 'marketing_ai': return <MarketingAiManagement />;
             case 'products': return <ProductManagement />;
             case 'partners': return <PartnerManagement />;
+            case 'sales': return <SalesManagement />;
             case 'team': return isSuperAdmin ? <StaffManagement /> : null;
             default: return null;
         }
@@ -890,6 +898,37 @@ export default function AdminDashboardPage() {
                         </CardDescription>
                     </DialogHeader>
                     <div className="space-y-6 py-3 text-xs">
+                        {/* Dynamic Precast Profit Margin Section */}
+                        <div className="space-y-3">
+                            <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider flex items-center gap-1.5 border-b pb-1">
+                                <TrendingUp size={14} className="text-amber-500" /> Standard Precast Profit Margin (%)
+                            </h4>
+                            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/80 p-3.5 rounded-xl space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="font-bold text-slate-900 text-xs">Profit Margin Percentage</label>
+                                    <span className="font-extrabold text-amber-800 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded text-xs">
+                                        {tempRates.profitMarginPercentage ?? 15}% Markup
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 leading-relaxed">
+                                    This percentage is automatically applied to precast beam linear metres and directly calibrates price-per-square-metre estimates. Adjust anytime (e.g., 10%, 15%, 20%).
+                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="1"
+                                        value={tempRates.profitMarginPercentage ?? 15}
+                                        onChange={e => setTempRates((prev: any) => ({ ...prev, profitMarginPercentage: e.target.value }))}
+                                        placeholder="15"
+                                        className="w-28 font-bold text-slate-900 bg-white border-amber-300 focus:ring-amber-500"
+                                    />
+                                    <span className="text-xs font-semibold text-slate-500">% margin on beams</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-3">
                             <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider flex items-center gap-1.5 border-b pb-1">
                                 <Layers size={14} className="text-primary" /> Beam &amp; Infill Block Unit Rates

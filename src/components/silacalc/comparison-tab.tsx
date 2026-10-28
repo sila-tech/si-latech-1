@@ -95,6 +95,25 @@ export function ComparisonTab() {
     }));
   };
 
+  // Keep localRates in sync when admin / global pricingRates change
+  useEffect(() => {
+    if (pricingRates) {
+      setLocalRates(prev => ({
+        ...prev,
+        cementRate: pricingRates.cementRate || prev.cementRate,
+        sandRate: pricingRates.sandRate || prev.sandRate,
+        ballastRate: pricingRates.ballastRate || prev.ballastRate,
+        brcRate: pricingRates.brcRate || prev.brcRate,
+        beamRate: settings?.beamType === 'tbeam' 
+          ? (pricingRates.beamTbeamRate || prev.beamRate) 
+          : (pricingRates.beamFlatRate || prev.beamRate),
+        blockRate: settings?.beamType === 'tbeam' 
+          ? (pricingRates.blockTbeamRate || prev.blockRate) 
+          : (pricingRates.blockFlatRate || prev.blockRate),
+      }));
+    }
+  }, [pricingRates, settings?.beamType]);
+
   // Sync calculation mode automatically when rooms are added or removed
   useEffect(() => {
     if (rooms && rooms.length > 0) {
@@ -169,9 +188,10 @@ export function ComparisonTab() {
       silaBRCrolls = totals.brc?.rollsNeeded || 0;
       silaProps = totals.timber?.totalProps || 0;
     } else {
-      // Estimate based on area
-      silaBeamsM = area * 2.4; // avg 2.4m of beam per m²
-      silaBlocksPcs = area * 10.5; // avg 10.5 blocks per m²
+      // Estimate based on area calibrated to match room calculations
+      const currentMarginPct = settings?.profitMarginPercentage ?? 15;
+      silaBeamsM = area * (1.95 * (1 + currentMarginPct / 100)); // Calibrated ~1.95m base + profit margin
+      silaBlocksPcs = Math.round(area * 7.5); // Calibrated 7.5 blocks per m² (0.55m pitch)
       
       // Wet concrete is 50mm topping + rib joints (total ~55mm)
       silaConcreteVol = area * 0.055;
