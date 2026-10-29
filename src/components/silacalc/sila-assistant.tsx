@@ -19,7 +19,7 @@ interface Message {
 
 export function SilaAssistant() {
   const pathname = usePathname();
-  const { rooms, setRooms, clearCalculator, settings, totals } = useCalculator();
+  const { rooms, setRooms, clearCalculator, settings, totals, pricingRates } = useCalculator();
   const { toast } = useToast();
   
   const [isOpen, setIsOpen] = useState(false);
@@ -200,8 +200,8 @@ export function SilaAssistant() {
     setIsLoading(true);
 
     // Calculate details to pass as current state
-    const BEAM_PRICE = settings.beamType === 'tbeam' ? 1200 : 545;
-    const BLOCK_PRICE = settings.beamType === 'tbeam' ? 100 : 90;
+    const BEAM_PRICE = settings.beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
+    const BLOCK_PRICE = settings.beamType === 'tbeam' ? (pricingRates?.blockTbeamRate || 100) : (pricingRates?.blockFlatRate || 90);
     
     const calculatorState = {
       beamType: settings.beamType || 'flat',

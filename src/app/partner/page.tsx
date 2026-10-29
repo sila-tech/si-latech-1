@@ -41,6 +41,7 @@ import {
 import { calculateProjectTotals, calcRoomBlocksAndBeams, CalculationDefaults, DEFAULTS } from '@/lib/calculator';
 import { generateQuotePdf } from '@/lib/pdf-utils';
 import { useToast } from '@/hooks/use-toast';
+import { useCalculator } from '@/context/calculator-context';
 
 interface LocalRoom {
     id: string;
@@ -52,6 +53,7 @@ interface LocalRoom {
 export default function PartnerDashboard() {
     const router = useRouter();
     const { toast } = useToast();
+    const { pricingRates } = useCalculator();
     const [company, setCompany] = useState<PartnerCompany | null>(null);
     const [projects, setProjects] = useState<PartnerProject[]>([]);
     const [activeProjectId, setActiveProjectId] = useState<string>('');
@@ -216,8 +218,8 @@ export default function PartnerDashboard() {
         return calculateProjectTotals(formattedRooms, calculationSettings);
     }, [formattedRooms, calculationSettings]);
 
-    const BEAM_PRICE = beamType === 'tbeam' ? 1200 : 545;
-    const BLOCK_PRICE = beamType === 'tbeam' ? 95 : 80;
+    const BEAM_PRICE = beamType === 'tbeam' ? (pricingRates?.beamTbeamRate || 1200) : (pricingRates?.beamFlatRate || 545);
+    const BLOCK_PRICE = beamType === 'tbeam' ? (pricingRates?.blockTbeamRate || 100) : (pricingRates?.blockFlatRate || 90);
 
     const beamsInvoiceTotal = totals.totalInvoiceBeamLength * BEAM_PRICE;
     const blocksInvoiceTotal = totals.totalBlocks * BLOCK_PRICE;
@@ -442,14 +444,14 @@ export default function PartnerDashboard() {
                                                 onClick={() => setBeamType('flat')}
                                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${beamType === 'flat' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
                                             >
-                                                Flat Beam (545/m)
+                                                Flat Beam (KES {(pricingRates?.beamFlatRate || 545).toLocaleString()}/m)
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setBeamType('tbeam')}
                                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${beamType === 'tbeam' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
                                             >
-                                                T-Beam (1,200/m)
+                                                T-Beam (KES {(pricingRates?.beamTbeamRate || 1200).toLocaleString()}/m)
                                             </button>
                                         </div>
                                     </div>

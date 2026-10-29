@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -29,11 +29,18 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useCalculator } from '@/context/calculator-context';
 import { ProductItem, DEFAULT_PRODUCTS } from '@/lib/products-data';
 
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState('all');
   const firestore = useFirestore();
+  const { pricingRates } = useCalculator();
+
+  const flatBeamRate = pricingRates?.beamFlatRate || 545;
+  const tBeamRate = pricingRates?.beamTbeamRate || 1200;
+  const flatBlockRate = pricingRates?.blockFlatRate || 90;
+  const tBlockRate = pricingRates?.blockTbeamRate || 100;
 
   const productsQuery = useMemoFirebase(
     () => query(collection(firestore, 'products'), orderBy('order', 'asc')),
@@ -41,9 +48,68 @@ export default function ProductsPage() {
   );
   const { data: dbProducts } = useCollection<ProductItem>(productsQuery);
 
-  const productsList: ProductItem[] = (dbProducts && dbProducts.length > 0)
+  const rawProducts: ProductItem[] = (dbProducts && dbProducts.length > 0)
     ? dbProducts
     : DEFAULT_PRODUCTS;
+
+  // Dynamically map live pricing rates from admin into the product catalog
+  const productsList: ProductItem[] = useMemo(() => {
+    return rawProducts.map((p) => {
+      // 1. T-Beam
+      if (p.id === 't-beam' || (p.beamType === 'tbeam' && p.category === 'beams')) {
+        return {
+          ...p,
+          price: `KES ${tBeamRate.toLocaleString()}`,
+          specs: (p.specs || []).map((s) => {
+            if (s.label === 'Compatible Blocks') {
+              return { ...s, value: `T-Beam Hollow Blocks (KES ${tBlockRate.toLocaleString()})` };
+            }
+            return s;
+          }),
+        };
+      }
+      // 2. Flat Beam
+      if (p.id === 'flat-beam' || (p.beamType === 'flat' && p.category === 'beams')) {
+        return {
+          ...p,
+          price: `KES ${flatBeamRate.toLocaleString()}`,
+          specs: (p.specs || []).map((s) => {
+            if (s.label === 'Compatible Blocks') {
+              return { ...s, value: `Flat Beam Hollow Blocks (KES ${flatBlockRate.toLocaleString()})` };
+            }
+            return s;
+          }),
+        };
+      }
+      // 3. T-Block
+      if (p.id === 't-block' || (p.beamType === 'tbeam' && p.category === 'blocks')) {
+        return {
+          ...p,
+          price: `KES ${tBlockRate.toLocaleString()}`,
+          specs: (p.specs || []).map((s) => {
+            if (s.label === 'Compatible Beam') {
+              return { ...s, value: `T-Beam (KES ${tBeamRate.toLocaleString()}/m)` };
+            }
+            return s;
+          }),
+        };
+      }
+      // 4. Flat Block
+      if (p.id === 'flat-block' || (p.beamType === 'flat' && p.category === 'blocks')) {
+        return {
+          ...p,
+          price: `KES ${flatBlockRate.toLocaleString()}`,
+          specs: (p.specs || []).map((s) => {
+            if (s.label === 'Compatible Beam') {
+              return { ...s, value: `Flat Beam (KES ${flatBeamRate.toLocaleString()}/m)` };
+            }
+            return s;
+          }),
+        };
+      }
+      return p;
+    });
+  }, [rawProducts, flatBeamRate, tBeamRate, flatBlockRate, tBlockRate]);
 
   const filteredProducts = activeTab === 'all'
     ? productsList
@@ -88,15 +154,15 @@ export default function ProductsPage() {
             <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl">
                 <span className="text-xs text-slate-400 block font-medium">Flat Beam Rate</span>
-                <span className="text-xl sm:text-2xl font-black text-amber-400">KES 545 <span className="text-xs font-normal text-slate-400">/ m</span></span>
+                <span className="text-xl sm:text-2xl font-black text-amber-400">KES {flatBeamRate.toLocaleString()} <span className="text-xs font-normal text-slate-400">/ m</span></span>
               </div>
               <div className="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl">
                 <span className="text-xs text-slate-400 block font-medium">T-Beam Rate</span>
-                <span className="text-xl sm:text-2xl font-black text-amber-400">KES 1,200 <span className="text-xs font-normal text-slate-400">/ m</span></span>
+                <span className="text-xl sm:text-2xl font-black text-amber-400">KES {tBeamRate.toLocaleString()} <span className="text-xs font-normal text-slate-400">/ m</span></span>
               </div>
               <div className="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl">
                 <span className="text-xs text-slate-400 block font-medium">Hollow Blocks</span>
-                <span className="text-xl sm:text-2xl font-black text-white">KES 90 - 100 <span className="text-xs font-normal text-slate-400">/ pc</span></span>
+                <span className="text-xl sm:text-2xl font-black text-white">KES {flatBlockRate.toLocaleString()} - {tBlockRate.toLocaleString()} <span className="text-xs font-normal text-slate-400">/ pc</span></span>
               </div>
               <div className="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl">
                 <span className="text-xs text-slate-400 block font-medium">Concrete Strength</span>
@@ -130,18 +196,18 @@ export default function ProductsPage() {
                   <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Beam Price</span>
-                      <span className="text-3xl font-black text-slate-900">KES 545</span>
+                      <span className="text-3xl font-black text-slate-900">KES {flatBeamRate.toLocaleString()}</span>
                       <span className="text-xs text-slate-600 ml-1.5 font-medium">/ linear meter</span>
                     </div>
                     <div className="border-l border-slate-200 pl-4">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Compatible Block</span>
-                      <span className="text-xl font-black text-amber-600">KES 90</span>
+                      <span className="text-xl font-black text-amber-600">KES {flatBlockRate.toLocaleString()}</span>
                       <span className="text-xs text-slate-600 ml-1.5 font-medium">/ piece</span>
                     </div>
                     <div>
                       <Button asChild className="bg-[#25D366] hover:bg-[#1fbb57] text-white font-bold rounded-xl shadow-sm">
                         <a 
-                          href={getWhatsAppOrderUrl('Precast Flat Beam System', 'KES 545/m')} 
+                          href={getWhatsAppOrderUrl('Precast Flat Beam System', `KES ${flatBeamRate.toLocaleString()}/m`)} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="flex items-center gap-2"
@@ -258,19 +324,19 @@ export default function ProductsPage() {
                   <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Beam Price</span>
-                      <span className="text-3xl font-black text-slate-900">KES 1,200</span>
+                      <span className="text-3xl font-black text-slate-900">KES {tBeamRate.toLocaleString()}</span>
                       <span className="text-xs text-slate-600 ml-1.5 font-medium">/ linear meter</span>
                       <span className="text-xs text-emerald-600 font-bold block mt-0.5">KES 2,800 – 3,500 / m² slab</span>
                     </div>
                     <div className="border-l border-slate-200 pl-4">
                       <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Compatible Block</span>
-                      <span className="text-xl font-black text-amber-600">KES 100</span>
+                      <span className="text-xl font-black text-amber-600">KES {tBlockRate.toLocaleString()}</span>
                       <span className="text-xs text-slate-600 ml-1.5 font-medium">/ piece</span>
                     </div>
                     <div>
                       <Button asChild className="bg-[#25D366] hover:bg-[#1fbb57] text-white font-bold rounded-xl shadow-sm">
                         <a 
-                          href={getWhatsAppOrderUrl('Prestressed Concrete T-Beam System', 'KES 1,200/m')} 
+                          href={getWhatsAppOrderUrl('Prestressed Concrete T-Beam System', `KES ${tBeamRate.toLocaleString()}/m`)} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="flex items-center gap-2"
@@ -362,13 +428,13 @@ export default function ProductsPage() {
                       <h3 className="text-xl font-bold text-slate-900">Flat Beam Infill Block</h3>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-black text-slate-900">KES 90</span>
+                      <span className="text-2xl font-black text-slate-900">KES {flatBlockRate.toLocaleString()}</span>
                       <span className="text-xs text-slate-500 block">per piece</span>
                     </div>
                   </div>
 
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    Designed with shallow rebates to rest flush against 545/m Flat Beams, producing a seamless, uniform ceiling soffit ready for skimming.
+                    Designed with shallow rebates to rest flush against {flatBeamRate.toLocaleString()}/m Flat Beams, producing a seamless, uniform ceiling soffit ready for skimming.
                   </p>
 
                   <div className="space-y-2 text-xs">
@@ -392,7 +458,7 @@ export default function ProductsPage() {
 
                   <Button asChild className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs py-5">
                     <a 
-                      href={getWhatsAppOrderUrl('Flat Beam Hollow Infill Blocks', 'KES 90/pc')}
+                      href={getWhatsAppOrderUrl('Flat Beam Hollow Infill Blocks', `KES ${flatBlockRate.toLocaleString()}/pc`)}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2"
@@ -411,7 +477,7 @@ export default function ProductsPage() {
                       <h3 className="text-xl font-bold text-slate-900">T-Beam Infill Block</h3>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-black text-slate-900">KES 100</span>
+                      <span className="text-2xl font-black text-slate-900">KES {tBlockRate.toLocaleString()}</span>
                       <span className="text-xs text-slate-500 block">per piece</span>
                     </div>
                   </div>
@@ -441,7 +507,7 @@ export default function ProductsPage() {
 
                   <Button asChild className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs py-5">
                     <a 
-                      href={getWhatsAppOrderUrl('T-Beam Hollow Infill Blocks', 'KES 100/pc')}
+                      href={getWhatsAppOrderUrl('T-Beam Hollow Infill Blocks', `KES ${tBlockRate.toLocaleString()}/pc`)}
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2"
@@ -616,14 +682,14 @@ export default function ProductsPage() {
                   <tbody className="divide-y divide-slate-100">
                     <tr>
                       <td className="py-3 px-4 font-semibold text-slate-900">Beam Unit Price</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">KES 545 / meter</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">KES 1,200 / meter</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">KES {flatBeamRate.toLocaleString()} / meter</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">KES {tBeamRate.toLocaleString()} / meter</td>
                       <td className="py-3 px-4 text-slate-500">N/A (Full timber formwork)</td>
                     </tr>
                     <tr>
                       <td className="py-3 px-4 font-semibold text-slate-900">Infill Block Price</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">KES 90 / pc</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">KES 100 / pc</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">KES {flatBlockRate.toLocaleString()} / pc</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">KES {tBlockRate.toLocaleString()} / pc</td>
                       <td className="py-3 px-4 text-slate-500">None (100% solid concrete)</td>
                     </tr>
                     <tr>

@@ -62,7 +62,7 @@ function RoomsEmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 export function CalculatorShell({ initialProjectData }: { initialProjectData?: ProjectData | null }) {
-  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings, displayUnit, setDisplayUnit, buildingBlocks, totals } = useCalculator();
+  const { rooms, perRoomCalculations, addRoom, updateRoom, deleteRoom, loadProjectData, settings, setSettings, displayUnit, setDisplayUnit, buildingBlocks, totals, pricingRates } = useCalculator();
   // Toggle between "enter by room" and "quick total area" mode
   const [entryMode, setEntryMode] = useState<'rooms' | 'quick'>('rooms');
   // Toggle shared walls panel
@@ -169,7 +169,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                           <span>Save up to 40% vs Solid Slab</span>
                         </div>
                         <h4 className="font-black text-slate-950 text-xl">Flat Beam System</h4>
-                        <p className="text-xs text-slate-500 font-bold mt-0.5">KES 545/m • KES 90 Infill Blocks</p>
+                        <p className="text-xs text-slate-500 font-bold mt-0.5">KES {(pricingRates?.beamFlatRate || 545).toLocaleString()}/m • KES {(pricingRates?.blockFlatRate || 90).toLocaleString()} Infill Blocks</p>
                       </div>
                       {settings.beamType !== 'tbeam' && (
                         <span className="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full tracking-wider shadow-xs">SELECTED</span>
@@ -193,7 +193,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                           <span>NO Formwork Needed</span>
                         </div>
                         <h4 className="font-black text-slate-950 text-xl">T-Beam System</h4>
-                        <p className="text-xs text-amber-700 font-bold mt-0.5">KES 1,200/m • KES 100 Blocks • 2,800-3,500/m²</p>
+                        <p className="text-xs text-amber-700 font-bold mt-0.5">KES {(pricingRates?.beamTbeamRate || 1200).toLocaleString()}/m • KES {(pricingRates?.blockTbeamRate || 100).toLocaleString()} Blocks • 2,800-3,500/m²</p>
                       </div>
                       {settings.beamType === 'tbeam' && (
                         <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full tracking-wider shadow-xs">SELECTED</span>
@@ -393,7 +393,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                           Most Economical • Spans ≤ 4.0m
                         </span>
                         <h3 className="font-black text-slate-950 text-lg">Flat Beam System</h3>
-                        <p className="text-xs text-slate-500 font-bold mt-0.5">KES 545 / m • KES 90 Blocks</p>
+                        <p className="text-xs text-slate-500 font-bold mt-0.5">KES {(pricingRates?.beamFlatRate || 545).toLocaleString()} / m • KES {(pricingRates?.blockFlatRate || 90).toLocaleString()} Blocks</p>
                       </div>
                       {settings.beamType !== 'tbeam' && (
                         <span className="bg-emerald-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">ACTIVE</span>
@@ -417,7 +417,7 @@ export function CalculatorShell({ initialProjectData }: { initialProjectData?: P
                           Zero Formwork • Spans up to 6.5m+
                         </span>
                         <h3 className="font-black text-slate-950 text-lg">T-Beam System</h3>
-                        <p className="text-xs text-amber-700 font-bold mt-0.5">KES 1,200 / m • KES 100 Blocks</p>
+                        <p className="text-xs text-amber-700 font-bold mt-0.5">KES {(pricingRates?.beamTbeamRate || 1200).toLocaleString()} / m • KES {(pricingRates?.blockTbeamRate || 100).toLocaleString()} Blocks</p>
                       </div>
                       {settings.beamType === 'tbeam' && (
                         <span className="bg-amber-500 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">ACTIVE</span>
