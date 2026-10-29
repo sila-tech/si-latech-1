@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   ShoppingBag, 
   ArrowRight, 
   MessageCircle, 
   Calculator, 
-  Sparkles,
+  Sparkles, 
   ExternalLink,
   Package
 } from 'lucide-react';
@@ -15,13 +15,13 @@ import { Button } from '@/components/ui/button';
 import { useCalculator } from '@/context/calculator-context';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { ProductItem, DEFAULT_PRODUCTS } from '@/lib/products-data';
+import { ProductItem, DEFAULT_PRODUCTS, applyLivePricingToProducts } from '@/lib/products-data';
 
 export { type ProductItem };
 
 export function ProductsSection() {
   const [activeCategory, setActiveCategory] = useState<'all' | 'beams' | 'blocks' | 'packages' | 'accessories'>('all');
-  const { setSettings } = useCalculator();
+  const { setSettings, pricingRates } = useCalculator();
   const firestore = useFirestore();
 
   // Subscribe to live products from Firestore
@@ -31,10 +31,14 @@ export function ProductsSection() {
   );
   const { data: dbProducts } = useCollection<ProductItem>(productsQuery);
 
-  // Fallback to DEFAULT_PRODUCTS if Firestore is empty or loading
-  const productsList: ProductItem[] = (dbProducts && dbProducts.length > 0) 
+  // Fallback to DEFAULT_PRODUCTS and apply live admin pricing rates
+  const rawProducts: ProductItem[] = (dbProducts && dbProducts.length > 0) 
     ? dbProducts 
     : DEFAULT_PRODUCTS;
+
+  const productsList: ProductItem[] = useMemo(() => {
+    return applyLivePricingToProducts(rawProducts, pricingRates);
+  }, [rawProducts, pricingRates]);
 
   const filteredProducts = activeCategory === 'all' 
     ? productsList 

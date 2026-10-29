@@ -205,6 +205,33 @@ const CalculatorContext = createContext<CalculatorContextType | undefined>(undef
 
 const LOGO_STORAGE_KEY = 'silacalc-logo';
 
+export type PricingRates = {
+  beamFlatRate: number;
+  beamTbeamRate: number;
+  blockFlatRate: number;
+  blockTbeamRate: number;
+  cementRate: number;
+  sandRate: number;
+  ballastRate: number;
+  brcRate: number;
+  propRate: number;
+  profitMarginPercentage: number;
+  [key: string]: number;
+};
+
+const DEFAULT_PRICING_RATES: PricingRates = {
+  beamFlatRate: 545,
+  beamTbeamRate: 1200,
+  blockFlatRate: 90,
+  blockTbeamRate: 100,
+  cementRate: 800,
+  sandRate: 3000,
+  ballastRate: 3200,
+  brcRate: 25000,
+  propRate: 500,
+  profitMarginPercentage: 15,
+};
+
 export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [rooms, setRooms] = useState<Room[]>([
     {
@@ -227,17 +254,19 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   const [logoUrl, setLogoUrlState] = useState<string | null>(null);
   const [displayUnit, setDisplayUnit] = useState<'m' | 'ft'>('m');
   const [costEstimationEnabled, setCostEstimationEnabled] = useState<boolean>(false);
-  const [pricingRates, setPricingRates] = useState({
-    beamFlatRate: 545,
-    beamTbeamRate: 1200,
-    blockFlatRate: 90,
-    blockTbeamRate: 100,
-    cementRate: 800,
-    sandRate: 3000,
-    ballastRate: 3200,
-    brcRate: 25000,
-    propRate: 500,
-    profitMarginPercentage: 15,
+  const [pricingRates, setPricingRates] = useState<PricingRates>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('sila-pricing-rates');
+        if (cached) {
+          return {
+            ...DEFAULT_PRICING_RATES,
+            ...JSON.parse(cached),
+          };
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_PRICING_RATES;
   });
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -249,10 +278,15 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onSnapshot(pricingRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
-        setPricingRates(prev => ({
-          ...prev,
-          ...data
-        }));
+        setPricingRates((prev: PricingRates) => {
+          const updated = { ...prev, ...data };
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('sila-pricing-rates', JSON.stringify(updated));
+            } catch (e) {}
+          }
+          return updated;
+        });
         if (data.profitMarginPercentage !== undefined) {
           const margin = Number(data.profitMarginPercentage);
           setSettings(prev => ({
@@ -269,7 +303,15 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
   }, [firestore]);
 
   const updatePricingRates = useCallback(async (newRates: any) => {
-    setPricingRates(prev => ({ ...prev, ...newRates }));
+    setPricingRates((prev: PricingRates) => {
+      const updated = { ...prev, ...newRates };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('sila-pricing-rates', JSON.stringify(updated));
+        } catch (e) {}
+      }
+      return updated;
+    });
     if (newRates.profitMarginPercentage !== undefined) {
       setSettings(prev => ({
         ...prev,
@@ -361,7 +403,7 @@ export const CalculatorProvider = ({ children }: { children: ReactNode }) => {
       setCostEstimationEnabled(projectData.costEstimationEnabled);
     }
     if (projectData.pricingRates) {
-      setPricingRates(prev => ({ ...prev, ...projectData.pricingRates }));
+      setPricingRates((prev: PricingRates) => ({ ...prev, ...projectData.pricingRates }));
     }
     setLoadedProjectId(projectData.id);
     setProjectName(projectData.name);

@@ -189,3 +189,94 @@ export const DEFAULT_PRODUCTS: ProductItem[] = [
     ],
   },
 ];
+
+/**
+ * Injects dynamic live pricing rates from Admin Settings into product items.
+ */
+export function applyLivePricingToProducts(
+  products: ProductItem[],
+  rates?: {
+    beamFlatRate?: number;
+    beamTbeamRate?: number;
+    blockFlatRate?: number;
+    blockTbeamRate?: number;
+  } | null
+): ProductItem[] {
+  const flatBeam = rates?.beamFlatRate || 545;
+  const tBeam = rates?.beamTbeamRate || 1200;
+  const flatBlock = rates?.blockFlatRate || 90;
+  const tBlock = rates?.blockTbeamRate || 100;
+
+  return products.map((p) => {
+    // 1. T-Beam
+    if (
+      p.id === 't-beam' || 
+      (p.beamType === 'tbeam' && p.category === 'beams') || 
+      (p.name?.toLowerCase().includes('t-beam') && p.category === 'beams')
+    ) {
+      return {
+        ...p,
+        price: `KES ${tBeam.toLocaleString()}`,
+        specs: (p.specs || []).map((s) => {
+          if (s.label === 'Compatible Blocks') {
+            return { ...s, value: `T-Beam Hollow Blocks (KES ${tBlock.toLocaleString()})` };
+          }
+          return s;
+        }),
+      };
+    }
+    // 2. Flat Beam
+    if (
+      p.id === 'flat-beam' || 
+      (p.beamType === 'flat' && p.category === 'beams') || 
+      (p.name?.toLowerCase().includes('flat beam') && p.category === 'beams')
+    ) {
+      return {
+        ...p,
+        price: `KES ${flatBeam.toLocaleString()}`,
+        specs: (p.specs || []).map((s) => {
+          if (s.label === 'Compatible Blocks') {
+            return { ...s, value: `Flat Beam Hollow Blocks (KES ${flatBlock.toLocaleString()})` };
+          }
+          return s;
+        }),
+      };
+    }
+    // 3. T-Block
+    if (
+      p.id === 't-block' || 
+      (p.beamType === 'tbeam' && p.category === 'blocks') || 
+      (p.name?.toLowerCase().includes('t-beam') && p.category === 'blocks')
+    ) {
+      return {
+        ...p,
+        price: `KES ${tBlock.toLocaleString()}`,
+        specs: (p.specs || []).map((s) => {
+          if (s.label === 'Compatible Beam') {
+            return { ...s, value: `T-Beam (KES ${tBeam.toLocaleString()}/m)` };
+          }
+          return s;
+        }),
+      };
+    }
+    // 4. Flat Block
+    if (
+      p.id === 'flat-block' || 
+      (p.beamType === 'flat' && p.category === 'blocks') || 
+      (p.name?.toLowerCase().includes('flat') && p.category === 'blocks')
+    ) {
+      return {
+        ...p,
+        price: `KES ${flatBlock.toLocaleString()}`,
+        description: p.description?.replace(/545\/m/g, `${flatBeam.toLocaleString()}/m`) || p.description,
+        specs: (p.specs || []).map((s) => {
+          if (s.label === 'Compatible Beam') {
+            return { ...s, value: `Flat Beam (KES ${flatBeam.toLocaleString()}/m)` };
+          }
+          return s;
+        }),
+      };
+    }
+    return p;
+  });
+}

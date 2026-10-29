@@ -30,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useCalculator } from '@/context/calculator-context';
-import { ProductItem, DEFAULT_PRODUCTS } from '@/lib/products-data';
+import { ProductItem, DEFAULT_PRODUCTS, applyLivePricingToProducts } from '@/lib/products-data';
 
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -54,62 +54,8 @@ export default function ProductsPage() {
 
   // Dynamically map live pricing rates from admin into the product catalog
   const productsList: ProductItem[] = useMemo(() => {
-    return rawProducts.map((p) => {
-      // 1. T-Beam
-      if (p.id === 't-beam' || (p.beamType === 'tbeam' && p.category === 'beams')) {
-        return {
-          ...p,
-          price: `KES ${tBeamRate.toLocaleString()}`,
-          specs: (p.specs || []).map((s) => {
-            if (s.label === 'Compatible Blocks') {
-              return { ...s, value: `T-Beam Hollow Blocks (KES ${tBlockRate.toLocaleString()})` };
-            }
-            return s;
-          }),
-        };
-      }
-      // 2. Flat Beam
-      if (p.id === 'flat-beam' || (p.beamType === 'flat' && p.category === 'beams')) {
-        return {
-          ...p,
-          price: `KES ${flatBeamRate.toLocaleString()}`,
-          specs: (p.specs || []).map((s) => {
-            if (s.label === 'Compatible Blocks') {
-              return { ...s, value: `Flat Beam Hollow Blocks (KES ${flatBlockRate.toLocaleString()})` };
-            }
-            return s;
-          }),
-        };
-      }
-      // 3. T-Block
-      if (p.id === 't-block' || (p.beamType === 'tbeam' && p.category === 'blocks')) {
-        return {
-          ...p,
-          price: `KES ${tBlockRate.toLocaleString()}`,
-          specs: (p.specs || []).map((s) => {
-            if (s.label === 'Compatible Beam') {
-              return { ...s, value: `T-Beam (KES ${tBeamRate.toLocaleString()}/m)` };
-            }
-            return s;
-          }),
-        };
-      }
-      // 4. Flat Block
-      if (p.id === 'flat-block' || (p.beamType === 'flat' && p.category === 'blocks')) {
-        return {
-          ...p,
-          price: `KES ${flatBlockRate.toLocaleString()}`,
-          specs: (p.specs || []).map((s) => {
-            if (s.label === 'Compatible Beam') {
-              return { ...s, value: `Flat Beam (KES ${flatBeamRate.toLocaleString()}/m)` };
-            }
-            return s;
-          }),
-        };
-      }
-      return p;
-    });
-  }, [rawProducts, flatBeamRate, tBeamRate, flatBlockRate, tBlockRate]);
+    return applyLivePricingToProducts(rawProducts, pricingRates);
+  }, [rawProducts, pricingRates]);
 
   const filteredProducts = activeTab === 'all'
     ? productsList
