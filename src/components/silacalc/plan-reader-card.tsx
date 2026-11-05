@@ -489,46 +489,20 @@ export function PlanReaderCard() {
         <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 
         <CardHeader className="pb-3 relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center justify-between">
             <CardTitle className="font-headline text-2xl text-slate-100 flex items-center gap-3">
               <div className="p-2 bg-sky-500/10 border border-sky-500/30 rounded-xl text-sky-400">
                 <UploadCloud size={24} className={isProcessing ? 'animate-bounce' : ''} />
               </div>
               AI Plan Reader
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAnalysisEngine('local')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                  analysisEngine === 'local'
-                    ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 ring-2 ring-emerald-500/20'
-                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-                }`}
-                title="100% on-device autonomous processing ($0 API cost, works completely offline)"
-              >
-                <Cpu size={13} className={analysisEngine === 'local' ? 'text-emerald-400' : ''} />
-                <span>Autonomous Local</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnalysisEngine('cloud')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                  analysisEngine === 'cloud'
-                    ? 'bg-sky-500/20 border border-sky-500/50 text-sky-300 ring-2 ring-sky-500/20'
-                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/60'
-                }`}
-                title="Google Gemini Vision (Requires active AI Studio credits)"
-              >
-                <Sparkles size={13} className={analysisEngine === 'cloud' ? 'text-sky-400' : ''} />
-                <span>Cloud AI (Gemini)</span>
-              </button>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-bold">
+              <Sparkles size={13} className="text-sky-400" />
+              <span>Multi-Stage Vision</span>
             </div>
           </div>
           <CardDescription className="text-slate-400 text-sm mt-2 leading-relaxed">
-            {analysisEngine === 'local'
-              ? 'Autonomous on-device engine: Extracts room spans, balconies, and dimensions locally with zero cloud API dependencies and zero per-scan charges.'
-              : 'Cloud neural vision: Upload any CAD drawing or blueprint to extract room spans with multi-model Gemini verification.'}
+            Upload any house plan, CAD drawing, or blueprint (PDF, JPG, PNG). Our neural model extracts room spans, checks beam orientations, and applies geometric constraint verification.
           </CardDescription>
         </CardHeader>
         
@@ -688,12 +662,8 @@ export function PlanReaderCard() {
               </>
             ) : (
               <>
-                {analysisEngine === 'local' ? <Cpu size={20} /> : <Wand2 size={20} />}
-                <span>
-                  {analysisEngine === 'local' 
-                    ? 'Extract Blueprint (Autonomous Local Engine)' 
-                    : 'Extract & Review Blueprint (Cloud AI)'}
-                </span>
+                <Wand2 size={20} />
+                <span>Extract &amp; Review Blueprint</span>
               </>
             )}
           </Button>

@@ -310,21 +310,15 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
           </div>
         )}
 
-        {hasDimensions && roomCalcs && (
+        {hasDimensions && (
           <div className="mt-4 pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
                 📐 {displayArea.toFixed(2)} m²
               </span>
-              <span className="inline-flex items-center gap-1 font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                📏 {roomCalcs.invoiceBeamCount || 0} Beams ({((roomCalcs.invoiceTotalBeamLength || roomCalcs.actualTotalBeamLength || 0)).toFixed(1)}m)
-              </span>
-              <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                🧱 {roomCalcs.totalBlocks || 0} Blocks
-              </span>
             </div>
 
-            {isTrapezium && roomCalcs.beamSchedule && (
+            {isTrapezium && roomCalcs?.beamSchedule && (
               <button
                 type="button"
                 onClick={() => setShowSchedule(v => !v)}
@@ -374,17 +368,6 @@ export function RoomCard({ room, calculations, updateRoom, deleteRoom }: RoomCar
                 </tbody>
               </table>
             </div>
-
-            {roomCalcs.bayBreakdown && (
-              <div className="mt-2 text-[10px] text-slate-500">
-                <span className="font-semibold text-slate-700">Bays: </span>
-                {roomCalcs.bayBreakdown.map((bay, idx) => (
-                  <span key={bay.bayNumber} className="inline-block mr-2">
-                    Bay {bay.bayNumber}: ~{bay.blocks} blks{idx < roomCalcs.bayBreakdown!.length - 1 ? ',' : ''}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </CardContent>
