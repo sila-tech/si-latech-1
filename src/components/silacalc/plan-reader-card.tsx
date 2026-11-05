@@ -141,7 +141,7 @@ export function PlanReaderCard() {
     }
   }, [planData]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -149,10 +149,28 @@ export function PlanReaderCard() {
       setIsCalibrating(false);
       setAnalysisError(null);
 
+      const isPdf = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
+
       toast({
         title: 'File Selected',
-        description: `"${selectedFile.name}" ready for high-accuracy neural analysis.`,
+        description: `"${selectedFile.name}" ready for high-accuracy analysis.${isPdf ? ' Rendering blueprint pages...' : ''}`,
       });
+
+      if (isPdf) {
+        try {
+          const { convertPdfToImageUri } = await import('@/lib/pdf-rasterizer');
+          const rasterizedUri = await convertPdfToImageUri(selectedFile, 2.0);
+          setImageUri(rasterizedUri);
+          setPlanData(prev => ({ ...prev, imageUri: rasterizedUri }));
+          toast({
+            title: 'PDF Blueprint Ready',
+            description: 'Rendered blueprint into high-definition vector image.',
+          });
+          return;
+        } catch (pdfErr) {
+          console.error('PDF rasterization failed on selection, falling back to FileReader:', pdfErr);
+        }
+      }
 
       const reader = new FileReader();
       reader.readAsDataURL(selectedFile);
@@ -237,7 +255,16 @@ export function PlanReaderCard() {
     });
 
     try {
-      const compressedUri = await compressImage(imageUri);
+      let targetUri = imageUri;
+      if (targetUri.startsWith('data:application/pdf')) {
+        setProcessingStatus('Rasterizing PDF blueprint vector pages...');
+        const { convertPdfToImageUri } = await import('@/lib/pdf-rasterizer');
+        targetUri = await convertPdfToImageUri(targetUri, 2.0);
+        setImageUri(targetUri);
+        setPlanData(prev => ({ ...prev, imageUri: targetUri }));
+      }
+
+      const compressedUri = await compressImage(targetUri);
 
       // 1. AUTONOMOUS LOCAL ENGINE (100% Independent)
       if (analysisEngine === 'local') {

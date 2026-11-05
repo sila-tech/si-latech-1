@@ -212,6 +212,14 @@ export async function analyzePlanLocally(
   try {
     onProgress?.('Initializing local neural OCR engine...', 10);
 
+    let processedUri = imageDataUri;
+    // Check if the input is a PDF data URI; rasterize it to high-res image
+    if (processedUri.startsWith('data:application/pdf')) {
+      onProgress?.('Rasterizing PDF blueprint vector pages...', 15);
+      const { convertPdfToImageUri } = await import('@/lib/pdf-rasterizer');
+      processedUri = await convertPdfToImageUri(processedUri, 2.0);
+    }
+
     // Dynamic import to prevent server-side bundle bloating
     const Tesseract = await import('tesseract.js');
 
@@ -221,7 +229,7 @@ export async function analyzePlanLocally(
     await new Promise<void>((resolve, reject) => {
       img.onload = () => resolve();
       img.onerror = (e) => reject(new Error('Failed to load blueprint image for local processing.'));
-      img.src = imageDataUri;
+      img.src = processedUri;
     });
 
     onProgress?.('Preprocessing CAD geometry and color channels...', 25);

@@ -21,6 +21,7 @@ import com.silatech.calc.ui.navigation.SilaRoute
 import com.silatech.calc.ui.screens.CalculatorScreen
 import com.silatech.calc.ui.screens.HomeScreen
 import com.silatech.calc.ui.screens.ProjectsScreen
+import com.silatech.calc.ui.screens.RatesScreen
 import com.silatech.calc.ui.theme.SilaTheme
 import com.silatech.calc.viewmodel.CalculatorViewModel
 import com.silatech.calc.viewmodel.ProjectsViewModel
@@ -53,6 +54,7 @@ private fun SilaApp(calcVm: CalculatorViewModel, projectsVm: ProjectsViewModel) 
     val navItems = listOf(
         NavItem(SilaRoute.HOME,       "Home",       Icons.Default.Home),
         NavItem(SilaRoute.CALCULATOR, "Calculator", Icons.Default.Calculate),
+        NavItem(SilaRoute.RATES,      "My Rates",   Icons.Default.Tune),
         NavItem(SilaRoute.PROJECTS,   "Projects",   Icons.Default.FolderOpen)
     )
 
@@ -97,18 +99,24 @@ private fun SilaApp(calcVm: CalculatorViewModel, projectsVm: ProjectsViewModel) 
                     SilaRoute.HOME ->
                         HomeScreen(
                             onNavigateToCalculator = { currentRoute = SilaRoute.CALCULATOR },
+                            onNavigateToRates      = { currentRoute = SilaRoute.RATES },
                             onNavigateToProjects   = { currentRoute = SilaRoute.PROJECTS }
                         )
                     SilaRoute.CALCULATOR ->
                         CalculatorScreen(
-                            vm     = calcVm,
+                            vm                = calcVm,
+                            onBack            = { currentRoute = SilaRoute.HOME },
+                            onNavigateToRates = { currentRoute = SilaRoute.RATES }
+                        )
+                    SilaRoute.RATES ->
+                        RatesScreen(
                             onBack = { currentRoute = SilaRoute.HOME }
                         )
                     SilaRoute.PROJECTS ->
                         ProjectsScreen(
-                            pVm            = projectsVm,
-                            cVm            = calcVm,
-                            onBack         = { currentRoute = SilaRoute.HOME },
+                            pVm             = projectsVm,
+                            cVm             = calcVm,
+                            onBack          = { currentRoute = SilaRoute.HOME },
                             onProjectLoaded = { currentRoute = SilaRoute.CALCULATOR }
                         )
                 }
