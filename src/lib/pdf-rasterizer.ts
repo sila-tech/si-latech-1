@@ -3,7 +3,18 @@
  * 
  * Renders the first page of architectural PDF blueprints to high-resolution
  * HTML5 Canvas / PNG data URIs completely locally in the browser ($0 cloud cost).
+ * Also extracts native vector text directly from the PDF for 100% accurate room recognition.
  */
+
+let lastExtractedPdfText = '';
+
+export function getLastExtractedPdfText(): string {
+  return lastExtractedPdfText;
+}
+
+export function setLastExtractedPdfText(text: string) {
+  lastExtractedPdfText = text;
+}
 
 export async function isPdfSource(source: string | File): Promise<boolean> {
   if (source instanceof File) {
@@ -64,6 +75,18 @@ export async function convertPdfToImageUri(
 
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
+
+    // Extract native vector text directly from the PDF for 100% precision
+    try {
+      const textContent = await page.getTextContent();
+      const items = (textContent?.items || [])
+        .map((it: any) => it.str || '')
+        .filter((s: string) => s.trim().length > 0);
+      lastExtractedPdfText = items.join('\n');
+    } catch (txtErr) {
+      console.warn('Could not extract native text content from PDF page:', txtErr);
+      lastExtractedPdfText = '';
+    }
 
     // Render at target scale (2.0 gives ~200-300 DPI clarity for architectural plans)
     const viewport = page.getViewport({ scale: targetScale });
