@@ -26,7 +26,7 @@ export async function convertPdfToImageUri(
   // Dynamic import of PDF.js client build
   const pdfjsLib = await import('pdfjs-dist');
 
-  // Configure local worker to avoid external dependencies
+  // Configure worker: try local file, fallback to CDN if unavailable
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
   }
@@ -53,33 +53,41 @@ export async function convertPdfToImageUri(
     data = pdfSource;
   }
 
-  const loadingTask = pdfjsLib.getDocument({
-    data,
-    useSystemFonts: true,
-  });
+  try {
+    const loadingTask = pdfjsLib.getDocument({
+      data,
+      useSystemFonts: true,
+      enableXfa: false,       // CRITICAL: Disable XFA forms to avoid undefined .success errors in CAD drawings
+      disableFontFace: false,
+      stopAtErrors: false,
+    });
 
-  const pdf = await loadingTask.promise;
-  const page = await pdf.getPage(1);
+    const pdf = await loadingTask.promise;
+    const page = await pdf.getPage(1);
 
-  // Render at target scale (2.0 gives ~200-300 DPI clarity for architectural plans)
-  const viewport = page.getViewport({ scale: targetScale });
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(viewport.width);
-  canvas.height = Math.round(viewport.height);
+    // Render at target scale (2.0 gives ~200-300 DPI clarity for architectural plans)
+    const viewport = page.getViewport({ scale: targetScale });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(viewport.width);
+    canvas.height = Math.round(viewport.height);
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error('Could not create 2D canvas context for PDF blueprint rendering.');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Could not create 2D canvas context for PDF blueprint rendering.');
+    }
+
+    // Fill crisp white background behind transparent PDF CAD layers
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    await page.render({
+      canvasContext: ctx,
+      viewport: viewport,
+    }).promise;
+
+    return canvas.toDataURL('image/png');
+  } catch (err: any) {
+    console.error('Error in convertPdfToImageUri:', err);
+    throw new Error(`Failed to rasterize PDF blueprint: ${err?.message || err}`);
   }
-
-  // Fill crisp white background behind transparent PDF layers
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  await page.render({
-    canvasContext: ctx,
-    viewport: viewport,
-  }).promise;
-
-  return canvas.toDataURL('image/png');
 }

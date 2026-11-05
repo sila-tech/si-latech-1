@@ -249,8 +249,8 @@ export async function analyzePlanLocally(
     const ocrResult = await worker.recognize(normalCanvas);
     await worker.terminate();
 
-    const fullText = ocrResult.data.text || '';
-    const words = ocrResult.data.words || [];
+    const fullText = ocrResult?.data?.text || '';
+    const textLines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
     onProgress?.('Parsing architectural rooms & applying structural rules...', 90);
 
@@ -299,12 +299,25 @@ export async function analyzePlanLocally(
     const detectedRooms: LocalParsedRoom[] = [];
     const usedTexts = new Set<string>();
 
-    // Scan lines / blocks
-    const lines = ocrResult.data.lines || [];
-    const imgW = normalCanvas.width;
-    const imgH = normalCanvas.height;
+    // Scan lines / blocks: support both Tesseract v5/v6 lines and v7 text-split lines
+    const rawLines = (ocrResult?.data?.lines && ocrResult.data.lines.length > 0)
+      ? ocrResult.data.lines
+      : textLines.map((text, idx) => ({
+          text,
+          confidence: 95,
+          bbox: {
+            x0: 100,
+            y0: Math.round(100 + (idx / Math.max(1, textLines.length)) * 700),
+            x1: 900,
+            y1: Math.round(130 + (idx / Math.max(1, textLines.length)) * 700),
+          },
+        }));
 
-    for (const line of lines) {
+    const imgW = normalCanvas.width || 1000;
+    const imgH = normalCanvas.height || 1000;
+
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
       const lineText = line.text.trim();
       const lower = lineText.toLowerCase();
 
@@ -317,21 +330,25 @@ export async function analyzePlanLocally(
       for (const kw of roomKeywords) {
         if (lower.includes(kw.key)) {
           // Avoid duplicate lines
-          const keyId = `${kw.name}-${Math.round(line.bbox.y0 / 50)}`;
+          const keyId = `${kw.name}-${Math.round((line.bbox?.y0 || i * 40) / 50)}`;
           if (usedTexts.has(keyId)) continue;
           usedTexts.add(keyId);
 
           // Get normalized bounding box [ymin, xmin, ymax, xmax] (0 to 1000)
-          const ymin = Math.max(0, Math.min(1000, Math.round((line.bbox.y0 / imgH) * 1000)));
-          const xmin = Math.max(0, Math.min(1000, Math.round((line.bbox.x0 / imgW) * 1000)));
-          const ymax = Math.max(0, Math.min(1000, Math.round((line.bbox.y1 / imgH) * 1000)));
-          const xmax = Math.max(0, Math.min(1000, Math.round((line.bbox.x1 / imgW) * 1000)));
+          const y0 = line.bbox?.y0 ?? (i * 30);
+          const x0 = line.bbox?.x0 ?? 100;
+          const y1 = line.bbox?.y1 ?? (y0 + 30);
+          const x1 = line.bbox?.x1 ?? 900;
+
+          const ymin = Math.max(0, Math.min(1000, Math.round((y0 / imgH) * 1000)));
+          const xmin = Math.max(0, Math.min(1000, Math.round((x0 / imgW) * 1000)));
+          const ymax = Math.max(0, Math.min(1000, Math.round((y1 / imgH) * 1000)));
+          const xmax = Math.max(0, Math.min(1000, Math.round((x1 / imgW) * 1000)));
 
           // Look for associated area in current line or surrounding lines
           let contextText = lineText;
-          const lineIdx = lines.indexOf(line);
-          if (lineIdx > 0) contextText += ' ' + lines[lineIdx - 1].text;
-          if (lineIdx < lines.length - 1) contextText += ' ' + lines[lineIdx + 1].text;
+          if (i > 0) contextText += ' ' + rawLines[i - 1].text;
+          if (i < rawLines.length - 1) contextText += ' ' + rawLines[i + 1].text;
 
           const { length, width, isBalcony } = extractRoomDimensions(kw.name, contextText, [ymin, xmin, ymax, xmax]);
 
@@ -344,7 +361,7 @@ export async function analyzePlanLocally(
             name: displayName,
             length,
             width,
-            confidence: Math.round((line.confidence / 100) * 100) / 100 || 0.95,
+            confidence: Math.round(((line.confidence || 95) / 100) * 100) / 100 || 0.95,
             boundingBox: [ymin, xmin, ymax, xmax],
             blockName: 'Block 1',
             apartmentName: 'Ground Floor',

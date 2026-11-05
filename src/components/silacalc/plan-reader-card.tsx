@@ -41,7 +41,6 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useCalculator } from '@/context/calculator-context';
 import { useFirebase } from '@/firebase';
-import { analyzePlan } from '@/ai/flows/analyze-plan-flow';
 import { analyzePlanLocally } from '@/lib/local-plan-analyzer';
 import { BuildingBlock, ApartmentGroup } from '@/lib/calculator';
 import { logBlueprintActiveLearning } from '@/firebase/blueprint-learning';
@@ -117,7 +116,6 @@ export function PlanReaderCard() {
   const [drawingSummary, setDrawingSummary] = useState<string | undefined>();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [analysisEngine, setAnalysisEngine] = useState<'local' | 'cloud'>('local');
   const [processingStatus, setProcessingStatus] = useState<string>('Analyzing blueprint...');
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -245,13 +243,11 @@ export function PlanReaderCard() {
 
     setIsProcessing(true);
     setAnalysisError(null);
-    setProcessingStatus(analysisEngine === 'local' ? 'Running Autonomous Local Analysis...' : 'Calling Vision AI...');
+    setProcessingStatus('Running Autonomous Local Analysis...');
 
     toast({
-      title: analysisEngine === 'local' ? 'Autonomous Local Analysis' : 'Neural Blueprint Analysis...',
-      description: analysisEngine === 'local' 
-        ? 'Analyzing CAD geometry and room schedules on-device (100% offline, $0 APIs).'
-        : 'Parsing CAD geometry, scale calibration, and room spans with Gemini.',
+      title: 'Autonomous Local Analysis',
+      description: 'Analyzing CAD geometry and room schedules on-device (100% offline, $0 APIs).',
     });
 
     try {
@@ -266,84 +262,33 @@ export function PlanReaderCard() {
 
       const compressedUri = await compressImage(targetUri);
 
-      // 1. AUTONOMOUS LOCAL ENGINE (100% Independent)
-      if (analysisEngine === 'local') {
-        const localResult = await analyzePlanLocally(compressedUri, (status, pct) => {
-          setProcessingStatus(`${status} (${pct}%)`);
-        });
+      const localResult = await analyzePlanLocally(compressedUri, (status, pct) => {
+        setProcessingStatus(`${status} (${pct}%)`);
+      });
 
-        if (localResult.success && localResult.rooms && localResult.rooms.length > 0) {
-          setParsedRooms(localResult.rooms as PlanRoomData[]);
-          setOriginalAiRooms(localResult.rooms as PlanRoomData[]);
-          setDetectedScale(localResult.detectedScale);
-          setDetectedUnits(localResult.detectedUnits);
-          setDrawingSummary(localResult.summary);
-
-          setPlanData({
-            imageUri: compressedUri,
-            parsedRooms: localResult.rooms as PlanRoomData[],
-            detectedScale: localResult.detectedScale,
-            detectedUnits: localResult.detectedUnits,
-            scalePixelsPerMeter: calibrationScale || undefined,
-          });
-
-          setIsReviewOpen(true);
-          toast({
-            title: 'Plan Analyzed Autonomously (100% Local)',
-            description: `Extracted ${localResult.rooms.length} rooms & balconies without external APIs. Reviewing layout.`,
-          });
-          return;
-        } else {
-          throw new Error(localResult.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
-        }
-      }
-
-      // 2. CLOUD GEMINI AI ENGINE (With seamless local fallback)
-      let result;
-      try {
-        result = await analyzePlan({ 
-          photoDataUri: compressedUri,
-          calibrationScale: calibrationScale || undefined,
-          customNote: customNote.trim() || undefined,
-        });
-      } catch (cloudErr: any) {
-        console.warn('Cloud AI failed, falling back to Autonomous Local Engine:', cloudErr);
-        toast({
-          title: 'Cloud AI Unavailable / Depleted',
-          description: 'Falling back to Autonomous Local Engine seamlessly...',
-        });
-        const fallbackResult = await analyzePlanLocally(compressedUri, (status, pct) => {
-          setProcessingStatus(`Local fallback: ${status} (${pct}%)`);
-        });
-        if (fallbackResult.success && fallbackResult.rooms && fallbackResult.rooms.length > 0) {
-          result = fallbackResult;
-        } else {
-          throw cloudErr;
-        }
-      }
-
-      if (result && result.success && result.rooms && result.rooms.length > 0) {
-        setParsedRooms(result.rooms as PlanRoomData[]);
-        setOriginalAiRooms(result.rooms as PlanRoomData[]);
-        setDetectedScale(result.detectedScale);
-        setDetectedUnits(result.detectedUnits);
-        setDrawingSummary(result.summary);
+      if (localResult?.success && localResult?.rooms && localResult.rooms.length > 0) {
+        setParsedRooms(localResult.rooms as PlanRoomData[]);
+        setOriginalAiRooms(localResult.rooms as PlanRoomData[]);
+        setDetectedScale(localResult.detectedScale);
+        setDetectedUnits(localResult.detectedUnits);
+        setDrawingSummary(localResult.summary);
 
         setPlanData({
           imageUri: compressedUri,
-          parsedRooms: result.rooms as PlanRoomData[],
-          detectedScale: result.detectedScale,
-          detectedUnits: result.detectedUnits,
+          parsedRooms: localResult.rooms as PlanRoomData[],
+          detectedScale: localResult.detectedScale,
+          detectedUnits: localResult.detectedUnits,
           scalePixelsPerMeter: calibrationScale || undefined,
         });
 
         setIsReviewOpen(true);
         toast({
-          title: 'Blueprint Parsed with ML Precision',
-          description: `Extracted ${result.rooms.length} rooms (${result.detectedScale || 'Scale auto-fitted'}). Reviewing layout.`,
+          title: 'Plan Analyzed Autonomously (100% Local)',
+          description: `Extracted ${localResult.rooms.length} rooms & balconies without external APIs. Reviewing layout.`,
         });
+        return;
       } else {
-        throw new Error(result?.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
+        throw new Error(localResult?.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
       }
     } catch (err) {
       console.error('Plan analysis failed:', err);

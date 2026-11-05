@@ -284,11 +284,11 @@ export function AdminProjectEditorModal({
         result = await analyzePlanLocally(compressedUri);
       }
 
-      if (!result?.success || !result.rooms || result.rooms.length === 0) {
+      if (!result?.success || !result?.rooms || result.rooms.length === 0) {
         result = await analyzePlanLocally(compressedUri);
       }
 
-      if (result.success && result.rooms && result.rooms.length > 0) {
+      if (result?.success && result?.rooms && result.rooms.length > 0) {
         setParsedRooms(result.rooms as PlanRoomData[]);
         setBlueprintUri(compressedUri);
 
