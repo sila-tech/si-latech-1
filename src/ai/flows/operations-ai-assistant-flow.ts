@@ -131,7 +131,7 @@ Return structured output according to the schema. Always match the target projec
 
     try {
       const { output } = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash'),
+        model: googleAI.model('gemini-2.0-flash'),
         prompt,
         output: {
           schema: OperationsAiAssistantOutputSchema,

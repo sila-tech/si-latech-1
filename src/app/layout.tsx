@@ -93,7 +93,7 @@ export default function RootLayout({
         name: 'SI-LATECH',
         description: 'Beam and block specialists providing precast concrete beams and hollow concrete blocks for construction projects across Kenya.',
         url: 'https://si-latech.com',
-        telephone: '+254741557960',
+        telephone: '+254185218251',
         address: {
           '@type': 'PostalAddress',
           addressCountry: 'KE',
@@ -102,12 +102,12 @@ export default function RootLayout({
         },
         contactPoint: {
           '@type': 'ContactPoint',
-          telephone: '+254741557960',
+          telephone: '+254185218251',
           contactType: 'customer service',
           availableLanguage: 'English',
         },
         sameAs: [
-          'https://wa.me/254741557960',
+          'https://wa.me/254185218251',
         ],
         openingHoursSpecification: {
           '@type': 'OpeningHoursSpecification',

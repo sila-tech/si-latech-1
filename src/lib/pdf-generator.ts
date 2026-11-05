@@ -78,7 +78,7 @@ export async function generateQuotePdfDetails(clientInfo: any, rooms: any[]): Pr
   doc.setFontSize(8.5);
   doc.setTextColor(100);
   doc.text('Head Office: Ruiru, behind Rubis petrol station', 14, 38);
-  doc.text('Tel: +254 741 557 960 | Email: info.silatechsolutions@gmail.com', 14, 43);
+  doc.text('Tel: +254 185 218 251 | Email: info.silatechsolutions@gmail.com', 14, 43);
 
   // Divider line
   doc.setDrawColor(220, 220, 220);

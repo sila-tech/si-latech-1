@@ -204,8 +204,8 @@ export default function PartnerLoginPage() {
                             </div>
                             <p className="text-[11px] text-slate-400">
                                 Don't have partner credentials? Contact SI-LATECH management at{' '}
-                                <a href="tel:+254741557960" className="text-primary font-bold hover:underline">
-                                    +254 741 557 960
+                                <a href="tel:+254185218251" className="text-primary font-bold hover:underline">
+                                    +254 185 218 251
                                 </a>
                             </p>
                         </div>

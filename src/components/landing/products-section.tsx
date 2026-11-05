@@ -56,7 +56,7 @@ export function ProductsSection() {
 
   const getWhatsAppOrderUrl = (productName: string, price: string) => {
     const text = `Hello SI-LATECH, I want to purchase: ${productName} (${price}). Please provide delivery schedule and quotation details.`;
-    return `https://wa.me/254741557960?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/254185218251?text=${encodeURIComponent(text)}`;
   };
 
   return (

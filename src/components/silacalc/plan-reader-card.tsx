@@ -34,12 +34,15 @@ import {
   CheckCircle2, 
   Sparkles, 
   Scale,
-  RefreshCw
+  RefreshCw,
+  AlertCircle,
+  Cpu
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCalculator } from '@/context/calculator-context';
 import { useFirebase } from '@/firebase';
 import { analyzePlan } from '@/ai/flows/analyze-plan-flow';
+import { analyzePlanLocally } from '@/lib/local-plan-analyzer';
 import { BuildingBlock, ApartmentGroup } from '@/lib/calculator';
 import { logBlueprintActiveLearning } from '@/firebase/blueprint-learning';
 import type { PlanRoomData } from '@/firebase/data-manager';
@@ -113,6 +116,9 @@ export function PlanReaderCard() {
   const [detectedUnits, setDetectedUnits] = useState<string | undefined>(planData?.detectedUnits);
   const [drawingSummary, setDrawingSummary] = useState<string | undefined>();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisEngine, setAnalysisEngine] = useState<'local' | 'cloud'>('local');
+  const [processingStatus, setProcessingStatus] = useState<string>('Analyzing blueprint...');
 
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -141,6 +147,7 @@ export function PlanReaderCard() {
       setFile(selectedFile);
       setCalibPoints([]);
       setIsCalibrating(false);
+      setAnalysisError(null);
 
       toast({
         title: 'File Selected',
@@ -219,20 +226,76 @@ export function PlanReaderCard() {
     }
 
     setIsProcessing(true);
+    setAnalysisError(null);
+    setProcessingStatus(analysisEngine === 'local' ? 'Running Autonomous Local Analysis...' : 'Calling Vision AI...');
+
     toast({
-      title: 'Neural Blueprint Analysis...',
-      description: 'Parsing CAD geometry, scale calibration, and room spans with Gemini.',
+      title: analysisEngine === 'local' ? 'Autonomous Local Analysis' : 'Neural Blueprint Analysis...',
+      description: analysisEngine === 'local' 
+        ? 'Analyzing CAD geometry and room schedules on-device (100% offline, $0 APIs).'
+        : 'Parsing CAD geometry, scale calibration, and room spans with Gemini.',
     });
 
     try {
       const compressedUri = await compressImage(imageUri);
-      const result = await analyzePlan({ 
-        photoDataUri: compressedUri,
-        calibrationScale: calibrationScale || undefined,
-        customNote: customNote.trim() || undefined,
-      });
 
-      if (result.success && result.rooms && result.rooms.length > 0) {
+      // 1. AUTONOMOUS LOCAL ENGINE (100% Independent)
+      if (analysisEngine === 'local') {
+        const localResult = await analyzePlanLocally(compressedUri, (status, pct) => {
+          setProcessingStatus(`${status} (${pct}%)`);
+        });
+
+        if (localResult.success && localResult.rooms && localResult.rooms.length > 0) {
+          setParsedRooms(localResult.rooms as PlanRoomData[]);
+          setOriginalAiRooms(localResult.rooms as PlanRoomData[]);
+          setDetectedScale(localResult.detectedScale);
+          setDetectedUnits(localResult.detectedUnits);
+          setDrawingSummary(localResult.summary);
+
+          setPlanData({
+            imageUri: compressedUri,
+            parsedRooms: localResult.rooms as PlanRoomData[],
+            detectedScale: localResult.detectedScale,
+            detectedUnits: localResult.detectedUnits,
+            scalePixelsPerMeter: calibrationScale || undefined,
+          });
+
+          setIsReviewOpen(true);
+          toast({
+            title: 'Plan Analyzed Autonomously (100% Local)',
+            description: `Extracted ${localResult.rooms.length} rooms & balconies without external APIs. Reviewing layout.`,
+          });
+          return;
+        } else {
+          throw new Error(localResult.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
+        }
+      }
+
+      // 2. CLOUD GEMINI AI ENGINE (With seamless local fallback)
+      let result;
+      try {
+        result = await analyzePlan({ 
+          photoDataUri: compressedUri,
+          calibrationScale: calibrationScale || undefined,
+          customNote: customNote.trim() || undefined,
+        });
+      } catch (cloudErr: any) {
+        console.warn('Cloud AI failed, falling back to Autonomous Local Engine:', cloudErr);
+        toast({
+          title: 'Cloud AI Unavailable / Depleted',
+          description: 'Falling back to Autonomous Local Engine seamlessly...',
+        });
+        const fallbackResult = await analyzePlanLocally(compressedUri, (status, pct) => {
+          setProcessingStatus(`Local fallback: ${status} (${pct}%)`);
+        });
+        if (fallbackResult.success && fallbackResult.rooms && fallbackResult.rooms.length > 0) {
+          result = fallbackResult;
+        } else {
+          throw cloudErr;
+        }
+      }
+
+      if (result && result.success && result.rooms && result.rooms.length > 0) {
         setParsedRooms(result.rooms as PlanRoomData[]);
         setOriginalAiRooms(result.rooms as PlanRoomData[]);
         setDetectedScale(result.detectedScale);
@@ -253,13 +316,15 @@ export function PlanReaderCard() {
           description: `Extracted ${result.rooms.length} rooms (${result.detectedScale || 'Scale auto-fitted'}). Reviewing layout.`,
         });
       } else {
-        throw new Error(result.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
+        throw new Error(result?.error || 'No rooms were detected in the floor plan. Please ensure dimensions are visible.');
       }
     } catch (err) {
       console.error('Plan analysis failed:', err);
+      const errorMsg = err instanceof Error ? err.message : 'An unexpected response was received from the server.';
+      setAnalysisError(errorMsg);
       toast({
         title: 'Blueprint Analysis Failed',
-        description: err instanceof Error ? err.message : 'An unexpected response was received from the server.',
+        description: errorMsg,
         variant: 'destructive',
       });
     } finally {
@@ -424,20 +489,46 @@ export function PlanReaderCard() {
         <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 
         <CardHeader className="pb-3 relative z-10">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <CardTitle className="font-headline text-2xl text-slate-100 flex items-center gap-3">
               <div className="p-2 bg-sky-500/10 border border-sky-500/30 rounded-xl text-sky-400">
                 <UploadCloud size={24} className={isProcessing ? 'animate-bounce' : ''} />
               </div>
               AI Plan Reader
             </CardTitle>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-bold">
-              <Sparkles size={13} className="text-sky-400" />
-              <span>Multi-Stage ML Vision</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAnalysisEngine('local')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  analysisEngine === 'local'
+                    ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 ring-2 ring-emerald-500/20'
+                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                }`}
+                title="100% on-device autonomous processing ($0 API cost, works completely offline)"
+              >
+                <Cpu size={13} className={analysisEngine === 'local' ? 'text-emerald-400' : ''} />
+                <span>Autonomous Local</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnalysisEngine('cloud')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  analysisEngine === 'cloud'
+                    ? 'bg-sky-500/20 border border-sky-500/50 text-sky-300 ring-2 ring-sky-500/20'
+                    : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-slate-700/60'
+                }`}
+                title="Google Gemini Vision (Requires active AI Studio credits)"
+              >
+                <Sparkles size={13} className={analysisEngine === 'cloud' ? 'text-sky-400' : ''} />
+                <span>Cloud AI (Gemini)</span>
+              </button>
             </div>
           </div>
           <CardDescription className="text-slate-400 text-sm mt-2 leading-relaxed">
-            Upload any house plan, CAD drawing, or blueprint (PDF, JPG, PNG). Our neural model extracts room spans, checks beam orientations, and applies geometric constraint verification.
+            {analysisEngine === 'local'
+              ? 'Autonomous on-device engine: Extracts room spans, balconies, and dimensions locally with zero cloud API dependencies and zero per-scan charges.'
+              : 'Cloud neural vision: Upload any CAD drawing or blueprint to extract room spans with multi-model Gemini verification.'}
           </CardDescription>
         </CardHeader>
         
@@ -555,6 +646,29 @@ export function PlanReaderCard() {
               </div>
             </div>
           )}
+
+          {/* Analysis Notice / Error Alert */}
+          {analysisError && (
+            <div className="p-3 bg-red-950/60 border border-red-500/40 rounded-xl space-y-1.5 text-xs text-red-200 animate-in fade-in duration-200">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold text-red-300">Blueprint Analysis Notice</p>
+                  <p className="leading-relaxed text-red-200/90">{analysisError}</p>
+                  {analysisError.includes('aistudio.google.com') && (
+                    <a 
+                      href="https://aistudio.google.com/" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-1 font-bold text-sky-400 hover:text-sky-300 underline mt-1"
+                    >
+                      Open Google AI Studio &rarr;
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="pt-2 relative z-10 flex flex-col sm:flex-row gap-3">
@@ -570,12 +684,16 @@ export function PlanReaderCard() {
             {isProcessing ? (
               <>
                 <Loader2 className="animate-spin text-sky-200" size={20} />
-                <span>Running Multi-Stage Vision AI...</span>
+                <span className="truncate max-w-[280px] sm:max-w-none">{processingStatus}</span>
               </>
             ) : (
               <>
-                <Wand2 size={20} />
-                <span>Extract & Review Blueprint</span>
+                {analysisEngine === 'local' ? <Cpu size={20} /> : <Wand2 size={20} />}
+                <span>
+                  {analysisEngine === 'local' 
+                    ? 'Extract Blueprint (Autonomous Local Engine)' 
+                    : 'Extract & Review Blueprint (Cloud AI)'}
+                </span>
               </>
             )}
           </Button>

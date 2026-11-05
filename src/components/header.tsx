@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-const phoneNumber = '254741557960';
+const phoneNumber = '254185218251';
 const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent('Hello SI-LATECH, I would like to inquire about purchasing precast beams and blocks.')}`;
 
 const navLinks = [
@@ -145,7 +145,7 @@ export function Header() {
               <MessageCircle size={15} /> WhatsApp
             </a>
             <a
-              href="tel:+254741557960"
+              href="tel:+254185218251"
               onClick={() => setMobileOpen(false)}
               className="flex items-center justify-center gap-1.5 bg-slate-900 text-white py-3 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-transform"
             >

@@ -139,7 +139,7 @@ const silaVoiceFlow = ai.defineFlow(
     `;
 
     const { output } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash'),
+      model: googleAI.model('gemini-2.0-flash'),
       prompt: systemPrompt,
       output: {
         schema: SilaVoiceOutputSchema,

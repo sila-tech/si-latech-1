@@ -63,7 +63,7 @@ export default function ProductsPage() {
 
   const getWhatsAppOrderUrl = (productName: string, price: string) => {
     const text = `Hello SI-LATECH, I am viewing your product catalog and would like to order: ${productName} (${price}). Please provide delivery timeline and a formal quotation.`;
-    return `https://wa.me/254741557960?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/254185218251?text=${encodeURIComponent(text)}`;
   };
 
   return (
@@ -725,14 +725,14 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
                   <Button asChild className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl py-6 px-6">
-                    <a href="tel:+254741557960" className="flex items-center gap-2">
+                    <a href="tel:+254185218251" className="flex items-center gap-2">
                       <Phone size={18} />
-                      Call: +254 741 557 960
+                      Call: +254 185 218 251
                     </a>
                   </Button>
                   <Button asChild className="w-full sm:w-auto bg-[#25D366] hover:bg-[#1fbb57] text-white font-bold rounded-xl py-6 px-6">
                     <a 
-                      href="https://wa.me/254741557960?text=Hello%20SI-LATECH,%20I%20would%20like%20to%20order%20precast%20beams%20and%20blocks%20for%20my%20project."
+                      href="https://wa.me/254185218251?text=Hello%20SI-LATECH,%20I%20would%20like%20to%20order%20precast%20beams%20and%20blocks%20for%20my%20project."
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center gap-2"

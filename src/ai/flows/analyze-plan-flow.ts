@@ -37,7 +37,7 @@ const TrapeziumSchema = z.object({
 
 const RoomSchema = z.object({
   name: z.string().describe(
-    'The full descriptive name of the room. Rules: (1) Balconies/verandahs MUST include "Balcony" or "Verandah". (2) Staircases/voids MUST include "(Opening)". (3) Use human-readable names like "Master Bedroom", "Lounge", "Kitchen". (4) For multi-unit plans: "Ground Floor: Unit A - Lounge".'
+    'The full descriptive name of the room. Rules: (1) Balconies/verandahs/porches MUST include "Balcony", "Porch", or "Verandah". (2) EXCLUDE STAIRCASES completely: do NOT include stairwells or staircase openings as room slabs. (3) Use human-readable names like "Master Bedroom", "Lounge", "Kitchen", "Pantry", "Laundry", "Front Porch". (4) For multi-unit plans: "Ground Floor: Unit A - Lounge".'
   ),
   length: z.number().describe(
     'The LONGER clear span dimension in METRES (e.g. 4.2). Must be > 0. If in mm (e.g. 4200), divide by 1000.'
@@ -123,7 +123,13 @@ export interface AnalyzePlanResult {
  * rectifies unscaled millimetres, and applies physical sanity checks.
  */
 function reconcileAndValidateRooms(output: AnalyzePlanOutput, calibrationScale?: number): AnalyzePlanOutput {
-  const reconciledRooms = (output.rooms || []).map((room, idx) => {
+  // CRITICAL RULE: Exclude staircases, stairwells, and stair openings completely
+  const nonStaircaseRooms = (output.rooms || []).filter(room => {
+    const n = (room.name || '').toLowerCase();
+    return !n.includes('stair') && !n.includes('staircase') && !n.includes('stairwell');
+  });
+
+  const reconciledRooms = nonStaircaseRooms.map((room, idx) => {
     let length = Number(room.length) || 3.0;
     let width = Number(room.width) || 2.5;
 
@@ -233,10 +239,12 @@ export async function analyzePlan(input: AnalyzePlanInput): Promise<AnalyzePlanR
     console.error('Plan analysis failed in Server Action:', err);
     let errMsg = 'AI Blueprint analysis service is temporarily unavailable.';
     const errorStr = String(err.message || err);
-    if (errorStr.includes('API key was reported as leaked') || errorStr.includes('leaked')) {
+    if (errorStr.includes('prepayment credits are depleted') || errorStr.includes('prepayment') || errorStr.includes('credits are depleted')) {
+      errMsg = 'Google AI Studio prepayment credits are depleted for your Gemini API project. Please visit https://aistudio.google.com/ to recharge your prepaid balance, or update the GEMINI_API_KEY environment variable in your production secrets (Firebase App Hosting) and local .env.local file with an active key.';
+    } else if (errorStr.includes('API key was reported as leaked') || errorStr.includes('leaked')) {
       errMsg = 'The Gemini API Key configured in your environment has been revoked by Google because it was reported as leaked. Please update the GEMINI_API_KEY environment variable in your production secrets (Firebase App Hosting) and local .env.local file with a newly generated key from Google AI Studio.';
-    } else if (errorStr.includes('API key') || errorStr.includes('API_KEY')) {
-      errMsg = 'Invalid or missing Gemini API Key. Please verify your configuration.';
+    } else if (errorStr.includes('API key') || errorStr.includes('API_KEY') || errorStr.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED')) {
+      errMsg = 'Invalid or missing Gemini API Key. Please verify your GEMINI_API_KEY in Google AI Studio.';
     } else if (errorStr.includes('Quota exceeded') || errorStr.includes('429')) {
       errMsg = 'The Gemini API quota has been exceeded. Please check your billing plan or retry in a few moments.';
     } else if (err.message) {
@@ -280,11 +288,13 @@ STAGE 1: DRAWING METADATA & SCALE CALIBRATION
 ═══════════════════════════════════════════════════════
 STAGE 2: BEAM-AND-BLOCK SLAB STRUCTURAL RULES
 ═══════════════════════════════════════════════════════
-• STANDARD ROOMS (Bedroom, Lounge, Kitchen, Dining, Store, Corridor, etc.):
+• STANDARD ROOMS (Bedroom, Lounge, Kitchen, Dining, Pantry, Laundry, Store, Corridor, etc.):
   Beams span across the SHORTER dimension.
-• BALCONIES & VERANDAHS (including cantilevers/porches):
-  Beams span across the LONGER dimension (parallel to building face).
-  ⚠ CRITICAL: The room name MUST contain "Balcony" or "Verandah" (or "Baraza") to trigger proper beam direction logic.
+• BALCONIES, VERANDAHS & PORCHES (MANDATORY INCLUSION):
+  Extract EVERY balcony, verandah, terrace, or porch (e.g., "Front Porch (Balcony)", "Rear Porch (Balcony)", "Master Bedroom Porch (Balcony)").
+  ⚠ CRITICAL: The room name MUST contain "Balcony", "Porch", or "Verandah" (or "Baraza") to trigger proper beam direction logic (beams run parallel to the longer span / building face).
+• ⚠ EXCLUDE STAIRCASES COMPLETELY:
+  Do NOT extract staircases, stairwells, or stair voids as rooms requiring a floor slab. The staircase opening MUST be completely excluded from the rooms array because no floor slab is cast over open stairwells.
 • TRAPEZOIDAL / TAPERING BALCONIES & SLABS:
   When a balcony or verandah has tapering or non-parallel sides (trapezium shape):
   - Mark shape: "trapezium"
@@ -294,40 +304,53 @@ STAGE 2: BEAM-AND-BLOCK SLAB STRUCTURAL RULES
     - runLength: The perpendicular distance in metres across which beams are laid at SI-LATECH's 550mm c/c spacing (e.g., 3.9).
     - slantEdge: Length in metres of the angled exterior / railing edge if noted on plan (e.g., 5.1).
   - Set length to startSpan and width to runLength for standard compatibility.
-• VOIDS / OPENINGS (Stairwells, Lift Shafts, Light Wells, Courtyards, Ducts):
-  Must include "(Opening)" in the name (e.g., "Staircase (Opening)", "Lift (Opening)").
 • SUNKEN SLABS:
-  Bathrooms, En-suites, Kitchens marked as "Sunken Slab" ARE CONCRETE SLABS. Extract them as regular rooms.
+  Bathrooms, En-suites, WCs, Washrooms marked on the plan ARE CONCRETE SLABS. Extract them as regular rooms.
+• AREA-ASSISTED VERIFICATION:
+  When a blueprint displays room labels with square metres (e.g. "LOUNGE 24.96 sqm", "KITCHEN 14.44 sqm", "BEDROOM 2 12.0 sqm", "PANTRY 7.14 sqm"):
+  Cross-verify your extracted clear span dimensions against the stamped area (length * width ≈ stamped sqm). Use grid dimension lines (e.g., 5100mm, 4000mm, 3800mm, 2600mm) divided by 1000 to determine clear span metres.
 
 ═══════════════════════════════════════════════════════
 STAGE 3: FEW-SHOT BLUEPRINT EXAMPLES (GROUND TRUTH)
 ═══════════════════════════════════════════════════════
 
-EXAMPLE A — 3-Bedroom Kenyan Maisonette Ground Floor:
+EXAMPLE 1 — Executive 3-Bedroom Master En-Suite Bungalow with Porches (GROUND FLOOR 201.8 SQM, SCALE 1:50):
+Title block: "GROUND FLOOR (201.8 SQM) SCALE 1:50"
+Dimension lines in mm (e.g., 5100, 4000, 3800, 2600, 1600). Room areas stamped in red text.
 Output JSON:
 {
-  "detectedScale": "1:100",
+  "detectedScale": "1:50",
   "detectedUnits": "mm",
   "drawingType": "Architectural Floor Plan",
-  "summary": "3-Bedroom Ground Floor with Lounge, Dining, Kitchen, Master En-suite, Verandah, and Stair Void.",
+  "summary": "Executive 3-Bedroom Bungalow Ground Floor (201.8 SQM) with Lounge, Dining, Kitchen, Pantry, Laundry, Master Suite with WIC, 3 Porches/Balconies, and 4 Bathrooms/WCs. Staircases excluded.",
   "rooms": [
-    { "name": "Lounge", "length": 5.4, "width": 4.2, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 1, "boundingBox": [320, 150, 680, 480], "confidence": 0.95 },
-    { "name": "Dining Room", "length": 3.9, "width": 3.3, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 2, "boundingBox": [320, 480, 580, 720], "confidence": 0.92 },
-    { "name": "Kitchen", "length": 3.3, "width": 2.7, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 3, "boundingBox": [580, 480, 850, 720], "confidence": 0.94 },
-    { "name": "Master Bedroom", "length": 4.0, "width": 3.6, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 4, "boundingBox": [100, 150, 320, 480], "confidence": 0.96 },
-    { "name": "En-Suite Bathroom", "length": 2.4, "width": 1.8, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 5, "boundingBox": [100, 480, 240, 620], "confidence": 0.90 },
-    { "name": "Verandah", "length": 4.5, "width": 1.8, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 6, "boundingBox": [680, 150, 850, 450], "confidence": 0.95 },
-    { "name": "Staircase (Opening)", "length": 3.0, "width": 2.2, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 7, "boundingBox": [240, 480, 320, 620], "confidence": 0.92 }
+    { "name": "Pantry", "length": 5.10, "width": 1.40, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 1, "boundingBox": [240, 280, 300, 430], "confidence": 0.98 },
+    { "name": "Rear Porch (Balcony)", "length": 3.80, "width": 1.60, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 2, "boundingBox": [240, 510, 300, 620], "confidence": 0.96 },
+    { "name": "Laundry", "length": 3.20, "width": 1.60, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 3, "boundingBox": [290, 615, 360, 670], "confidence": 0.97 },
+    { "name": "Kitchen", "length": 3.80, "width": 3.80, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 4, "boundingBox": [300, 405, 440, 510], "confidence": 0.98 },
+    { "name": "Dining", "length": 3.80, "width": 3.80, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 5, "boundingBox": [300, 510, 440, 615], "confidence": 0.98 },
+    { "name": "Bedroom 2", "length": 4.00, "width": 3.00, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 6, "boundingBox": [300, 280, 410, 405], "confidence": 0.99 },
+    { "name": "WC (Bedroom 2 En-Suite)", "length": 2.60, "width": 1.60, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 7, "boundingBox": [410, 270, 465, 345], "confidence": 0.96 },
+    { "name": "WC (Bedroom 3 En-Suite)", "length": 2.60, "width": 1.60, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 8, "boundingBox": [465, 270, 520, 345], "confidence": 0.96 },
+    { "name": "Bedroom 3", "length": 4.00, "width": 3.00, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 9, "boundingBox": [520, 280, 625, 405], "confidence": 0.99 },
+    { "name": "Guest WC", "length": 2.00, "width": 1.80, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 10, "boundingBox": [520, 405, 625, 440], "confidence": 0.95 },
+    { "name": "Foyer", "length": 2.60, "width": 2.40, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 11, "boundingBox": [520, 440, 625, 480], "confidence": 0.97 },
+    { "name": "Lounge", "length": 5.20, "width": 4.80, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 12, "boundingBox": [440, 480, 625, 620], "confidence": 0.99 },
+    { "name": "Front Porch (Balcony)", "length": 6.20, "width": 2.78, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 13, "boundingBox": [625, 435, 730, 620], "confidence": 0.98 },
+    { "name": "Master Bathroom", "length": 4.00, "width": 2.00, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 14, "boundingBox": [360, 615, 445, 740], "confidence": 0.97 },
+    { "name": "Master WIC", "length": 2.90, "width": 2.00, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 15, "boundingBox": [445, 650, 515, 740], "confidence": 0.96 },
+    { "name": "Master Bedroom", "length": 4.00, "width": 3.80, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 16, "boundingBox": [555, 615, 660, 740], "confidence": 0.99 },
+    { "name": "Master Porch (Balcony)", "length": 4.00, "width": 1.80, "blockName": "Block 1", "apartmentName": "Ground Floor", "sequenceInApartment": 17, "boundingBox": [515, 740, 660, 790], "confidence": 0.97 }
   ]
 }
 
-EXAMPLE B — Multi-Unit Bedsitter Row (Shared Walls):
+EXAMPLE 2 — Multi-Unit Bedsitter Row (Shared Walls):
 Output JSON:
 {
   "detectedScale": "1:100",
   "detectedUnits": "mm",
   "drawingType": "Architectural Floor Plan",
-  "summary": "Block of 3 Bedsitters side-by-side with shared walls.",
+  "summary": "Block of 3 Bedsitters side-by-side with shared walls. Staircases excluded.",
   "rooms": [
     { "name": "Bedsitter 1 - Room", "length": 3.6, "width": 3.0, "blockName": "Block 1", "apartmentName": "Unit 1", "sequenceInApartment": 1, "boundingBox": [100, 50, 400, 300], "confidence": 0.95 },
     { "name": "Bedsitter 1 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 1", "sequenceInApartment": 2, "boundingBox": [400, 50, 550, 200], "confidence": 0.91 },
@@ -335,17 +358,17 @@ Output JSON:
     { "name": "Bedsitter 2 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 2", "sequenceInApartment": 2, "boundingBox": [400, 300, 550, 450], "confidence": 0.91 },
     { "name": "Bedsitter 3 - Room", "length": 3.6, "width": 3.0, "blockName": "Block 1", "apartmentName": "Unit 3", "sequenceInApartment": 1, "boundingBox": [100, 550, 400, 800], "confidence": 0.95 },
     { "name": "Bedsitter 3 - Bathroom", "length": 1.8, "width": 1.5, "blockName": "Block 1", "apartmentName": "Unit 3", "sequenceInApartment": 2, "boundingBox": [400, 550, 550, 700], "confidence": 0.91 },
-    { "name": "Common Verandah", "length": 9.0, "width": 1.5, "blockName": "Block 1", "boundingBox": [550, 50, 700, 800], "confidence": 0.94 }
+    { "name": "Common Verandah (Balcony)", "length": 9.0, "width": 1.5, "blockName": "Block 1", "boundingBox": [550, 50, 700, 800], "confidence": 0.94 }
   ]
 }
 
-EXAMPLE C — Maisonette with Tapering Trapezium Balcony:
+EXAMPLE 3 — Maisonette with Tapering Trapezium Balcony:
 Output JSON:
 {
   "detectedScale": "1:100",
   "detectedUnits": "mm",
   "drawingType": "Architectural Floor Plan",
-  "summary": "First floor plan with Master Suite and a tapering Trapezoid Balcony.",
+  "summary": "First floor plan with Master Suite and a tapering Trapezoid Balcony. Staircases excluded.",
   "rooms": [
     { 
       "name": "Master Balcony", 
@@ -371,20 +394,21 @@ STAGE 4: SWAHILI & LOCAL VOCABULARY REFERENCE
 - Chumba / BR / Bed 1/2/3 → "Bedroom 1", "Bedroom 2", "Bedroom 3"
 - Choo / B/R / Bth / Washroom → "Bathroom" or "En-Suite Bathroom"
 - Stoo / S/R → "Store"
-- Baraza / Velanda / Velander → "Verandah"
+- Baraza / Velanda / Velander / Porch → "Verandah" or "Porch (Balcony)"
 - SQ / DSQ / BQ → "Staff Quarter Room"
 
 ═══════════════════════════════════════════════════════
 STAGE 5: FINAL OUTPUT REQUIREMENTS
 ═══════════════════════════════════════════════════════
-1. Return EVERY structural room space requiring a slab.
-2. Length and Width MUST be positive floating-point numbers in METRES.
-3. Accurate boundingBox [ymin, xmin, ymax, xmax] coordinates between 0 and 1000.
-4. Exclude site boundary fences, exterior landscaping, roof timber framing, foundation trench footings, and elevations.` }
+1. Return EVERY structural room space requiring a slab (including all rooms and all balconies/porches).
+2. EXCLUDE staircases completely (no staircase openings in output).
+3. Length and Width MUST be positive floating-point numbers in METRES.
+4. Accurate boundingBox [ymin, xmin, ymax, xmax] coordinates between 0 and 1000.
+5. Exclude site boundary fences, exterior landscaping, roof timber framing, foundation trench footings, and elevations.` }
     ];
 
     let result = null;
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash-8b'];
     let lastError: any = null;
 
     for (const modelName of modelsToTry) {

@@ -41,6 +41,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { analyzePlan } from '@/ai/flows/analyze-plan-flow';
+import { analyzePlanLocally } from '@/lib/local-plan-analyzer';
 import type { Room, CalculationDefaults } from '@/lib/calculator';
 import { DEFAULTS, NEW_PROJECT_DEFAULTS, calcRoomBlocksAndBeams, calculateProjectTotals } from '@/lib/calculator';
 import { generateQuotePdf, generatePromaxPdf } from '@/lib/pdf-utils';
@@ -274,7 +275,18 @@ export function AdminProjectEditorModal({
 
     try {
       const compressedUri = await compressImage(blueprintUri);
-      const result = await analyzePlan({ photoDataUri: compressedUri });
+      let result;
+      try {
+        result = await analyzePlan({ photoDataUri: compressedUri });
+      } catch (cloudErr) {
+        console.warn('Cloud AI failed, using Autonomous Local Engine:', cloudErr);
+        toast({ title: 'Cloud AI Unavailable', description: 'Switching to Autonomous Local Engine...' });
+        result = await analyzePlanLocally(compressedUri);
+      }
+
+      if (!result?.success || !result.rooms || result.rooms.length === 0) {
+        result = await analyzePlanLocally(compressedUri);
+      }
 
       if (result.success && result.rooms && result.rooms.length > 0) {
         setParsedRooms(result.rooms as PlanRoomData[]);
@@ -288,9 +300,9 @@ export function AdminProjectEditorModal({
         }));
         setRooms(newRoomsList);
 
-        toast({ title: 'AI Blueprint Parsed!', description: `Detected ${result.rooms.length} room spaces. Rooms imported successfully.` });
+        toast({ title: 'Blueprint Parsed Successfully!', description: `Detected ${result.rooms.length} room spaces. Rooms imported successfully.` });
       } else {
-        throw new Error(result.error || 'Could not detect room dimensions in blueprint.');
+        throw new Error(result?.error || 'Could not detect room dimensions in blueprint.');
       }
     } catch (err: any) {
       toast({ title: 'Blueprint Scan Failed', description: err.message || 'An error occurred during AI analysis.', variant: 'destructive' });
